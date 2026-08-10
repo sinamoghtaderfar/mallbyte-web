@@ -6,7 +6,7 @@ describe("session storage", () => {
   beforeEach(() => {
     clearSession();
   });
-
+  
   it("starts without an access token", () => {
     expect(getAccessToken()).toBeNull();
   });
@@ -25,3 +25,6 @@ describe("session storage", () => {
     expect(getAccessToken()).toBeNull();
   });
 });
+
+
+// Arrange → Act → Assert
