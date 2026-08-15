@@ -13,8 +13,10 @@ type AuthProviderProps = {
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const hasBootstrapped = useRef(false);
+
   const setUser = useAuthStore((state) => state.setUser);
   const setLoading = useAuthStore((state) => state.setLoading);
+  const setBootstrapped = useAuthStore((state) => state.setBootstrapped);
   const clearAuth = useAuthStore((state) => state.clearAuth);
 
   useEffect(() => {
@@ -26,6 +28,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     async function bootstrapSession() {
       setLoading(true);
+      setBootstrapped(false);
 
       try {
         await refreshSession();
@@ -37,11 +40,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
         clearAuth();
       } finally {
         setLoading(false);
+        setBootstrapped(true);
       }
     }
 
     bootstrapSession();
-  }, [clearAuth, setLoading, setUser]);
+  }, [clearAuth, setBootstrapped, setLoading, setUser]);
 
   return children;
 }
