@@ -1,0 +1,20 @@
+export type ProductListItem = {
+  id: number;
+  name: string;
+  slug: string;
+  main_image: string | null;
+  price: string;
+  compare_price: string | null;
+  final_price: string;
+  brand_name: string | null;
+  category_name: string | null;
+  stock: number;
+  available_stock: number;
+  reserved_stock: number;
+  is_featured: boolean;
+  views_count: number;
+  created_at: string;
+  barcode: string | null;
+  labels: string[];
+  label_display: string[];
+};
