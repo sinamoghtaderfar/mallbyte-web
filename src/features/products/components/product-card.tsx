@@ -41,7 +41,7 @@ export function ProductCard({ product }: ProductCardProps) {
 
   return (
     <article className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-md">
-      <Link href={`/products/${product.slug}`} className="block">
+      <Link href={`/products/${product.id}`} className="block">
         <div
           className="flex aspect-[4/3] items-center justify-center bg-slate-100 bg-cover bg-center"
           style={imageUrl ? { backgroundImage: `url(${imageUrl})` } : undefined}
