@@ -28,3 +28,11 @@ export async function getOrder(orderId: string) {
 
   return response.data;
 }
+
+export async function cancelOrder(orderId: number | string) {
+  const response = await apiClient.post<OrderDetail>(
+    API_ENDPOINTS.orders.orderCancel(orderId),
+  );
+
+  return response.data;
+}

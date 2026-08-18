@@ -4,19 +4,14 @@ export const API_ENDPOINTS = {
   auth: {
     tokenRefresh: "/api/auth/token/refresh/",
     logout: "/api/auth/logout/",
-
     otpRequest: "/api/auth/otp/request/",
     otpVerify: "/api/auth/otp/verify/",
-
     register: "/api/auth/register/",
     profile: "/api/auth/profile/",
-
     passwordResetRequest: "/api/auth/password-reset/request/",
     passwordResetVerify: "/api/auth/password-reset/verify/",
-
     emailVerifyRequest: "/api/auth/email/verify-request/",
     emailVerifyConfirm: "/api/auth/email/verify-confirm/",
-
     sellerApply: "/api/auth/seller/apply/",
     sellerStatus: "/api/auth/seller/status/",
     sellerDashboard: "/api/auth/seller/dashboard/",
@@ -49,12 +44,14 @@ export const API_ENDPOINTS = {
   },
 
   orders: {
-  cart: "/api/orders/cart/",
-  cartAdd: "/api/orders/cart/add/",
-  cartClear: "/api/orders/cart/clear/",
-  cartItem: (itemId: number | string) => `/api/orders/cart/items/${itemId}/`,
-  orders: "/api/orders/orders/",
-  checkout: "/api/orders/orders/checkout/",
+    cart: "/api/orders/cart/",
+    cartAdd: "/api/orders/cart/add/",
+    cartClear: "/api/orders/cart/clear/",
+    cartItem: (itemId: number | string) => `/api/orders/cart/items/${itemId}/`,
+    orders: "/api/orders/orders/",
+    checkout: "/api/orders/orders/checkout/",
+    orderCancel: (orderId: number | string) =>
+      `/api/orders/orders/${orderId}/cancel/`,
   },
 
   analytics: {
