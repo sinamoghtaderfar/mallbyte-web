@@ -20,6 +20,10 @@ const navItems = [
     label: "Products",
   },
   {
+    href: "/orders",
+    label: "Orders",
+  },
+  {
     href: "/profile",
     label: "Profile",
   },

@@ -140,7 +140,14 @@ export function OrderDetail() {
           ))}
         </div>
 
-        <div className="mt-8">
+        <div className="mt-8 flex flex-wrap gap-3">
+          <Link
+            href="/orders"
+            className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800"
+          >
+            Back to orders
+          </Link>
+
           <Link
             href="/products"
             className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 px-5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
