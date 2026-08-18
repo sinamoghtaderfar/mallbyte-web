@@ -1,10 +1,13 @@
 "use client";
+
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { logout } from "@/features/auth/api";
 import { useAuthStore } from "@/features/auth/auth-store";
+import { useCartStore } from "@/features/cart/cart-store";
+import { CartLink } from "@/features/cart/components/cart-link";
 import { getApiErrorMessage } from "@/lib/api/errors";
 
 const navItems = [
@@ -39,6 +42,8 @@ export function SiteHeader() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const clearAuth = useAuthStore((state) => state.clearAuth);
 
+  const clearCartState = useCartStore((state) => state.clearCartState);
+
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [error, setError] = useState("");
 
@@ -52,6 +57,7 @@ export function SiteHeader() {
       setError(getApiErrorMessage(logoutError));
     } finally {
       clearAuth();
+      clearCartState();
       setIsLoggingOut(false);
       router.push("/auth");
     }
@@ -61,7 +67,10 @@ export function SiteHeader() {
     <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur">
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4">
         <div className="flex items-center gap-8">
-          <Link href="/" className="text-lg font-bold tracking-tight text-slate-950">
+          <Link
+            href="/"
+            className="text-lg font-bold tracking-tight text-slate-950"
+          >
             MallByte
           </Link>
 
@@ -88,6 +97,8 @@ export function SiteHeader() {
         </div>
 
         <div className="flex items-center gap-3">
+          <CartLink />
+
           {error ? (
             <p className="hidden text-sm text-red-600 lg:block">{error}</p>
           ) : null}

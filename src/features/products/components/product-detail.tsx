@@ -1,5 +1,5 @@
 "use client";
-
+import { AddToCartButton } from "@/features/cart/components/add-to-cart-button";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -253,13 +253,7 @@ export function ProductDetail() {
         </div>
 
         <div className="mt-8 flex flex-wrap gap-3">
-          <button
-            type="button"
-            disabled={!product.is_in_stock}
-            className="h-12 rounded-2xl bg-slate-900 px-6 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Add to cart
-          </button>
+          <AddToCartButton productId={product.id} disabled={!product.is_in_stock} />
 
           <Link
             href="/products"

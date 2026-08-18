@@ -49,8 +49,12 @@ export const API_ENDPOINTS = {
   },
 
   orders: {
-    cart: "/api/orders/cart/",
-    orders: "/api/orders/orders/",
+  cart: "/api/orders/cart/",
+  cartAdd: "/api/orders/cart/add/",
+  cartClear: "/api/orders/cart/clear/",
+  cartItem: (itemId: number | string) => `/api/orders/cart/items/${itemId}/`,
+  orders: "/api/orders/orders/",
+  checkout: "/api/orders/orders/checkout/",
   },
 
   analytics: {
