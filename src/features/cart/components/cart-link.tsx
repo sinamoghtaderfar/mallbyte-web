@@ -55,7 +55,6 @@ export function CartLink() {
       className="relative inline-flex h-10 items-center justify-center rounded-2xl border border-slate-200 px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
     >
       Cart
-
       {totalItems > 0 ? (
         <span className="ml-2 rounded-full bg-slate-900 px-2 py-0.5 text-xs font-semibold text-white">
           {totalItems}

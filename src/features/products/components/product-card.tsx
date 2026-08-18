@@ -47,9 +47,7 @@ export function ProductCard({ product }: ProductCardProps) {
           style={imageUrl ? { backgroundImage: `url(${imageUrl})` } : undefined}
         >
           {!imageUrl ? (
-            <span className="text-sm font-medium text-slate-400">
-              No image
-            </span>
+            <span className="text-sm font-medium text-slate-400">No image</span>
           ) : null}
         </div>
 

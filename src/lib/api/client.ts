@@ -2,9 +2,9 @@ import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 
 import { API_ENDPOINTS } from "@/lib/api/endpoints";
 import {
-    clearSession,
-    getAccessToken,
-    setAccessToken,
+  clearSession,
+  getAccessToken,
+  setAccessToken,
 } from "@/lib/auth/session-storage";
 
 const API_BASE_URL =

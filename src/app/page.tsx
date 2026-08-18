@@ -18,9 +18,9 @@ export default function HomePage() {
             </h1>
 
             <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
-              This frontend is connected to the MallByte Django REST API and uses
-              email OTP authentication with refresh tokens stored in HttpOnly
-              cookies.
+              This frontend is connected to the MallByte Django REST API and
+              uses email OTP authentication with refresh tokens stored in
+              HttpOnly cookies.
             </p>
 
             <div className="mt-8 flex flex-wrap gap-3">

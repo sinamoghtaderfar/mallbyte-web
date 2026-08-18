@@ -136,9 +136,7 @@ export function ProductDetail() {
           style={imageUrl ? { backgroundImage: `url(${imageUrl})` } : undefined}
         >
           {!imageUrl ? (
-            <span className="text-sm font-medium text-slate-400">
-              No image
-            </span>
+            <span className="text-sm font-medium text-slate-400">No image</span>
           ) : null}
         </div>
 
@@ -253,7 +251,10 @@ export function ProductDetail() {
         </div>
 
         <div className="mt-8 flex flex-wrap gap-3">
-          <AddToCartButton productId={product.id} disabled={!product.is_in_stock} />
+          <AddToCartButton
+            productId={product.id}
+            disabled={!product.is_in_stock}
+          />
 
           <Link
             href="/products"

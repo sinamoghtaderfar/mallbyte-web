@@ -41,7 +41,8 @@ async function loadClient(apiBaseUrl?: string): Promise<{
 }
 
 function getAuthorizationHeader(config: AxiosRequestConfig) {
-  const headers = config.headers as Record<string, string | undefined> | undefined;
+  const headers = config.headers as
+    Record<string, string | undefined> | undefined;
 
   return headers?.Authorization ?? headers?.authorization;
 }
@@ -185,7 +186,9 @@ describe("api client refresh flow", () => {
       detail: "Forbidden.",
     });
 
-    await expect(apiClient.get(API_ENDPOINTS.auth.profile)).rejects.toMatchObject({
+    await expect(
+      apiClient.get(API_ENDPOINTS.auth.profile),
+    ).rejects.toMatchObject({
       response: {
         status: 403,
       },
@@ -196,97 +199,94 @@ describe("api client refresh flow", () => {
   });
 
   it("does not retry the same request more than once", async () => {
-  const { apiClient, session, mock, API_ENDPOINTS } = await loadClient();
+    const { apiClient, session, mock, API_ENDPOINTS } = await loadClient();
 
-  session.setAccessToken("old-access-token");
+    session.setAccessToken("old-access-token");
 
-  mock.onGet(API_ENDPOINTS.auth.profile).replyOnce(401, {
-    detail: "Access token expired.",
+    mock.onGet(API_ENDPOINTS.auth.profile).replyOnce(401, {
+      detail: "Access token expired.",
+    });
+
+    mock.onPost(API_ENDPOINTS.auth.tokenRefresh).reply(200, {
+      access: "new-access-token",
+    });
+
+    mock.onGet(API_ENDPOINTS.auth.profile).replyOnce(401, {
+      detail: "Still unauthorized.",
+    });
+
+    await expect(
+      apiClient.get(API_ENDPOINTS.auth.profile),
+    ).rejects.toMatchObject({
+      response: {
+        status: 401,
+      },
+    });
+
+    expect(session.getAccessToken()).toBe("new-access-token");
+    expect(mock.history.get).toHaveLength(2);
+    expect(mock.history.post).toHaveLength(1);
+  }); // ← تست قبلی اینجا تمام می‌شود
+
+  it("rejects network errors without trying to refresh", async () => {
+    const { apiClient, session, mock, API_ENDPOINTS } = await loadClient();
+
+    session.setAccessToken("access-token");
+
+    mock.onGet(API_ENDPOINTS.auth.profile).networkError();
+
+    await expect(
+      apiClient.get(API_ENDPOINTS.auth.profile),
+    ).rejects.toMatchObject({
+      message: "Network Error",
+    });
+
+    expect(session.getAccessToken()).toBe("access-token");
+    expect(mock.history.get).toHaveLength(1);
+    expect(mock.history.post).toHaveLength(0);
   });
 
-  mock.onPost(API_ENDPOINTS.auth.tokenRefresh).reply(200, {
-    access: "new-access-token",
+  it("rejects timeout errors without trying to refresh", async () => {
+    const { apiClient, session, mock, API_ENDPOINTS } = await loadClient();
+
+    session.setAccessToken("access-token");
+
+    mock.onGet(API_ENDPOINTS.auth.profile).timeout();
+
+    await expect(
+      apiClient.get(API_ENDPOINTS.auth.profile),
+    ).rejects.toMatchObject({
+      code: "ECONNABORTED",
+    });
+
+    expect(session.getAccessToken()).toBe("access-token");
+    expect(mock.history.get).toHaveLength(1);
+    expect(mock.history.post).toHaveLength(0);
   });
 
-  mock.onGet(API_ENDPOINTS.auth.profile).replyOnce(401, {
-    detail: "Still unauthorized.",
+  it("clears the session when refresh fails", async () => {
+    const { apiClient, session, mock, API_ENDPOINTS } = await loadClient();
+
+    session.setAccessToken("old-access-token");
+
+    mock.onGet(API_ENDPOINTS.auth.profile).replyOnce(401, {
+      detail: "Access token expired.",
+    });
+
+    mock.onPost(API_ENDPOINTS.auth.tokenRefresh).reply(401, {
+      detail: "Refresh token is invalid or expired.",
+    });
+
+    await expect(
+      apiClient.get(API_ENDPOINTS.auth.profile),
+    ).rejects.toMatchObject({
+      response: {
+        status: 401,
+      },
+    });
+
+    expect(session.getAccessToken()).toBeNull();
+    expect(mock.history.get).toHaveLength(1);
+    expect(mock.history.post).toHaveLength(1);
   });
-
-  await expect(
-    apiClient.get(API_ENDPOINTS.auth.profile),
-  ).rejects.toMatchObject({
-    response: {
-      status: 401,
-    },
-  });
-
-  expect(session.getAccessToken()).toBe("new-access-token");
-  expect(mock.history.get).toHaveLength(2);
-  expect(mock.history.post).toHaveLength(1);
-}); // ← تست قبلی اینجا تمام می‌شود
-
-
-it("rejects network errors without trying to refresh", async () => {
-  const { apiClient, session, mock, API_ENDPOINTS } = await loadClient();
-
-  session.setAccessToken("access-token");
-
-  mock.onGet(API_ENDPOINTS.auth.profile).networkError();
-
-  await expect(
-    apiClient.get(API_ENDPOINTS.auth.profile),
-  ).rejects.toMatchObject({
-    message: "Network Error",
-  });
-
-  expect(session.getAccessToken()).toBe("access-token");
-  expect(mock.history.get).toHaveLength(1);
-  expect(mock.history.post).toHaveLength(0);
-});
-
-
-it("rejects timeout errors without trying to refresh", async () => {
-  const { apiClient, session, mock, API_ENDPOINTS } = await loadClient();
-
-  session.setAccessToken("access-token");
-
-  mock.onGet(API_ENDPOINTS.auth.profile).timeout();
-
-  await expect(
-    apiClient.get(API_ENDPOINTS.auth.profile),
-  ).rejects.toMatchObject({
-    code: "ECONNABORTED",
-  });
-
-  expect(session.getAccessToken()).toBe("access-token");
-  expect(mock.history.get).toHaveLength(1);
-  expect(mock.history.post).toHaveLength(0);
-});
-
-
-it("clears the session when refresh fails", async () => {
-  const { apiClient, session, mock, API_ENDPOINTS } = await loadClient();
-
-  session.setAccessToken("old-access-token");
-
-  mock.onGet(API_ENDPOINTS.auth.profile).replyOnce(401, {
-    detail: "Access token expired.",
-  });
-
-  mock.onPost(API_ENDPOINTS.auth.tokenRefresh).reply(401, {
-    detail: "Refresh token is invalid or expired.",
-  });
-
-  await expect(
-    apiClient.get(API_ENDPOINTS.auth.profile),
-  ).rejects.toMatchObject({
-    response: {
-      status: 401,
-    },
-  });
-
-  expect(session.getAccessToken()).toBeNull();
-  expect(mock.history.get).toHaveLength(1);
-  expect(mock.history.post).toHaveLength(1);
-});
 });

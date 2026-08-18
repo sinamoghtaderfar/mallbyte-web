@@ -86,9 +86,7 @@ export function OrdersList() {
   if (!orders.length) {
     return (
       <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-        <h1 className="text-2xl font-semibold text-slate-950">
-          No orders yet
-        </h1>
+        <h1 className="text-2xl font-semibold text-slate-950">No orders yet</h1>
 
         <p className="mt-2 text-sm text-slate-500">
           Your orders will appear here after checkout.

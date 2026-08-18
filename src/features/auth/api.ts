@@ -3,13 +3,13 @@ import { API_ENDPOINTS } from "@/lib/api/endpoints";
 import { clearSession, setAccessToken } from "@/lib/auth/session-storage";
 
 import type {
-    LogoutResponse,
-    OtpRequestPayload,
-    OtpRequestResponse,
-    OtpVerifyPayload,
-    OtpVerifyResponse,
-    ProfileResponse,
-    TokenRefreshResponse,
+  LogoutResponse,
+  OtpRequestPayload,
+  OtpRequestResponse,
+  OtpVerifyPayload,
+  OtpVerifyResponse,
+  ProfileResponse,
+  TokenRefreshResponse,
 } from "./types";
 
 export async function requestOtp(payload: OtpRequestPayload) {
@@ -43,13 +43,17 @@ export async function refreshSession() {
 }
 
 export async function getProfile() {
-  const response = await apiClient.get<ProfileResponse>(API_ENDPOINTS.auth.profile);
+  const response = await apiClient.get<ProfileResponse>(
+    API_ENDPOINTS.auth.profile,
+  );
 
   return response.data;
 }
 
 export async function logout() {
-  const response = await apiClient.post<LogoutResponse>(API_ENDPOINTS.auth.logout);
+  const response = await apiClient.post<LogoutResponse>(
+    API_ENDPOINTS.auth.logout,
+  );
 
   clearSession();
 

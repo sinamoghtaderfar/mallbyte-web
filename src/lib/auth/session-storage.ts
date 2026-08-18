@@ -1,13 +1,13 @@
 let accessToken: string | null = null;
 
 export function getAccessToken(): string | null {
-    return accessToken;
+  return accessToken;
 }
 
 export function setAccessToken(token: string | null): void {
-    accessToken = token;
+  accessToken = token;
 }
 
 export function clearSession(): void {
-    accessToken = null;
+  accessToken = null;
 }

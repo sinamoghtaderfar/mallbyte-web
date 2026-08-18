@@ -17,7 +17,10 @@ const emailSchema = z.object({
 });
 
 const codeSchema = z.object({
-  code: z.string().trim().regex(/^\d{6}$/, "Code must be 6 digits."),
+  code: z
+    .string()
+    .trim()
+    .regex(/^\d{6}$/, "Code must be 6 digits."),
 });
 
 type EmailFormValues = z.infer<typeof emailSchema>;

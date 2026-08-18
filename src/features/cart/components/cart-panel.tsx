@@ -260,9 +260,10 @@ export function CartPanel() {
           </p>
         </div>
 
-        <Link href="/checkout"
+        <Link
+          href="/checkout"
           className="mt-6 inline-flex h-12 w-full items-center justify-center rounded-2xl bg-slate-900 text-sm font-medium text-white transition hover:bg-slate-800"
-          >
+        >
           Continue to checkout
         </Link>
 

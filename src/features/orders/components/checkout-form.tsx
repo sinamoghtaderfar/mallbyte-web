@@ -209,9 +209,7 @@ export function CheckoutForm() {
           </label>
 
           <label className="block">
-            <span className="text-sm font-medium text-slate-700">
-              Province
-            </span>
+            <span className="text-sm font-medium text-slate-700">Province</span>
             <input
               name="province"
               value={form.province}

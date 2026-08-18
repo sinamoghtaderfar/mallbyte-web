@@ -33,7 +33,6 @@ export function OrderDetail() {
   const [isCancelling, setIsCancelling] = useState(false);
   const [error, setError] = useState("");
 
-
   useEffect(() => {
     let isMounted = true;
 
@@ -65,24 +64,24 @@ export function OrderDetail() {
     };
   }, [params.id]);
   async function handleCancelOrder() {
-  if (!order) {
-    return;
+    if (!order) {
+      return;
+    }
+
+    setError("");
+    setIsCancelling(true);
+
+    try {
+      const updatedOrder = await cancelOrder(order.id);
+      setOrder(updatedOrder);
+    } catch (cancelError) {
+      setError(getApiErrorMessage(cancelError));
+    } finally {
+      setIsCancelling(false);
+    }
   }
 
-  setError("");
-  setIsCancelling(true);
-
-  try {
-    const updatedOrder = await cancelOrder(order.id);
-    setOrder(updatedOrder);
-  } catch (cancelError) {
-    setError(getApiErrorMessage(cancelError));
-  } finally {
-    setIsCancelling(false);
-  }
-}
-
-const canCancel = order?.status === "pending_payment";
+  const canCancel = order?.status === "pending_payment";
 
   if (isLoading) {
     return (
@@ -162,31 +161,31 @@ const canCancel = order?.status === "pending_payment";
         </div>
 
         <div className="mt-8 flex flex-wrap gap-3">
-  <Link
-    href="/orders"
-    className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800"
-  >
-    Back to orders
-  </Link>
+          <Link
+            href="/orders"
+            className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800"
+          >
+            Back to orders
+          </Link>
 
-  <Link
-    href="/products"
-    className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 px-5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-  >
-    Continue shopping
-  </Link>
+          <Link
+            href="/products"
+            className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 px-5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+          >
+            Continue shopping
+          </Link>
 
-  {canCancel ? (
-    <button
-      type="button"
-      onClick={handleCancelOrder}
-      disabled={isCancelling}
-      className="inline-flex h-11 items-center justify-center rounded-2xl bg-red-600 px-5 text-sm font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
-    >
-      {isCancelling ? "Cancelling..." : "Cancel order"}
-    </button>
-  ) : null}
-</div>
+          {canCancel ? (
+            <button
+              type="button"
+              onClick={handleCancelOrder}
+              disabled={isCancelling}
+              className="inline-flex h-11 items-center justify-center rounded-2xl bg-red-600 px-5 text-sm font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isCancelling ? "Cancelling..." : "Cancel order"}
+            </button>
+          ) : null}
+        </div>
       </section>
 
       <aside className="h-fit rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
