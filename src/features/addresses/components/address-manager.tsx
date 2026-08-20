@@ -173,6 +173,10 @@ export function AddressManager() {
                 value={form.province}
                 onChange={handleChange}
                 required
+                minLength={2}
+                maxLength={100}
+                pattern="[^0-9]*"
+                title="Use letters only. Numbers are not allowed."
                 className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-slate-400"
               />
             </label>
@@ -186,6 +190,10 @@ export function AddressManager() {
                 value={form.city}
                 onChange={handleChange}
                 required
+                minLength={2}
+                maxLength={100}
+                pattern="[^0-9]*"
+                title="Use letters only. Numbers are not allowed."
                 className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-slate-400"
               />
             </label>
