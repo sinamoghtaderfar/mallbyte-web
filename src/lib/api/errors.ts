@@ -1,17 +1,11 @@
 import { AxiosError } from "axios";
 
-type ApiErrorValue =
-  | string
-  | string[]
-  | Record<string, unknown>
-  | Record<string, unknown>[];
-
 type ApiErrorData = {
   detail?: string;
   message?: string;
   error?: string;
   non_field_errors?: string[];
-  [key: string]: ApiErrorValue | undefined;
+  [key: string]: unknown;
 };
 
 function humanizeFieldName(fieldName: string) {
@@ -106,7 +100,9 @@ export function getApiErrorMessage(error: unknown) {
     return "Something went wrong while processing the request.";
   }
 
-  if (error instanceof Error) return error.message;
+  if (error instanceof Error) {
+    return error.message;
+  }
 
   return "Something went wrong.";
 }
