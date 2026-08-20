@@ -50,9 +50,32 @@ export function AddressManager() {
   }
 
   useEffect(() => {
-    loadAddresses();
-  }, []);
+    let isMounted = true;
 
+    async function loadInitialAddresses() {
+      try {
+        const data = await getAddresses();
+
+        if (isMounted) {
+          setAddresses(data);
+        }
+      } catch (loadError) {
+        if (isMounted) {
+          setError(getApiErrorMessage(loadError));
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    void loadInitialAddresses();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
   function handleChange(event: ChangeEvent<HTMLInputElement>) {
     const { name, value, type, checked } = event.target;
 
@@ -113,9 +136,7 @@ export function AddressManager() {
         onSubmit={handleSubmit}
         className="h-fit rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
       >
-        <h1 className="text-2xl font-semibold text-slate-950">
-          Add address
-        </h1>
+        <h1 className="text-2xl font-semibold text-slate-950">Add address</h1>
 
         <p className="mt-2 text-sm text-slate-500">
           Save a delivery address for future checkout.
@@ -129,7 +150,9 @@ export function AddressManager() {
 
         <div className="mt-6 grid gap-4">
           <label>
-            <span className="text-sm font-medium text-slate-700">Title</span>
+            <span className="text-sm font-medium text-slate-700">
+              Title <span className="text-red-500">*</span>
+            </span>
             <input
               name="title"
               value={form.title}
@@ -143,7 +166,7 @@ export function AddressManager() {
           <div className="grid gap-4 sm:grid-cols-2">
             <label>
               <span className="text-sm font-medium text-slate-700">
-                Province
+                Province <span className="text-red-500">*</span>
               </span>
               <input
                 name="province"
@@ -155,7 +178,9 @@ export function AddressManager() {
             </label>
 
             <label>
-              <span className="text-sm font-medium text-slate-700">City</span>
+              <span className="text-sm font-medium text-slate-700">
+                City <span className="text-red-500">*</span>
+              </span>
               <input
                 name="city"
                 value={form.city}
@@ -167,7 +192,9 @@ export function AddressManager() {
           </div>
 
           <label>
-            <span className="text-sm font-medium text-slate-700">Street</span>
+            <span className="text-sm font-medium text-slate-700">
+              Street <span className="text-red-500">*</span>
+            </span>
             <input
               name="street"
               value={form.street}
@@ -190,12 +217,13 @@ export function AddressManager() {
 
             <label>
               <span className="text-sm font-medium text-slate-700">
-                Building
+                Building / Plate number <span className="text-red-500">*</span>
               </span>
               <input
                 name="building_number"
                 value={form.building_number}
                 onChange={handleChange}
+                required
                 className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-slate-400"
               />
             </label>
@@ -225,13 +253,15 @@ export function AddressManager() {
 
           <label>
             <span className="text-sm font-medium text-slate-700">
-              Postal code
+              Postal code <span className="text-red-500">*</span>
             </span>
             <input
               name="postal_code"
               value={form.postal_code}
               onChange={handleChange}
               required
+              inputMode="numeric"
+              pattern="[0-9]{4,10}"
               placeholder="1234567890"
               className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-slate-400"
             />
@@ -240,7 +270,7 @@ export function AddressManager() {
           <div className="grid gap-4 sm:grid-cols-2">
             <label>
               <span className="text-sm font-medium text-slate-700">
-                Receiver name
+                Receiver name <span className="text-red-500">*</span>
               </span>
               <input
                 name="receiver_name"
@@ -253,7 +283,7 @@ export function AddressManager() {
 
             <label>
               <span className="text-sm font-medium text-slate-700">
-                Receiver phone
+                Receiver phone <span className="text-red-500">*</span>
               </span>
               <input
                 name="receiver_phone"
