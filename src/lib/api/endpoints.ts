@@ -16,6 +16,11 @@ export const API_ENDPOINTS = {
     sellerStatus: "/api/auth/seller/status/",
     sellerDashboard: "/api/auth/seller/dashboard/",
     sellerStore: "/api/auth/seller/store/",
+    addresses: "/api/auth/addresses/",
+    addressDetail: (addressId: number | string) =>
+      `/api/auth/addresses/${addressId}/`,
+    addressSetDefault: (addressId: number | string) =>
+      `/api/auth/addresses/${addressId}/set_default/`,
   },
 
   rbac: {
