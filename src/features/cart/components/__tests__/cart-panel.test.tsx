@@ -189,7 +189,10 @@ describe("CartPanel", () => {
 
     render(<CartPanel />);
 
-    expect(await screen.findByText(/could not load cart/i)).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: /could not load cart/i }),
+    ).toBeInTheDocument();
+
     expect(screen.getByText("Could not load cart.")).toBeInTheDocument();
   });
 });
