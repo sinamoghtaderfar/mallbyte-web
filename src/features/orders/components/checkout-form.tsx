@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 
+import { getAddresses } from "@/features/addresses/api";
+import type { Address } from "@/features/addresses/types";
 import { getCart } from "@/features/cart/api";
 import { useCartStore } from "@/features/cart/cart-store";
 import type { Cart } from "@/features/cart/types";
@@ -40,6 +42,33 @@ function formatPrice(value: string | number | null | undefined) {
   }).format(numberValue);
 }
 
+function formatAddressLine(address: Address) {
+  return [
+    address.street,
+    address.alley,
+    address.building_number ? `Building ${address.building_number}` : "",
+    address.floor ? `Floor ${address.floor}` : "",
+    address.unit ? `Unit ${address.unit}` : "",
+  ]
+    .filter(Boolean)
+    .join(", ");
+}
+
+function mapAddressToCheckoutForm(
+  address: Address,
+  currentForm: CheckoutPayload,
+): CheckoutPayload {
+  return {
+    ...currentForm,
+    receiver_name: address.receiver_name,
+    receiver_phone: address.receiver_phone,
+    province: address.province,
+    city: address.city,
+    address: formatAddressLine(address),
+    postal_code: address.postal_code,
+  };
+}
+
 export function CheckoutForm() {
   const router = useRouter();
 
@@ -47,6 +76,8 @@ export function CheckoutForm() {
   const clearCartState = useCartStore((state) => state.clearCartState);
 
   const [cart, setLocalCart] = useState<Cart | null>(null);
+  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState("");
   const [form, setForm] = useState<CheckoutPayload>(initialForm);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -55,16 +86,33 @@ export function CheckoutForm() {
   useEffect(() => {
     let isMounted = true;
 
-    async function loadCart() {
+    async function loadCheckoutData() {
       setIsLoading(true);
       setError("");
 
       try {
-        const data = await getCart();
+        const [cartData, addressData] = await Promise.all([
+          getCart(),
+          getAddresses(),
+        ]);
 
-        if (isMounted) {
-          setLocalCart(data);
-          setCart(data);
+        if (!isMounted) {
+          return;
+        }
+
+        setLocalCart(cartData);
+        setCart(cartData);
+        setAddresses(addressData);
+
+        const defaultAddress = addressData.find(
+          (address) => address.is_default,
+        );
+
+        if (defaultAddress) {
+          setSelectedAddressId(String(defaultAddress.id));
+          setForm((current) =>
+            mapAddressToCheckoutForm(defaultAddress, current),
+          );
         }
       } catch (loadError) {
         if (isMounted) {
@@ -77,7 +125,7 @@ export function CheckoutForm() {
       }
     }
 
-    loadCart();
+    void loadCheckoutData();
 
     return () => {
       isMounted = false;
@@ -93,6 +141,26 @@ export function CheckoutForm() {
       ...current,
       [name]: value,
     }));
+  }
+
+  function handleAddressSelect(event: ChangeEvent<HTMLSelectElement>) {
+    const addressId = event.target.value;
+
+    setSelectedAddressId(addressId);
+
+    if (!addressId) {
+      return;
+    }
+
+    const selectedAddress = addresses.find(
+      (address) => String(address.id) === addressId,
+    );
+
+    if (!selectedAddress) {
+      return;
+    }
+
+    setForm((current) => mapAddressToCheckoutForm(selectedAddress, current));
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -171,7 +239,7 @@ export function CheckoutForm() {
           </h1>
 
           <p className="mt-3 text-sm leading-6 text-slate-500">
-            Enter receiver details to create an order from your cart.
+            Choose a saved address or enter receiver details manually.
           </p>
         </div>
 
@@ -180,6 +248,43 @@ export function CheckoutForm() {
             {error}
           </div>
         ) : null}
+
+        <div className="mt-8 rounded-3xl border border-slate-200 bg-slate-50 p-5">
+          <label className="block">
+            <span className="text-sm font-medium text-slate-700">
+              Saved address
+            </span>
+
+            <select
+              value={selectedAddressId}
+              onChange={handleAddressSelect}
+              className="mt-2 h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm outline-none transition focus:border-slate-400"
+            >
+              <option value="">Enter address manually</option>
+
+              {addresses.map((address) => (
+                <option key={address.id} value={address.id}>
+                  {address.title}
+                  {address.is_default ? " (Default)" : ""} - {address.city}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          {!addresses.length ? (
+            <p className="mt-3 text-sm text-slate-500">
+              No saved addresses yet. You can create one from the addresses page
+              or continue manually.
+            </p>
+          ) : null}
+
+          <Link
+            href="/addresses"
+            className="mt-4 inline-flex text-sm font-medium text-slate-900 underline underline-offset-4"
+          >
+            Manage addresses
+          </Link>
+        </div>
 
         <div className="mt-8 grid gap-5 sm:grid-cols-2">
           <label className="block">
@@ -204,6 +309,7 @@ export function CheckoutForm() {
               value={form.receiver_phone}
               onChange={handleChange}
               required
+              placeholder="09123456789"
               className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-slate-400"
             />
           </label>
@@ -215,6 +321,10 @@ export function CheckoutForm() {
               value={form.province}
               onChange={handleChange}
               required
+              minLength={2}
+              maxLength={100}
+              pattern="[^0-9]*"
+              title="Use letters only. Numbers are not allowed."
               className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-slate-400"
             />
           </label>
@@ -226,6 +336,10 @@ export function CheckoutForm() {
               value={form.city}
               onChange={handleChange}
               required
+              minLength={2}
+              maxLength={100}
+              pattern="[^0-9]*"
+              title="Use letters only. Numbers are not allowed."
               className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-slate-400"
             />
           </label>
@@ -239,6 +353,8 @@ export function CheckoutForm() {
               value={form.postal_code}
               onChange={handleChange}
               required
+              inputMode="numeric"
+              pattern="[0-9]{4,10}"
               className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-slate-400"
             />
           </label>
