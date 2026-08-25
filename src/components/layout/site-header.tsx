@@ -89,9 +89,9 @@ export function SiteHeader() {
               </Link>
             ))}
 
-            {user?.is_seller ? (
+            {isAuthenticated ? (
               <Link
-                href="/seller"
+                href="/seller/status"
                 className={getLinkClass(pathname.startsWith("/seller"))}
               >
                 Seller
