@@ -45,3 +45,29 @@ export type SellerApplicationResponse = {
   bank_info: SellerApplicationPayload["bank_info"];
   documents: string[];
 };
+
+export type SellerStoreBankInfo = {
+  account_holder?: string;
+  iban?: string;
+};
+
+export type SellerStore = {
+  logo: string | null;
+  banner: string | null;
+  description: string;
+  business_phone: string;
+  business_email: string;
+  website: string;
+  bank_info: SellerStoreBankInfo | null;
+};
+
+export type SellerStorePayload = {
+  description: string;
+  business_phone: string;
+  business_email: string;
+  website: string;
+  bank_info: {
+    account_holder: string;
+    iban: string;
+  };
+};
