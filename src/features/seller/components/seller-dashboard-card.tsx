@@ -197,8 +197,15 @@ export function SellerDashboardCard() {
 
         <div className="mt-8 flex flex-wrap gap-3">
           <Link
-            href="/seller/store"
+            href="/seller/products"
             className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800"
+          >
+            Manage products
+          </Link>
+
+          <Link
+            href="/seller/store"
+            className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 px-5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
           >
             Edit store settings
           </Link>
