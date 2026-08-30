@@ -135,9 +135,12 @@ export function SellerProductsList() {
                 className="grid grid-cols-[1fr_140px_120px] gap-4 px-5 py-4"
               >
                 <div>
-                  <p className="text-sm font-semibold text-slate-950">
+                  <Link
+                    href={`/seller/products/${product.id}`}
+                    className="text-sm font-semibold text-slate-950 underline-offset-4 hover:underline"
+                  >
                     {product.name}
-                  </p>
+                  </Link>
                   <p className="mt-1 text-xs text-slate-500">
                     {product.category_name || "No category"} ·{" "}
                     {product.brand_name || "No brand"}
