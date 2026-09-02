@@ -8,6 +8,7 @@ import type { ProductDetail } from "@/features/products/types";
 import { getApiErrorMessage } from "@/lib/api/errors";
 
 import { deleteSellerProduct, getSellerProduct } from "../api";
+import { SellerProductImagesManager } from "./seller-product-images-manager";
 
 function formatPrice(value: string | number | null | undefined) {
   if (value === null || value === undefined) {
@@ -260,6 +261,8 @@ export function SellerProductDetail() {
             {product.description}
           </p>
         </div>
+
+        <SellerProductImagesManager productId={product.id} />
 
         <div className="mt-8 flex flex-wrap gap-3">
           <Link

@@ -76,3 +76,45 @@ export async function updateSellerProduct(
 export async function deleteSellerProduct(productId: string) {
   await apiClient.delete(`${API_ENDPOINTS.products.products}${productId}/`);
 }
+
+export type SellerProductImagePayload = {
+  file: File;
+  alt_text: string;
+  is_main: boolean;
+  order: number;
+};
+
+export async function getSellerProductImages(productId: string) {
+  const product = await getSellerProduct(productId);
+
+  return product.images;
+}
+
+export async function createSellerProductImage(
+  productId: string,
+  payload: SellerProductImagePayload,
+) {
+  const formData = new FormData();
+
+  formData.append("product", productId);
+  formData.append("image", payload.file);
+  formData.append("alt_text", payload.alt_text);
+  formData.append("is_main", String(payload.is_main));
+  formData.append("order", String(payload.order));
+
+  const response = await apiClient.post(
+    API_ENDPOINTS.products.productImages,
+    formData,
+    {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    },
+  );
+
+  return response.data;
+}
+
+export async function deleteSellerProductImage(imageId: number | string) {
+  await apiClient.delete(API_ENDPOINTS.products.productImageDetail(imageId));
+}

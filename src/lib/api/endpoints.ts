@@ -44,6 +44,9 @@ export const API_ENDPOINTS = {
     categories: "/api/products/categories/",
     brands: "/api/products/brands/",
     products: "/api/products/products/",
+    productImages: "/api/products/product-images/",
+    productImageDetail: (imageId: number | string) =>
+      `/api/products/product-images/${imageId}/`,
     wishlist: "/api/products/wishlist/",
     recentlyViewed: "/api/products/recently-viewed/",
   },
