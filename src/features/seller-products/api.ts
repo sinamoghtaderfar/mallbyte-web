@@ -1,4 +1,8 @@
-import type { ProductDetail, ProductListItem } from "@/features/products/types";
+import type {
+  ProductDetail,
+  ProductListItem,
+  ProductVariant,
+} from "@/features/products/types";
 import { apiClient } from "@/lib/api/client";
 import { API_ENDPOINTS } from "@/lib/api/endpoints";
 import type { PaginatedResponse } from "@/types/api";
@@ -8,6 +12,7 @@ import type {
   SellerProductCategory,
   SellerProductCreateResponse,
   SellerProductPayload,
+  SellerProductVariantPayload,
 } from "./types";
 
 type ListResponse<T> = T[] | PaginatedResponse<T>;
@@ -117,4 +122,43 @@ export async function createSellerProductImage(
 
 export async function deleteSellerProductImage(imageId: number | string) {
   await apiClient.delete(API_ENDPOINTS.products.productImageDetail(imageId));
+}
+
+export async function getSellerProductVariants(productId: string) {
+  const product = await getSellerProduct(productId);
+
+  return product.variants;
+}
+
+export async function createSellerProductVariant(
+  productId: string,
+  payload: SellerProductVariantPayload,
+) {
+  const response = await apiClient.post<ProductVariant>(
+    API_ENDPOINTS.products.productVariants,
+    {
+      ...payload,
+      product: Number(productId),
+    },
+  );
+
+  return response.data;
+}
+
+export async function updateSellerProductVariant(
+  variantId: number | string,
+  payload: SellerProductVariantPayload,
+) {
+  const response = await apiClient.patch<ProductVariant>(
+    API_ENDPOINTS.products.productVariantDetail(variantId),
+    payload,
+  );
+
+  return response.data;
+}
+
+export async function deleteSellerProductVariant(variantId: number | string) {
+  await apiClient.delete(
+    API_ENDPOINTS.products.productVariantDetail(variantId),
+  );
 }

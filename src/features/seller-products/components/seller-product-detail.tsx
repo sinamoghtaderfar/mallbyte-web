@@ -9,6 +9,7 @@ import { getApiErrorMessage } from "@/lib/api/errors";
 
 import { deleteSellerProduct, getSellerProduct } from "../api";
 import { SellerProductImagesManager } from "./seller-product-images-manager";
+import { SellerProductVariantsManager } from "./seller-product-variants-manager";
 
 function formatPrice(value: string | number | null | undefined) {
   if (value === null || value === undefined) {
@@ -263,6 +264,8 @@ export function SellerProductDetail() {
         </div>
 
         <SellerProductImagesManager productId={product.id} />
+
+        <SellerProductVariantsManager productId={product.id} />
 
         <div className="mt-8 flex flex-wrap gap-3">
           <Link

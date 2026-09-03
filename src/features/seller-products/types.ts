@@ -47,3 +47,12 @@ export type SellerProductCreateResponse = SellerProductPayload & {
   available_stock: number;
   reserved_stock: number;
 };
+
+export type SellerProductVariantPayload = {
+  name: string;
+  sku: string;
+  price: string;
+  compare_price: string | null;
+  stock: number;
+  is_default: boolean;
+};
