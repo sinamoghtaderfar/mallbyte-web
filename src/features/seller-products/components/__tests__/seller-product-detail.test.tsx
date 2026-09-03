@@ -21,6 +21,18 @@ vi.mock("next/navigation", () => ({
   useRouter: () => routerMock,
 }));
 
+vi.mock("../seller-product-images-manager", () => ({
+  SellerProductImagesManager: ({ productId }: { productId: number }) => (
+    <div>Images manager for product {productId}</div>
+  ),
+}));
+
+vi.mock("../seller-product-variants-manager", () => ({
+  SellerProductVariantsManager: ({ productId }: { productId: number }) => (
+    <div>Variants manager for product {productId}</div>
+  ),
+}));
+
 vi.mock("next/link", () => ({
   default: ({
     href,
