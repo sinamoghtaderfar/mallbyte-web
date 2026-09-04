@@ -51,6 +51,8 @@ export const API_ENDPOINTS = {
     productVariantDetail: (variantId: number | string) =>
       `/api/products/product-variants/${variantId}/`,
     wishlist: "/api/products/wishlist/",
+    wishlistItem: (wishlistItemId: number | string) =>
+      `/api/products/wishlist/${wishlistItemId}/`,
     recentlyViewed: "/api/products/recently-viewed/",
   },
 

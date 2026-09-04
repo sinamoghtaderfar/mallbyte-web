@@ -1,5 +1,6 @@
 "use client";
 import { AddToCartButton } from "@/features/cart/components/add-to-cart-button";
+import { WishlistButton } from "@/features/wishlist/components/wishlist-button";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -255,6 +256,8 @@ export function ProductDetail() {
             productId={product.id}
             disabled={!product.is_in_stock}
           />
+
+          <WishlistButton productId={product.id} />
 
           <Link
             href="/products"
