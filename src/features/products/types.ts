@@ -95,3 +95,39 @@ export type ProductDetail = {
   labels: string[];
   label_display: string[];
 };
+
+export type ProductCategory = {
+  id: number;
+  name: string;
+  slug: string;
+  parent: number | null;
+  parent_name: string | null;
+  description: string;
+  image: string | null;
+  is_active: boolean;
+  order: number;
+  created_at: string;
+};
+
+export type ProductBrand = {
+  id: number;
+  name: string;
+  slug: string;
+  logo: string | null;
+  description: string;
+  website: string;
+  is_active: boolean;
+  created_at: string;
+};
+
+export type ProductQueryParams = {
+  search?: string;
+  category?: string;
+  brand?: string;
+  min_price?: string;
+  max_price?: string;
+  in_stock?: string;
+  has_discount?: string;
+  label?: string;
+  ordering?: string;
+};
