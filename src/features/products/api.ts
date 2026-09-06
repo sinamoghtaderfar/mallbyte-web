@@ -8,6 +8,7 @@ import type {
   ProductDetail,
   ProductListItem,
   ProductQueryParams,
+  RecentlyViewedProduct,
 } from "./types";
 
 type ListResponse<T> = T[] | PaginatedResponse<T>;
@@ -37,6 +38,30 @@ export async function getProduct(productId: string) {
   );
 
   return response.data;
+}
+
+export async function trackProductView(productId: string) {
+  const response = await apiClient.post<{ views_count: number }>(
+    API_ENDPOINTS.products.productAddView(productId),
+  );
+
+  return response.data;
+}
+
+export async function getRelatedProducts(productId: string) {
+  const response = await apiClient.get<ListResponse<ProductListItem>>(
+    API_ENDPOINTS.products.productRelated(productId),
+  );
+
+  return normalizeList(response.data);
+}
+
+export async function getRecentlyViewedProducts() {
+  const response = await apiClient.get<ListResponse<RecentlyViewedProduct>>(
+    API_ENDPOINTS.products.recentlyViewed,
+  );
+
+  return normalizeList(response.data);
 }
 
 export async function getProductFilters() {

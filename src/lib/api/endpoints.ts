@@ -44,6 +44,10 @@ export const API_ENDPOINTS = {
     categories: "/api/products/categories/",
     brands: "/api/products/brands/",
     products: "/api/products/products/",
+    productAddView: (productId: number | string) =>
+      `/api/products/products/${productId}/add_view/`,
+    productRelated: (productId: number | string) =>
+      `/api/products/products/${productId}/related/`,
     productImages: "/api/products/product-images/",
     productImageDetail: (imageId: number | string) =>
       `/api/products/product-images/${imageId}/`,

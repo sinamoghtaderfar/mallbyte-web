@@ -131,3 +131,12 @@ export type ProductQueryParams = {
   label?: string;
   ordering?: string;
 };
+
+export type RecentlyViewedProduct = {
+  id: number;
+  product: number;
+  product_name: string;
+  product_price: string;
+  product_image: string | null;
+  viewed_at: string;
+};

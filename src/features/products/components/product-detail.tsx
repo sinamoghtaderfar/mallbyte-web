@@ -1,4 +1,5 @@
 "use client";
+
 import { AddToCartButton } from "@/features/cart/components/add-to-cart-button";
 import { WishlistButton } from "@/features/wishlist/components/wishlist-button";
 import Link from "next/link";
@@ -7,8 +8,9 @@ import { useEffect, useState } from "react";
 
 import { getApiErrorMessage } from "@/lib/api/errors";
 
-import { getProduct } from "../api";
+import { getProduct, trackProductView } from "../api";
 import type { ProductDetail as ProductDetailType } from "../types";
+import { RelatedProductsSection } from "./related-products-section";
 
 function formatPrice(value: string | null | undefined) {
   if (!value) {
@@ -43,6 +45,7 @@ function getImageUrl(path: string | null | undefined) {
 
 export function ProductDetail() {
   const params = useParams<{ id: string }>();
+  const productId = params.id;
 
   const [product, setProduct] = useState<ProductDetailType | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -56,7 +59,9 @@ export function ProductDetail() {
       setError("");
 
       try {
-        const data = await getProduct(params.id);
+        const data = await getProduct(productId);
+
+        void trackProductView(productId).catch(() => undefined);
 
         if (isMounted) {
           setProduct(data);
@@ -72,12 +77,12 @@ export function ProductDetail() {
       }
     }
 
-    loadProduct();
+    void loadProduct();
 
     return () => {
       isMounted = false;
     };
-  }, [params.id]);
+  }, [productId]);
 
   if (isLoading) {
     return (
@@ -211,6 +216,10 @@ export function ProductDetail() {
               ? `${product.available_stock} available`
               : "Out of stock"}
           </p>
+
+          <p className="mt-2 text-sm text-slate-500">
+            {product.views_count} views
+          </p>
         </div>
 
         <div className="mt-8 grid gap-3 sm:grid-cols-2">
@@ -258,6 +267,13 @@ export function ProductDetail() {
           />
 
           <WishlistButton productId={product.id} />
+
+          <Link
+            href="/recently-viewed"
+            className="inline-flex h-12 items-center justify-center rounded-2xl border border-slate-200 px-6 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+          >
+            Recently viewed
+          </Link>
 
           <Link
             href="/products"
@@ -325,6 +341,8 @@ export function ProductDetail() {
           </div>
         </section>
       ) : null}
+
+      <RelatedProductsSection productId={product.id} />
     </div>
   );
 }
