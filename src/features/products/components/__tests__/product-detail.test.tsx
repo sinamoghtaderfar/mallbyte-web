@@ -40,6 +40,12 @@ vi.mock("@/features/cart/components/add-to-cart-button", () => ({
   }) => <button disabled={disabled}>Add to cart product {productId}</button>,
 }));
 
+vi.mock("@/features/reviews/components/product-reviews-section", () => ({
+  ProductReviewsSection: ({ productId }: { productId: number }) => (
+    <div>Product reviews for {productId}</div>
+  ),
+}));
+
 vi.mock("@/features/wishlist/components/wishlist-button", () => ({
   WishlistButton: ({ productId }: { productId: number }) => (
     <button>Add to wishlist product {productId}</button>
@@ -163,6 +169,7 @@ describe("ProductDetail", () => {
     expect(screen.getByText("4.50 / 5")).toBeInTheDocument();
     expect(screen.getByText("Red Switch")).toBeInTheDocument();
     expect(screen.getByText("Switch")).toBeInTheDocument();
+    expect(screen.getByText("Product reviews for 10")).toBeInTheDocument();
     expect(screen.getByText("Related products for 10")).toBeInTheDocument();
 
     await waitFor(() => {

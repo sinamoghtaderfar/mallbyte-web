@@ -60,6 +60,15 @@ export const API_ENDPOINTS = {
     recentlyViewed: "/api/products/recently-viewed/",
   },
 
+  reviews: {
+    productReviews: "/api/reviews/product-reviews/",
+    productReviewsSummary: "/api/reviews/product-reviews/summary/",
+    productReviewHelpful: (reviewId: number | string) =>
+      `/api/reviews/product-reviews/${reviewId}/helpful/`,
+    productReviewNotHelpful: (reviewId: number | string) =>
+      `/api/reviews/product-reviews/${reviewId}/not-helpful/`,
+  },
+
   orders: {
     cart: "/api/orders/cart/",
     cartAdd: "/api/orders/cart/add/",

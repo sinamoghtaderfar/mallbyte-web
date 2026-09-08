@@ -1,3 +1,5 @@
+import { AxiosError } from "axios";
+
 import { apiClient } from "@/lib/api/client";
 import { API_ENDPOINTS } from "@/lib/api/endpoints";
 import type { PaginatedResponse } from "@/types/api";
@@ -49,11 +51,19 @@ export async function trackProductView(productId: string) {
 }
 
 export async function getRelatedProducts(productId: string) {
-  const response = await apiClient.get<ListResponse<ProductListItem>>(
-    API_ENDPOINTS.products.productRelated(productId),
-  );
+  try {
+    const response = await apiClient.get<ListResponse<ProductListItem>>(
+      API_ENDPOINTS.products.productRelated(productId),
+    );
 
-  return normalizeList(response.data);
+    return normalizeList(response.data);
+  } catch (error) {
+    if (error instanceof AxiosError && error.response?.status === 404) {
+      return [];
+    }
+
+    throw error;
+  }
 }
 
 export async function getRecentlyViewedProducts() {

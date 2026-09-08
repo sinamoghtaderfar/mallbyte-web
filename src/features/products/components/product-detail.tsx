@@ -1,6 +1,7 @@
 "use client";
 
 import { AddToCartButton } from "@/features/cart/components/add-to-cart-button";
+import { ProductReviewsSection } from "@/features/reviews/components/product-reviews-section";
 import { WishlistButton } from "@/features/wishlist/components/wishlist-button";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -341,6 +342,8 @@ export function ProductDetail() {
           </div>
         </section>
       ) : null}
+
+      <ProductReviewsSection productId={product.id} />
 
       <RelatedProductsSection productId={product.id} />
     </div>
