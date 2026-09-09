@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChangeEvent, FormEvent, useEffect, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
 
 import { getAddresses } from "@/features/addresses/api";
 import type { Address } from "@/features/addresses/types";
 import { getCart } from "@/features/cart/api";
 import { useCartStore } from "@/features/cart/cart-store";
 import type { Cart } from "@/features/cart/types";
+import { validateDiscountCode } from "@/features/discounts/api";
+import type { DiscountValidationResult } from "@/features/discounts/types";
 import { getApiErrorMessage } from "@/lib/api/errors";
 
 import { checkout } from "../api";
@@ -79,9 +81,13 @@ export function CheckoutForm() {
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState("");
   const [form, setForm] = useState<CheckoutPayload>(initialForm);
+  const [discountResult, setDiscountResult] =
+    useState<DiscountValidationResult | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isValidatingDiscount, setIsValidatingDiscount] = useState(false);
   const [error, setError] = useState("");
+  const [discountError, setDiscountError] = useState("");
 
   useEffect(() => {
     let isMounted = true;
@@ -132,6 +138,14 @@ export function CheckoutForm() {
     };
   }, [setCart]);
 
+  const finalTotal = useMemo(() => {
+    if (discountResult) {
+      return discountResult.total_after_discount;
+    }
+
+    return cart?.subtotal ?? "0";
+  }, [cart?.subtotal, discountResult]);
+
   function handleChange(
     event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) {
@@ -141,6 +155,11 @@ export function CheckoutForm() {
       ...current,
       [name]: value,
     }));
+
+    if (name === "discount_code") {
+      setDiscountResult(null);
+      setDiscountError("");
+    }
   }
 
   function handleAddressSelect(event: ChangeEvent<HTMLSelectElement>) {
@@ -163,6 +182,43 @@ export function CheckoutForm() {
     setForm((current) => mapAddressToCheckoutForm(selectedAddress, current));
   }
 
+  async function handleValidateDiscount() {
+    const code = form.discount_code?.trim();
+
+    setDiscountError("");
+    setDiscountResult(null);
+
+    if (!code) {
+      setDiscountError("Enter a discount code first.");
+      return;
+    }
+
+    setIsValidatingDiscount(true);
+
+    try {
+      const result = await validateDiscountCode({ code });
+
+      setDiscountResult(result);
+      setForm((current) => ({
+        ...current,
+        discount_code: result.code,
+      }));
+    } catch (validateError) {
+      setDiscountError(getApiErrorMessage(validateError));
+    } finally {
+      setIsValidatingDiscount(false);
+    }
+  }
+
+  function handleRemoveDiscount() {
+    setDiscountResult(null);
+    setDiscountError("");
+    setForm((current) => ({
+      ...current,
+      discount_code: "",
+    }));
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -172,6 +228,7 @@ export function CheckoutForm() {
     try {
       const order = await checkout({
         ...form,
+        discount_code: form.discount_code?.trim() || "",
         shipping_cost: 0,
       });
 
@@ -239,7 +296,7 @@ export function CheckoutForm() {
           </h1>
 
           <p className="mt-3 text-sm leading-6 text-slate-500">
-            Choose a saved address or enter receiver details manually.
+            Choose a saved address, apply a discount code, and place your order.
           </p>
         </div>
 
@@ -359,17 +416,54 @@ export function CheckoutForm() {
             />
           </label>
 
-          <label className="block">
-            <span className="text-sm font-medium text-slate-700">
-              Discount code
-            </span>
-            <input
-              name="discount_code"
-              value={form.discount_code}
-              onChange={handleChange}
-              className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-slate-400"
-            />
-          </label>
+          <div className="block">
+            <label className="block">
+              <span className="text-sm font-medium text-slate-700">
+                Discount code
+              </span>
+              <input
+                name="discount_code"
+                value={form.discount_code}
+                onChange={handleChange}
+                placeholder="SAVE10"
+                className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm uppercase outline-none transition focus:border-slate-400"
+              />
+            </label>
+
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => void handleValidateDiscount()}
+                disabled={isValidatingDiscount}
+                className="h-10 rounded-2xl bg-slate-900 px-4 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isValidatingDiscount ? "Checking..." : "Apply code"}
+              </button>
+
+              {discountResult ? (
+                <button
+                  type="button"
+                  onClick={handleRemoveDiscount}
+                  className="h-10 rounded-2xl border border-slate-200 px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                >
+                  Remove
+                </button>
+              ) : null}
+            </div>
+
+            {discountError ? (
+              <p className="mt-2 text-sm text-red-600">{discountError}</p>
+            ) : null}
+
+            {discountResult ? (
+              <div className="mt-3 rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+                <p className="font-medium">{discountResult.title} applied</p>
+                <p className="mt-1">
+                  Discount: {formatPrice(discountResult.discount_amount)}
+                </p>
+              </div>
+            ) : null}
+          </div>
 
           <label className="block sm:col-span-2">
             <span className="text-sm font-medium text-slate-700">Address</span>
@@ -434,11 +528,31 @@ export function CheckoutForm() {
           ))}
         </div>
 
-        <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-5">
-          <p className="text-sm text-slate-500">Subtotal</p>
-          <p className="text-lg font-semibold text-slate-950">
-            {formatPrice(cart.subtotal)}
-          </p>
+        <div className="mt-5 space-y-3 border-t border-slate-100 pt-5">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-slate-500">Subtotal</p>
+            <p className="text-sm font-medium text-slate-950">
+              {formatPrice(cart.subtotal)}
+            </p>
+          </div>
+
+          {discountResult ? (
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-green-700">
+                Discount ({discountResult.code})
+              </p>
+              <p className="text-sm font-medium text-green-700">
+                -{formatPrice(discountResult.discount_amount)}
+              </p>
+            </div>
+          ) : null}
+
+          <div className="flex items-center justify-between border-t border-slate-100 pt-4">
+            <p className="text-sm font-semibold text-slate-950">Total</p>
+            <p className="text-lg font-semibold text-slate-950">
+              {formatPrice(finalTotal)}
+            </p>
+          </div>
         </div>
       </aside>
     </div>

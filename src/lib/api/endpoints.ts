@@ -69,6 +69,10 @@ export const API_ENDPOINTS = {
       `/api/reviews/product-reviews/${reviewId}/not-helpful/`,
   },
 
+  discounts: {
+    validate: "/api/discounts/validate/",
+  },
+
   orders: {
     cart: "/api/orders/cart/",
     cartAdd: "/api/orders/cart/add/",
