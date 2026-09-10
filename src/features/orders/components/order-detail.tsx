@@ -146,6 +146,8 @@ export function OrderDetail() {
   }
 
   const canCancel = order?.status === "pending_payment";
+  const canPay =
+    order?.status === "pending_payment" && order.payment_status !== "paid";
 
   if (isLoading) {
     return (
@@ -381,6 +383,15 @@ export function OrderDetail() {
           >
             Continue shopping
           </Link>
+
+          {canPay ? (
+            <Link
+              href={`/orders/${order.id}/payment`}
+              className="inline-flex h-11 items-center justify-center rounded-2xl bg-green-600 px-5 text-sm font-medium text-white transition hover:bg-green-700"
+            >
+              Pay now
+            </Link>
+          ) : null}
 
           {canCancel ? (
             <button

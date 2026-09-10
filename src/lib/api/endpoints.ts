@@ -73,6 +73,18 @@ export const API_ENDPOINTS = {
     validate: "/api/discounts/validate/",
   },
 
+  payments: {
+    payments: "/api/payments/payments/",
+    paymentDetail: (paymentId: number | string) =>
+      `/api/payments/payments/${paymentId}/`,
+    markSuccess: (paymentId: number | string) =>
+      `/api/payments/payments/${paymentId}/mark-success/`,
+    markFailed: (paymentId: number | string) =>
+      `/api/payments/payments/${paymentId}/mark-failed/`,
+    cancel: (paymentId: number | string) =>
+      `/api/payments/payments/${paymentId}/cancel/`,
+  },
+
   orders: {
     cart: "/api/orders/cart/",
     cartAdd: "/api/orders/cart/add/",

@@ -119,6 +119,11 @@ describe("OrderDetail", () => {
       screen.getByRole("link", { name: /mechanical keyboard/i }),
     ).toHaveAttribute("href", "/products/10");
 
+    expect(screen.getByRole("link", { name: /pay now/i })).toHaveAttribute(
+      "href",
+      "/orders/1/payment",
+    );
+
     expect(screen.getByText("SKU: KB-001")).toBeInTheDocument();
     expect(screen.getByText("Quantity: 2")).toBeInTheDocument();
     expect(screen.getByText("Warehouse: Main Warehouse")).toBeInTheDocument();
@@ -219,6 +224,9 @@ describe("OrderDetail", () => {
     expect(await screen.findByText("MBA-1001")).toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: /cancel order/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: /pay now/i }),
     ).not.toBeInTheDocument();
   });
 
