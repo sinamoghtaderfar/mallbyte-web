@@ -85,6 +85,14 @@ export const API_ENDPOINTS = {
       `/api/payments/payments/${paymentId}/cancel/`,
   },
 
+  sellerOrders: {
+    orders: "/api/orders/orders/seller/",
+    detail: (orderId: number | string) =>
+      `/api/orders/orders/${orderId}/seller-detail/`,
+    updateStatus: (orderId: number | string) =>
+      `/api/orders/orders/${orderId}/seller-status/`,
+  },
+
   orders: {
     cart: "/api/orders/cart/",
     cartAdd: "/api/orders/cart/add/",
