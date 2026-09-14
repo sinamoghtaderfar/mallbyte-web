@@ -148,6 +148,7 @@ export function OrderDetail() {
   const canCancel = order?.status === "pending_payment";
   const canPay =
     order?.status === "pending_payment" && order.payment_status !== "paid";
+  const canRequestReturn = order?.status === "delivered";
 
   if (isLoading) {
     return (
@@ -390,6 +391,15 @@ export function OrderDetail() {
               className="inline-flex h-11 items-center justify-center rounded-2xl bg-green-600 px-5 text-sm font-medium text-white transition hover:bg-green-700"
             >
               Pay now
+            </Link>
+          ) : null}
+
+          {canRequestReturn ? (
+            <Link
+              href={`/orders/${order.id}/return`}
+              className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            >
+              Request return
             </Link>
           ) : null}
 
