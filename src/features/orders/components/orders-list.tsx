@@ -1,5 +1,6 @@
 "use client";
 
+import { OrderReturnBadge } from "@/features/returns/components/order-return-badge";
 import Link from "next/link";
 import { ChangeEvent, useEffect, useMemo, useState } from "react";
 
@@ -434,6 +435,12 @@ export function OrdersList() {
                         {formatPrice(order.total_amount)}
                       </p>
                       <p className="mt-1 text-sm text-slate-500">
+                        <span className="mb-2 block">
+                          <OrderReturnBadge
+                            orderId={order.id}
+                            orderNumber={order.order_number}
+                          />
+                        </span>
                         View details →
                       </p>
                     </div>

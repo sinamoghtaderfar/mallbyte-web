@@ -1,6 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import {
+  OrderReturnActionButton,
+  OrderReturnStatusCard,
+} from "@/features/returns/components/order-return-badge";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -370,6 +374,11 @@ export function OrderDetail() {
           </div>
         ) : null}
 
+        <OrderReturnStatusCard
+          orderId={order.id}
+          orderNumber={order.order_number}
+        />
+
         <div className="mt-8 flex flex-wrap gap-3">
           <Link
             href="/orders"
@@ -394,14 +403,11 @@ export function OrderDetail() {
             </Link>
           ) : null}
 
-          {canRequestReturn ? (
-            <Link
-              href={`/orders/${order.id}/return`}
-              className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-            >
-              Request return
-            </Link>
-          ) : null}
+          <OrderReturnActionButton
+            orderId={order.id}
+            orderNumber={order.order_number}
+            canRequestReturn={canRequestReturn}
+          />
 
           {canCancel ? (
             <button

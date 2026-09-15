@@ -8,7 +8,9 @@ export default function OrderDetailPage() {
       <main className="px-4 py-12">
         <div className="mx-auto w-full max-w-6xl">
           <ProtectedRoute>
-            <OrderDetail />
+            <>
+              <OrderDetail />
+            </>
           </ProtectedRoute>
         </div>
       </main>
