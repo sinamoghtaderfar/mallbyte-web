@@ -90,6 +90,14 @@ export const API_ENDPOINTS = {
     detail: (returnId: number | string) => `/api/returns/requests/${returnId}/`,
     cancel: (returnId: number | string) =>
       `/api/returns/requests/${returnId}/cancel/`,
+    approve: (returnId: number | string) =>
+      `/api/returns/requests/${returnId}/approve/`,
+    reject: (returnId: number | string) =>
+      `/api/returns/requests/${returnId}/reject/`,
+    markReceived: (returnId: number | string) =>
+      `/api/returns/requests/${returnId}/mark-received/`,
+    markRefunded: (returnId: number | string) =>
+      `/api/returns/requests/${returnId}/mark-refunded/`,
   },
 
   sellerOrders: {

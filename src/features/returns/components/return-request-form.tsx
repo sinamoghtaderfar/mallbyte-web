@@ -8,11 +8,7 @@ import { getOrder } from "@/features/orders/api";
 import { getApiErrorMessage } from "@/lib/api/errors";
 
 import { createReturnRequest } from "../api";
-import type {
-  ReturnItemCondition,
-  ReturnReason,
-  RequestedResolution,
-} from "../types";
+import type { ReturnItemCondition, ReturnReason } from "../types";
 
 type ReturnableOrderItem = {
   id: number;
