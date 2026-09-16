@@ -106,6 +106,9 @@ export const API_ENDPOINTS = {
       `/api/returns/requests/${returnId}/mark-received/`,
     markRefunded: (returnId: number | string) =>
       `/api/returns/requests/${returnId}/mark-refunded/`,
+    sellerRequests: "/api/returns/requests/seller/",
+    sellerDetail: (returnId: number | string) =>
+      `/api/returns/requests/${returnId}/seller-detail/`,
   },
 
   sellerOrders: {

@@ -70,7 +70,9 @@ describe("SellerDashboardCard", () => {
     render(<SellerDashboardCard />);
 
     expect(await screen.findByText("Sina Demo Store")).toBeInTheDocument();
-    expect(screen.getByText("Demo seller account for MallByte")).toBeInTheDocument();
+    expect(
+      screen.getByText("Demo seller account for MallByte"),
+    ).toBeInTheDocument();
     expect(screen.getByText("approved")).toBeInTheDocument();
 
     expect(screen.getByText("2,500,000")).toBeInTheDocument();
@@ -84,7 +86,9 @@ describe("SellerDashboardCard", () => {
   });
 
   it("shows an error when dashboard is not available", async () => {
-    mockedGetSellerDashboard.mockRejectedValue(new Error("Seller is not approved."));
+    mockedGetSellerDashboard.mockRejectedValue(
+      new Error("Seller is not approved."),
+    );
 
     render(<SellerDashboardCard />);
 

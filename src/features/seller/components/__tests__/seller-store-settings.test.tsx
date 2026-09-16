@@ -135,7 +135,9 @@ describe("SellerStoreSettings", () => {
   });
 
   it("shows an error when store settings are not available", async () => {
-    mockedGetSellerStore.mockRejectedValue(new Error("Seller is not approved."));
+    mockedGetSellerStore.mockRejectedValue(
+      new Error("Seller is not approved."),
+    );
 
     render(<SellerStoreSettings />);
 

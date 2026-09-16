@@ -7,3 +7,19 @@ export function isAdminUser(user: AuthUser | null) {
 export function isSellerUser(user: AuthUser | null) {
   return Boolean(user?.is_seller);
 }
+
+export function getAccountTypeLabel(user: AuthUser | null) {
+  if (!user) {
+    return "Guest";
+  }
+
+  if (isAdminUser(user)) {
+    return "Platform admin";
+  }
+
+  if (isSellerUser(user)) {
+    return "Seller";
+  }
+
+  return "Customer";
+}

@@ -4,6 +4,22 @@ import Link from "next/link";
 
 import { useAuthStore } from "../auth-store";
 
+function getAccountTypeLabel(user: {
+  is_seller?: boolean;
+  is_staff?: boolean;
+  is_superuser?: boolean;
+}) {
+  if (user.is_staff || user.is_superuser) {
+    return "Platform admin";
+  }
+
+  if (user.is_seller) {
+    return "Seller account";
+  }
+
+  return "Customer account";
+}
+
 export function ProfileCard() {
   const user = useAuthStore((state) => state.user);
 
@@ -54,28 +70,12 @@ export function ProfileCard() {
             Account type
           </p>
           <p className="mt-2 text-sm font-medium text-slate-900">
-            {user.is_seller ? "Seller" : "Customer"}
+            {getAccountTypeLabel(user)}
           </p>
         </div>
       </div>
 
-      <div className="mt-8 flex flex-wrap gap-3">
-        <Link
-          href="/"
-          className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 px-5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-        >
-          Back home
-        </Link>
-
-        {user.is_seller ? (
-          <Link
-            href="/seller"
-            className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800"
-          >
-            Open seller dashboard
-          </Link>
-        ) : null}
-      </div>
+      <div className="mt-8 flex flex-wrap gap-3"></div>
     </div>
   );
 }

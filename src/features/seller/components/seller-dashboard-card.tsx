@@ -87,6 +87,20 @@ export function SellerDashboardCard() {
 
         <div className="mt-6 flex flex-wrap gap-3">
           <Link
+            href="/seller/returns"
+            className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 px-5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+          >
+            View returns
+          </Link>
+
+          <Link
+            href="/seller/returns"
+            className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 px-5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+          >
+            View returns
+          </Link>
+
+          <Link
             href="/seller/status"
             className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800"
           >
@@ -204,6 +218,20 @@ export function SellerDashboardCard() {
           </Link>
 
           <Link
+            href="/seller/orders"
+            className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 px-5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+          >
+            View orders
+          </Link>
+
+          <Link
+            href="/seller/returns"
+            className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 px-5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+          >
+            View returns
+          </Link>
+
+          <Link
             href="/seller/store"
             className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 px-5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
           >
@@ -225,9 +253,9 @@ export function SellerDashboardCard() {
         </h2>
 
         <div className="mt-5 space-y-4 text-sm leading-6 text-slate-600">
-          <p>1. Add seller product management.</p>
-          <p>2. Add seller order management.</p>
-          <p>3. Add real analytics charts later.</p>
+          <p>1. Manage products, orders, and return visibility.</p>
+          <p>2. Review customer returns related to your products.</p>
+          <p>3. Real analytics charts can be added later.</p>
         </div>
       </aside>
     </div>
