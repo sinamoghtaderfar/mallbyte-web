@@ -6,6 +6,7 @@ import { useState } from "react";
 
 import { logout } from "@/features/auth/api";
 import { useAuthStore } from "@/features/auth/auth-store";
+import { isAdminUser, isSellerUser } from "@/features/auth/roles";
 import { useCartStore } from "@/features/cart/cart-store";
 import { CartLink } from "@/features/cart/components/cart-link";
 import { getApiErrorMessage } from "@/lib/api/errors";
@@ -89,12 +90,21 @@ export function SiteHeader() {
               </Link>
             ))}
 
-            {isAuthenticated ? (
+            {isAuthenticated && isSellerUser(user) ? (
               <Link
-                href="/seller/status"
+                href="/seller/dashboard"
                 className={getLinkClass(pathname.startsWith("/seller"))}
               >
                 Seller
+              </Link>
+            ) : null}
+
+            {isAuthenticated && isAdminUser(user) ? (
+              <Link
+                href="/admin"
+                className={getLinkClass(pathname.startsWith("/admin"))}
+              >
+                Admin
               </Link>
             ) : null}
           </nav>

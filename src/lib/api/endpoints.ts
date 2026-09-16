@@ -21,6 +21,14 @@ export const API_ENDPOINTS = {
       `/api/auth/addresses/${addressId}/`,
     addressSetDefault: (addressId: number | string) =>
       `/api/auth/addresses/${addressId}/set_default/`,
+    adminSellers: "/api/auth/admin/sellers/",
+    adminPendingSellers: "/api/auth/admin/sellers/pending/",
+    adminSellerDetail: (sellerId: number | string) =>
+      `/api/auth/admin/sellers/${sellerId}/`,
+    adminSellerVerify: (sellerId: number | string) =>
+      `/api/auth/admin/sellers/${sellerId}/verify/`,
+    adminSellerReject: (sellerId: number | string) =>
+      `/api/auth/admin/sellers/${sellerId}/reject/`,
   },
 
   rbac: {

@@ -4,6 +4,8 @@ export type AuthUser = {
   phone: string | null;
   full_name: string;
   is_seller: boolean;
+  is_staff?: boolean;
+  is_superuser?: boolean;
   email_verified: boolean;
 };
 
