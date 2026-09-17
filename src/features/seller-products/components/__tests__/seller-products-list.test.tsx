@@ -29,7 +29,9 @@ vi.mock("../../api", () => ({
 
 const mockedGetSellerProducts = vi.mocked(getSellerProducts);
 
-function makeProduct(overrides: Partial<ProductListItem> = {}): ProductListItem {
+function makeProduct(
+  overrides: Partial<ProductListItem> = {},
+): ProductListItem {
   return {
     id: 1,
     name: "Mechanical Keyboard",

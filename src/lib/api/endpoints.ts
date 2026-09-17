@@ -93,6 +93,21 @@ export const API_ENDPOINTS = {
       `/api/payments/payments/${paymentId}/cancel/`,
   },
 
+  shipping: {
+    shipments: "/api/shipping/shipments/",
+    eligibleOrders: "/api/shipping/shipments/eligible-orders/",
+    detail: (shipmentId: number | string) =>
+      `/api/shipping/shipments/${shipmentId}/`,
+    markReady: (shipmentId: number | string) =>
+      `/api/shipping/shipments/${shipmentId}/mark-ready/`,
+    markShipped: (shipmentId: number | string) =>
+      `/api/shipping/shipments/${shipmentId}/mark-shipped/`,
+    markDelivered: (shipmentId: number | string) =>
+      `/api/shipping/shipments/${shipmentId}/mark-delivered/`,
+    cancel: (shipmentId: number | string) =>
+      `/api/shipping/shipments/${shipmentId}/cancel/`,
+  },
+
   returns: {
     requests: "/api/returns/requests/",
     detail: (returnId: number | string) => `/api/returns/requests/${returnId}/`,

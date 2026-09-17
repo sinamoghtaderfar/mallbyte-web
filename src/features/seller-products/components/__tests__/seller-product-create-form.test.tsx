@@ -110,7 +110,10 @@ describe("SellerProductCreateForm", () => {
       screen.getByLabelText(/^description$/i),
       "A compact mechanical keyboard.",
     );
-    await user.type(screen.getByLabelText(/short description/i), "Compact keyboard");
+    await user.type(
+      screen.getByLabelText(/short description/i),
+      "Compact keyboard",
+    );
 
     await user.selectOptions(screen.getByLabelText(/category/i), "1");
     await user.selectOptions(screen.getByLabelText(/brand/i), "2");
@@ -164,7 +167,9 @@ describe("SellerProductCreateForm", () => {
     const user = userEvent.setup();
 
     mockedGetSellerProductOptions.mockResolvedValue(options);
-    mockedCreateSellerProduct.mockRejectedValue(new Error("SKU already exists."));
+    mockedCreateSellerProduct.mockRejectedValue(
+      new Error("SKU already exists."),
+    );
 
     render(<SellerProductCreateForm />);
 

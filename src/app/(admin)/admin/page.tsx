@@ -14,10 +14,16 @@ const adminSections = [
     href: "/admin/returns",
     status: "Ready",
   },
+  {
+    title: "Shipping management",
+    description:
+      "Create shipments for paid orders and manage delivery progress.",
+    href: "/admin/shipments",
+    status: "Ready",
+  },
 ];
 
 const upcomingSections = [
-  "Shipping management",
   "Inventory management",
   "Support tickets",
   "Analytics",
@@ -35,8 +41,8 @@ export default function AdminDashboardPage() {
           Admin dashboard
         </h1>
         <p className="mt-2 max-w-2xl text-sm text-slate-600">
-          Manage platform-level workflows for sellers, returns, refunds, and
-          future operations.
+          Manage platform-level workflows for sellers, returns, shipping,
+          refunds, and future operations.
         </p>
       </div>
 

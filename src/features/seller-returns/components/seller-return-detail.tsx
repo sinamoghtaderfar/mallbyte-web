@@ -27,7 +27,6 @@ const statusLabels: Record<string, string> = {
   closed: "Closed",
 };
 
-
 const returnValueLabels: Record<string, string> = {
   original_payment: "Original payment method",
   store_credit: "Store credit",
