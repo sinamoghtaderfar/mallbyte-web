@@ -6,6 +6,7 @@ import {
   cancelShipment,
   createShipment,
   getEligibleShipmentOrders,
+  getOrderShipment,
   getShipment,
   getShipmentCarrierLabel,
   getShipments,
@@ -142,7 +143,64 @@ describe("shipments api", () => {
     await expect(getShipment(12)).resolves.toEqual(shipment);
     expect(mockedGet).toHaveBeenCalledWith(API_ENDPOINTS.shipping.detail(12));
   });
+  it("gets the latest shipment for an order", async () => {
+    const olderShipment = makeShipmentListItem({
+      id: 3,
+      order: 7,
+      created_at: "2026-09-16T18:00:00Z",
+    });
 
+    const latestShipment = makeShipmentListItem({
+      id: 8,
+      order: 7,
+      created_at: "2026-09-17T18:00:00Z",
+    });
+
+    const otherOrderShipment = makeShipmentListItem({
+      id: 9,
+      order: 99,
+      created_at: "2026-09-18T18:00:00Z",
+    });
+
+    const detail = makeShipmentDetail({
+      id: 8,
+      order: 7,
+    });
+
+    mockedGet
+      .mockResolvedValueOnce({
+        data: [olderShipment, otherOrderShipment, latestShipment],
+      })
+      .mockResolvedValueOnce({
+        data: detail,
+      });
+
+    await expect(getOrderShipment(7)).resolves.toEqual(detail);
+
+    expect(mockedGet).toHaveBeenNthCalledWith(
+      1,
+      API_ENDPOINTS.shipping.shipments,
+    );
+
+    expect(mockedGet).toHaveBeenNthCalledWith(
+      2,
+      API_ENDPOINTS.shipping.detail(8),
+    );
+  });
+
+  it("returns null when an order has no shipment", async () => {
+    mockedGet.mockResolvedValue({
+      data: [
+        makeShipmentListItem({
+          order: 99,
+        }),
+      ],
+    });
+
+    await expect(getOrderShipment(7)).resolves.toBeNull();
+
+    expect(mockedGet).toHaveBeenCalledTimes(1);
+  });
   it("creates a shipment with the selected carrier", async () => {
     const shipment = makeShipmentDetail({
       carrier: "dhl",

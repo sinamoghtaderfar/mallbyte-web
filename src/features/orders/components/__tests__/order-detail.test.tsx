@@ -1,6 +1,6 @@
-import type { ReactNode } from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { cancelOrder, getOrder } from "../../api";
@@ -30,7 +30,11 @@ vi.mock("next/link", () => ({
     </a>
   ),
 }));
-
+vi.mock("@/features/shipments/components/order-shipment-tracking", () => ({
+  OrderShipmentTracking: ({ orderId }: { orderId: number }) => (
+    <div>Shipment tracking for order {orderId}</div>
+  ),
+}));
 vi.mock("../../api", () => ({
   getOrder: vi.fn(),
   cancelOrder: vi.fn(),

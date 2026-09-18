@@ -1,14 +1,14 @@
 "use client";
 
-import Link from "next/link";
 import {
   OrderReturnActionButton,
   OrderReturnStatusCard,
 } from "@/features/returns/components/order-return-badge";
+import { OrderShipmentTracking } from "@/features/shipments/components/order-shipment-tracking";
+import { getApiErrorMessage } from "@/lib/api/errors";
+import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-
-import { getApiErrorMessage } from "@/lib/api/errors";
 
 import { cancelOrder, getOrder } from "../api";
 import type { OrderDetail as OrderDetailType } from "../types";
@@ -373,7 +373,7 @@ export function OrderDetail() {
             </div>
           </div>
         ) : null}
-
+        <OrderShipmentTracking key={order.id} orderId={order.id} />
         <OrderReturnStatusCard
           orderId={order.id}
           orderNumber={order.order_number}

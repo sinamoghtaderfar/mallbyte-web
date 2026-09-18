@@ -156,6 +156,25 @@ export async function getShipment(shipmentId: number | string) {
   return response.data;
 }
 
+export async function getOrderShipment(orderId: number | string) {
+  const shipments = await getShipments();
+  const normalizedOrderId = Number(orderId);
+
+  const orderShipments = shipments
+    .filter((shipment) => shipment.order === normalizedOrderId)
+    .sort(
+      (left, right) =>
+        new Date(right.created_at).getTime() -
+        new Date(left.created_at).getTime(),
+    );
+
+  if (orderShipments.length === 0) {
+    return null;
+  }
+
+  return getShipment(orderShipments[0].id);
+}
+
 export async function createShipment(payload: CreateShipmentPayload) {
   const response = await apiClient.post<ShipmentDetail>(
     API_ENDPOINTS.shipping.shipments,
