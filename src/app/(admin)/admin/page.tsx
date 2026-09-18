@@ -21,14 +21,16 @@ const adminSections = [
     href: "/admin/shipments",
     status: "Ready",
   },
+  {
+    title: "Inventory management",
+    description:
+      "Monitor warehouse stock, reserved inventory, available quantities, and low-stock products.",
+    href: "/admin/inventory",
+    status: "Ready",
+  },
 ];
 
-const upcomingSections = [
-  "Inventory management",
-  "Support tickets",
-  "Analytics",
-  "Observability",
-];
+const upcomingSections = ["Support tickets", "Analytics", "Observability"];
 
 export default function AdminDashboardPage() {
   return (
@@ -37,12 +39,14 @@ export default function AdminDashboardPage() {
         <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">
           Admin
         </p>
+
         <h1 className="mt-2 text-3xl font-semibold text-slate-950">
           Admin dashboard
         </h1>
+
         <p className="mt-2 max-w-2xl text-sm text-slate-600">
           Manage platform-level workflows for sellers, returns, shipping,
-          refunds, and future operations.
+          inventory, refunds, and future operations.
         </p>
       </div>
 
@@ -58,6 +62,7 @@ export default function AdminDashboardPage() {
                 <h2 className="text-xl font-semibold text-slate-950">
                   {section.title}
                 </h2>
+
                 <p className="mt-2 text-sm text-slate-600">
                   {section.description}
                 </p>
@@ -77,6 +82,7 @@ export default function AdminDashboardPage() {
 
       <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-6">
         <h2 className="text-lg font-semibold text-slate-950">Coming next</h2>
+
         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {upcomingSections.map((section) => (
             <div
@@ -84,6 +90,7 @@ export default function AdminDashboardPage() {
               className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4"
             >
               <p className="text-sm font-medium text-slate-700">{section}</p>
+
               <p className="mt-1 text-xs text-slate-500">Not built yet</p>
             </div>
           ))}

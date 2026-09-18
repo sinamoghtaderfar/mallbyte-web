@@ -67,7 +67,14 @@ export const API_ENDPOINTS = {
       `/api/products/wishlist/${wishlistItemId}/`,
     recentlyViewed: "/api/products/recently-viewed/",
   },
-
+  inventory: {
+    warehouses: "/api/inventory/warehouses/",
+    activeWarehouses: "/api/inventory/warehouses/active/",
+    stocks: "/api/inventory/stocks/",
+    lowStock: "/api/inventory/stocks/low-stock/",
+    stockMovements: "/api/inventory/stock-movements/",
+    stockTransfers: "/api/inventory/stock-transfers/",
+  },
   reviews: {
     productReviews: "/api/reviews/product-reviews/",
     productReviewsSummary: "/api/reviews/product-reviews/summary/",
