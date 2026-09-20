@@ -3,12 +3,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { apiClient } from "@/lib/api/client";
 import { API_ENDPOINTS } from "@/lib/api/endpoints";
 import {
-    createStockMovement,
-    getStockMovements,
-    getStocks,
-    type StockListItem,
-    type StockMovementDetail,
-    type StockMovementListItem,
+  createStockMovement,
+  getStockMovements,
+  getStocks,
+  type StockListItem,
+  type StockMovementDetail,
+  type StockMovementListItem,
 } from "../api";
 
 vi.mock("@/lib/api/client", () => ({
@@ -21,9 +21,7 @@ vi.mock("@/lib/api/client", () => ({
 const mockedGet = vi.mocked(apiClient.get);
 const mockedPost = vi.mocked(apiClient.post);
 
-function makeStock(
-  overrides: Partial<StockListItem> = {},
-): StockListItem {
+function makeStock(overrides: Partial<StockListItem> = {}): StockListItem {
   return {
     id: 1,
     product: 10,
@@ -100,10 +98,7 @@ describe("inventory api", () => {
         },
       });
 
-    await expect(getStocks()).resolves.toEqual([
-      firstStock,
-      secondStock,
-    ]);
+    await expect(getStocks()).resolves.toEqual([firstStock, secondStock]);
 
     expect(mockedGet).toHaveBeenNthCalledWith(
       1,
@@ -128,9 +123,7 @@ describe("inventory api", () => {
       },
     });
 
-    await expect(
-      getStockMovements(),
-    ).resolves.toEqual([movement]);
+    await expect(getStockMovements()).resolves.toEqual([movement]);
 
     expect(mockedGet).toHaveBeenCalledWith(
       API_ENDPOINTS.inventory.stockMovements,
@@ -157,9 +150,7 @@ describe("inventory api", () => {
       notes: "Test stock adjustment",
     };
 
-    await expect(
-      createStockMovement(payload),
-    ).resolves.toEqual(movement);
+    await expect(createStockMovement(payload)).resolves.toEqual(movement);
 
     expect(mockedPost).toHaveBeenCalledWith(
       API_ENDPOINTS.inventory.stockMovements,

@@ -3,9 +3,9 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
-    createStockMovement,
-    type StockListItem,
-    type StockMovementDetail,
+  createStockMovement,
+  type StockListItem,
+  type StockMovementDetail,
 } from "@/features/inventory/api";
 import { StockAdjustmentModal } from "../stock-adjustment-modal";
 
@@ -20,12 +20,9 @@ vi.mock("@/features/inventory/api", async () => {
   };
 });
 
-const mockedCreateStockMovement =
-  vi.mocked(createStockMovement);
+const mockedCreateStockMovement = vi.mocked(createStockMovement);
 
-function makeStock(
-  overrides: Partial<StockListItem> = {},
-): StockListItem {
+function makeStock(overrides: Partial<StockListItem> = {}): StockListItem {
   return {
     id: 1,
     product: 10,
@@ -79,9 +76,7 @@ describe("StockAdjustmentModal", () => {
     const user = userEvent.setup();
     const onCreated = vi.fn();
 
-    mockedCreateStockMovement.mockResolvedValue(
-      makeMovement(),
-    );
+    mockedCreateStockMovement.mockResolvedValue(makeMovement());
 
     render(
       <StockAdjustmentModal
@@ -91,12 +86,9 @@ describe("StockAdjustmentModal", () => {
       />,
     );
 
-    const quantity = screen.getByRole(
-      "spinbutton",
-      {
-        name: /quantity/i,
-      },
-    );
+    const quantity = screen.getByRole("spinbutton", {
+      name: /quantity/i,
+    });
 
     await user.clear(quantity);
     await user.type(quantity, "5");
@@ -129,9 +121,7 @@ describe("StockAdjustmentModal", () => {
     );
 
     await waitFor(() => {
-      expect(
-        mockedCreateStockMovement,
-      ).toHaveBeenCalledWith({
+      expect(mockedCreateStockMovement).toHaveBeenCalledWith({
         product: 10,
         warehouse: 1,
         movement_type: "purchase",
@@ -180,12 +170,9 @@ describe("StockAdjustmentModal", () => {
       "damaged",
     );
 
-    const quantity = screen.getByRole(
-      "spinbutton",
-      {
-        name: /quantity/i,
-      },
-    );
+    const quantity = screen.getByRole("spinbutton", {
+      name: /quantity/i,
+    });
 
     await user.clear(quantity);
     await user.type(quantity, "2");
@@ -204,9 +191,7 @@ describe("StockAdjustmentModal", () => {
     );
 
     await waitFor(() => {
-      expect(
-        mockedCreateStockMovement,
-      ).toHaveBeenCalledWith(
+      expect(mockedCreateStockMovement).toHaveBeenCalledWith(
         expect.objectContaining({
           movement_type: "damaged",
           quantity: -2,
@@ -238,12 +223,9 @@ describe("StockAdjustmentModal", () => {
       "damaged",
     );
 
-    const quantity = screen.getByRole(
-      "spinbutton",
-      {
-        name: /quantity/i,
-      },
-    );
+    const quantity = screen.getByRole("spinbutton", {
+      name: /quantity/i,
+    });
 
     await user.clear(quantity);
     await user.type(quantity, "14");
@@ -262,13 +244,9 @@ describe("StockAdjustmentModal", () => {
     );
 
     expect(
-      await screen.findByText(
-        /only 13 units are available to remove/i,
-      ),
+      await screen.findByText(/only 13 units are available to remove/i),
     ).toBeInTheDocument();
 
-    expect(
-      mockedCreateStockMovement,
-    ).not.toHaveBeenCalled();
+    expect(mockedCreateStockMovement).not.toHaveBeenCalled();
   });
 });

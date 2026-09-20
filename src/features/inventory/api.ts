@@ -81,6 +81,56 @@ export type StockMovementDetail = StockMovementListItem & {
   created_by: number | null;
 };
 
+export type StockTransferStatus =
+  "pending" | "in_transit" | "completed" | "cancelled";
+
+export type StockTransferListItem = {
+  id: number;
+
+  product: number;
+  product_name: string;
+  product_sku: string;
+
+  from_warehouse: number;
+  from_warehouse_name: string;
+  from_warehouse_code: string;
+
+  to_warehouse: number;
+  to_warehouse_name: string;
+  to_warehouse_code: string;
+
+  quantity: number;
+
+  status: StockTransferStatus;
+  status_display: string;
+
+  tracking_number: string;
+
+  shipped_at: string | null;
+  delivered_at: string | null;
+
+  reason: string;
+
+  requested_by_name: string | null;
+  approved_by_name: string | null;
+
+  created_at: string;
+  updated_at: string;
+};
+
+export type StockTransferDetail = StockTransferListItem & {
+  requested_by: number | null;
+  approved_by: number | null;
+};
+
+export type CreateStockTransferPayload = {
+  from_warehouse: number;
+  to_warehouse: number;
+  product: number;
+  quantity: number;
+  reason?: string;
+};
+
 export type CreateStockMovementPayload = {
   product: number;
   warehouse: number;
@@ -136,12 +186,57 @@ export async function getStockMovements() {
   );
 }
 
-export async function createStockMovement(
-  payload: CreateStockMovementPayload,
-) {
+export async function createStockMovement(payload: CreateStockMovementPayload) {
   const response = await apiClient.post<StockMovementDetail>(
     API_ENDPOINTS.inventory.stockMovements,
     payload,
+  );
+
+  return response.data;
+}
+
+export async function getStockTransfers() {
+  return getAllPages<StockTransferListItem>(
+    API_ENDPOINTS.inventory.stockTransfers,
+  );
+}
+
+export async function createStockTransfer(payload: CreateStockTransferPayload) {
+  const response = await apiClient.post<StockTransferDetail>(
+    API_ENDPOINTS.inventory.stockTransfers,
+    payload,
+  );
+
+  return response.data;
+}
+
+export async function markStockTransferInTransit(
+  transferId: number,
+  trackingNumber: string,
+) {
+  const response = await apiClient.post<StockTransferDetail>(
+    API_ENDPOINTS.inventory.stockTransferMarkInTransit(transferId),
+    {
+      tracking_number: trackingNumber.trim(),
+    },
+  );
+
+  return response.data;
+}
+
+export async function completeStockTransfer(transferId: number) {
+  const response = await apiClient.post<StockTransferDetail>(
+    API_ENDPOINTS.inventory.stockTransferComplete(transferId),
+    {},
+  );
+
+  return response.data;
+}
+
+export async function cancelStockTransfer(transferId: number) {
+  const response = await apiClient.post<StockTransferDetail>(
+    API_ENDPOINTS.inventory.stockTransferCancel(transferId),
+    {},
   );
 
   return response.data;

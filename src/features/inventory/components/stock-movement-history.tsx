@@ -3,9 +3,9 @@
 import { useMemo, useState } from "react";
 
 import {
-    getStockMovementLabel,
-    type StockMovementListItem,
-    type WarehouseListItem
+  getStockMovementLabel,
+  type StockMovementListItem,
+  type WarehouseListItem,
 } from "@/features/inventory/api";
 
 type StockMovementHistoryProps = {
@@ -41,44 +41,24 @@ export function StockMovementHistory({
     return movements.filter((movement) => {
       const matchesSearch =
         !normalizedSearch ||
-        movement.product_name
-          .toLowerCase()
-          .includes(normalizedSearch) ||
-        movement.product_sku
-          .toLowerCase()
-          .includes(normalizedSearch) ||
-        movement.reference_id
-          .toLowerCase()
-          .includes(normalizedSearch) ||
-        movement.reason
-          .toLowerCase()
-          .includes(normalizedSearch);
+        movement.product_name.toLowerCase().includes(normalizedSearch) ||
+        movement.product_sku.toLowerCase().includes(normalizedSearch) ||
+        movement.reference_id.toLowerCase().includes(normalizedSearch) ||
+        movement.reason.toLowerCase().includes(normalizedSearch);
 
       const matchesType =
-        typeFilter === "all" ||
-        movement.movement_type === typeFilter;
+        typeFilter === "all" || movement.movement_type === typeFilter;
 
       const matchesWarehouse =
         warehouseFilter === "all" ||
         movement.warehouse === Number(warehouseFilter);
 
-      return (
-        matchesSearch &&
-        matchesType &&
-        matchesWarehouse
-      );
+      return matchesSearch && matchesType && matchesWarehouse;
     });
-  }, [
-    movements,
-    search,
-    typeFilter,
-    warehouseFilter,
-  ]);
+  }, [movements, search, typeFilter, warehouseFilter]);
 
   const movementTypes = Array.from(
-    new Set(
-      movements.map((movement) => movement.movement_type),
-    ),
+    new Set(movements.map((movement) => movement.movement_type)),
   );
 
   return (
@@ -118,18 +98,13 @@ export function StockMovementHistory({
 
         <select
           value={warehouseFilter}
-          onChange={(event) =>
-            setWarehouseFilter(event.target.value)
-          }
+          onChange={(event) => setWarehouseFilter(event.target.value)}
           className="h-11 rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-slate-400"
         >
           <option value="all">All warehouses</option>
 
           {warehouses.map((warehouse) => (
-            <option
-              key={warehouse.id}
-              value={warehouse.id}
-            >
+            <option key={warehouse.id} value={warehouse.id}>
               {warehouse.name}
             </option>
           ))}
@@ -191,9 +166,7 @@ export function StockMovementHistory({
 
                   <span className="inline-flex h-fit w-fit self-start rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
                     {movement.movement_type_display ||
-                      getStockMovementLabel(
-                        movement.movement_type,
-                      )}
+                      getStockMovementLabel(movement.movement_type)}
                   </span>
 
                   <p
@@ -213,9 +186,7 @@ export function StockMovementHistory({
                   </p>
 
                   <div>
-                    <p className="text-slate-700">
-                      {movement.reason || "—"}
-                    </p>
+                    <p className="text-slate-700">{movement.reason || "—"}</p>
 
                     {movement.reference_id ? (
                       <p className="mt-1 text-xs text-slate-500">
@@ -250,8 +221,7 @@ export function StockMovementHistory({
 
       {!isLoading && movements.length > 0 ? (
         <p className="mt-4 text-xs text-slate-500">
-          Showing {filteredMovements.length} of{" "}
-          {movements.length} movements.
+          Showing {filteredMovements.length} of {movements.length} movements.
         </p>
       ) : null}
     </section>

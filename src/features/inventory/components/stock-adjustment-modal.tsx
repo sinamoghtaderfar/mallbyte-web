@@ -4,27 +4,21 @@ import type { FormEvent } from "react";
 import { useMemo, useState } from "react";
 
 import {
-    createStockMovement,
-    type StockListItem,
-    type StockMovementDetail,
-    type StockMovementType,
+  createStockMovement,
+  type StockListItem,
+  type StockMovementDetail,
+  type StockMovementType,
 } from "@/features/inventory/api";
 import { getApiErrorMessage } from "@/lib/api/errors";
 
-type AdjustableMovementType =
-  | "purchase"
-  | "return"
-  | "damaged"
-  | "adjustment";
+type AdjustableMovementType = "purchase" | "return" | "damaged" | "adjustment";
 
 type AdjustmentDirection = "increase" | "decrease";
 
 type StockAdjustmentModalProps = {
   stock: StockListItem;
   onClose: () => void;
-  onCreated: (
-    movement: StockMovementDetail,
-  ) => void | Promise<void>;
+  onCreated: (movement: StockMovementDetail) => void | Promise<void>;
 };
 
 const MOVEMENT_OPTIONS: Array<{
@@ -57,8 +51,7 @@ export function StockAdjustmentModal({
   const [movementType, setMovementType] =
     useState<AdjustableMovementType>("purchase");
 
-  const [direction, setDirection] =
-    useState<AdjustmentDirection>("increase");
+  const [direction, setDirection] = useState<AdjustmentDirection>("increase");
 
   const [quantity, setQuantity] = useState("1");
   const [referenceId, setReferenceId] = useState("");
@@ -79,26 +72,19 @@ export function StockAdjustmentModal({
       return -numericQuantity;
     }
 
-    if (
-      movementType === "adjustment" &&
-      direction === "decrease"
-    ) {
+    if (movementType === "adjustment" && direction === "decrease") {
       return -numericQuantity;
     }
 
     return numericQuantity;
   }, [numericQuantity, movementType, direction]);
 
-  const previewQuantity =
-    stock.quantity + signedQuantity;
+  const previewQuantity = stock.quantity + signedQuantity;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (
-      !Number.isInteger(numericQuantity) ||
-      numericQuantity <= 0
-    ) {
+    if (!Number.isInteger(numericQuantity) || numericQuantity <= 0) {
       setError("Quantity must be a positive whole number.");
       return;
     }
@@ -108,10 +94,7 @@ export function StockAdjustmentModal({
       return;
     }
 
-    if (
-      signedQuantity < 0 &&
-      numericQuantity > stock.available_quantity
-    ) {
+    if (signedQuantity < 0 && numericQuantity > stock.available_quantity) {
       setError(
         `Only ${stock.available_quantity} units are available to remove. ${stock.reserved_quantity} units are currently reserved.`,
       );
@@ -227,17 +210,12 @@ export function StockAdjustmentModal({
             <select
               value={movementType}
               onChange={(event) =>
-                setMovementType(
-                  event.target.value as AdjustableMovementType,
-                )
+                setMovementType(event.target.value as AdjustableMovementType)
               }
               className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-slate-400"
             >
               {MOVEMENT_OPTIONS.map((option) => (
-                <option
-                  key={option.value}
-                  value={option.value}
-                >
+                <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
               ))}
@@ -253,26 +231,18 @@ export function StockAdjustmentModal({
               <select
                 value={direction}
                 onChange={(event) =>
-                  setDirection(
-                    event.target.value as AdjustmentDirection,
-                  )
+                  setDirection(event.target.value as AdjustmentDirection)
                 }
                 className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-slate-400"
               >
-                <option value="increase">
-                  Increase stock
-                </option>
-                <option value="decrease">
-                  Decrease stock
-                </option>
+                <option value="increase">Increase stock</option>
+                <option value="decrease">Decrease stock</option>
               </select>
             </label>
           ) : null}
 
           <label className="block">
-            <span className="text-sm font-medium text-slate-700">
-              Quantity
-            </span>
+            <span className="text-sm font-medium text-slate-700">Quantity</span>
 
             <input
               type="number"
@@ -304,9 +274,7 @@ export function StockAdjustmentModal({
               {signedQuantity !== 0 ? (
                 <span
                   className={
-                    signedQuantity > 0
-                      ? "text-green-700"
-                      : "text-red-700"
+                    signedQuantity > 0 ? "text-green-700" : "text-red-700"
                   }
                 >
                   ({signedQuantity > 0 ? "+" : ""}
@@ -324,9 +292,7 @@ export function StockAdjustmentModal({
             <input
               type="text"
               value={referenceId}
-              onChange={(event) =>
-                setReferenceId(event.target.value)
-              }
+              onChange={(event) => setReferenceId(event.target.value)}
               placeholder="Example: PO-2026-001"
               className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-slate-400"
             />
@@ -337,9 +303,7 @@ export function StockAdjustmentModal({
           </label>
 
           <label className="block">
-            <span className="text-sm font-medium text-slate-700">
-              Reason
-            </span>
+            <span className="text-sm font-medium text-slate-700">Reason</span>
 
             <textarea
               value={reason}
@@ -352,9 +316,7 @@ export function StockAdjustmentModal({
           </label>
 
           <label className="block">
-            <span className="text-sm font-medium text-slate-700">
-              Notes
-            </span>
+            <span className="text-sm font-medium text-slate-700">Notes</span>
 
             <textarea
               value={notes}
@@ -380,9 +342,7 @@ export function StockAdjustmentModal({
               disabled={isSubmitting}
               className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {isSubmitting
-                ? "Saving adjustment..."
-                : "Save adjustment"}
+              {isSubmitting ? "Saving adjustment..." : "Save adjustment"}
             </button>
           </div>
         </form>

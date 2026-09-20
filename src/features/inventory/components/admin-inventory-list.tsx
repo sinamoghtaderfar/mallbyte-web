@@ -14,6 +14,7 @@ import {
 } from "@/features/inventory/api";
 import { StockAdjustmentModal } from "@/features/inventory/components/stock-adjustment-modal";
 import { StockMovementHistory } from "@/features/inventory/components/stock-movement-history";
+import { StockTransfersPanel } from "@/features/inventory/components/stock-transfers-panel";
 import { getApiErrorMessage } from "@/lib/api/errors";
 
 function formatDate(value: string) {
@@ -22,21 +23,16 @@ function formatDate(value: string) {
 
 export function AdminInventoryList() {
   const [stocks, setStocks] = useState<StockListItem[]>([]);
-  const [warehouses, setWarehouses] = useState<
-    WarehouseListItem[]
-  >([]);
-  const [movements, setMovements] = useState<
-    StockMovementListItem[]
-  >([]);
+  const [warehouses, setWarehouses] = useState<WarehouseListItem[]>([]);
+  const [movements, setMovements] = useState<StockMovementListItem[]>([]);
 
   const [search, setSearch] = useState("");
-  const [warehouseFilter, setWarehouseFilter] =
-    useState("all");
-  const [lowStockOnly, setLowStockOnly] =
-    useState(false);
+  const [warehouseFilter, setWarehouseFilter] = useState("all");
+  const [lowStockOnly, setLowStockOnly] = useState(false);
 
-  const [selectedStock, setSelectedStock] =
-    useState<StockListItem | null>(null);
+  const [selectedStock, setSelectedStock] = useState<StockListItem | null>(
+    null,
+  );
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -47,11 +43,7 @@ export function AdminInventoryList() {
 
     async function loadInventory() {
       try {
-        const [
-          stockData,
-          warehouseData,
-          movementData,
-        ] = await Promise.all([
+        const [stockData, warehouseData, movementData] = await Promise.all([
           getStocks(),
           getWarehouses(),
           getStockMovements(),
@@ -86,11 +78,10 @@ export function AdminInventoryList() {
     try {
       setError("");
 
-      const [stockData, movementData] =
-        await Promise.all([
-          getStocks(),
-          getStockMovements(),
-        ]);
+      const [stockData, movementData] = await Promise.all([
+        getStocks(),
+        getStockMovements(),
+      ]);
 
       setStocks(stockData);
       setMovements(movementData);
@@ -99,9 +90,7 @@ export function AdminInventoryList() {
     }
   }
 
-  async function handleMovementCreated(
-    movement: StockMovementDetail,
-  ) {
+  async function handleMovementCreated(movement: StockMovementDetail) {
     setMessage(
       `${movement.product_name} stock updated from ${movement.before_quantity} to ${movement.after_quantity}.`,
     );
@@ -117,38 +106,20 @@ export function AdminInventoryList() {
     return stocks.filter((stock) => {
       const matchesSearch =
         !normalizedSearch ||
-        stock.product_name
-          .toLowerCase()
-          .includes(normalizedSearch) ||
-        stock.product_sku
-          .toLowerCase()
-          .includes(normalizedSearch) ||
-        stock.warehouse_name
-          .toLowerCase()
-          .includes(normalizedSearch) ||
-        stock.warehouse_code
-          .toLowerCase()
-          .includes(normalizedSearch);
+        stock.product_name.toLowerCase().includes(normalizedSearch) ||
+        stock.product_sku.toLowerCase().includes(normalizedSearch) ||
+        stock.warehouse_name.toLowerCase().includes(normalizedSearch) ||
+        stock.warehouse_code.toLowerCase().includes(normalizedSearch);
 
       const matchesWarehouse =
         warehouseFilter === "all" ||
         stock.warehouse === Number(warehouseFilter);
 
-      const matchesLowStock =
-        !lowStockOnly || stock.is_low_stock;
+      const matchesLowStock = !lowStockOnly || stock.is_low_stock;
 
-      return (
-        matchesSearch &&
-        matchesWarehouse &&
-        matchesLowStock
-      );
+      return matchesSearch && matchesWarehouse && matchesLowStock;
     });
-  }, [
-    stocks,
-    search,
-    warehouseFilter,
-    lowStockOnly,
-  ]);
+  }, [stocks, search, warehouseFilter, lowStockOnly]);
 
   const totalQuantity = stocks.reduce(
     (total, stock) => total + stock.quantity,
@@ -156,20 +127,16 @@ export function AdminInventoryList() {
   );
 
   const reservedQuantity = stocks.reduce(
-    (total, stock) =>
-      total + stock.reserved_quantity,
+    (total, stock) => total + stock.reserved_quantity,
     0,
   );
 
   const availableQuantity = stocks.reduce(
-    (total, stock) =>
-      total + stock.available_quantity,
+    (total, stock) => total + stock.available_quantity,
     0,
   );
 
-  const lowStockCount = stocks.filter(
-    (stock) => stock.is_low_stock,
-  ).length;
+  const lowStockCount = stocks.filter((stock) => stock.is_low_stock).length;
 
   return (
     <>
@@ -185,9 +152,8 @@ export function AdminInventoryList() {
             </h1>
 
             <p className="mt-2 max-w-2xl text-sm text-slate-600">
-              Monitor and adjust stock across warehouses,
-              review reserved inventory, and audit inventory
-              movements.
+              Monitor and adjust stock across warehouses, review reserved
+              inventory, and audit inventory movements.
             </p>
           </div>
 
@@ -213,9 +179,7 @@ export function AdminInventoryList() {
 
         <section className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-3xl border border-slate-200 bg-white p-5">
-            <p className="text-sm text-slate-500">
-              Total stock
-            </p>
+            <p className="text-sm text-slate-500">Total stock</p>
 
             <p className="mt-2 text-3xl font-semibold text-slate-950">
               {totalQuantity.toLocaleString()}
@@ -227,23 +191,17 @@ export function AdminInventoryList() {
           </div>
 
           <div className="rounded-3xl border border-slate-200 bg-white p-5">
-            <p className="text-sm text-slate-500">
-              Available
-            </p>
+            <p className="text-sm text-slate-500">Available</p>
 
             <p className="mt-2 text-3xl font-semibold text-slate-950">
               {availableQuantity.toLocaleString()}
             </p>
 
-            <p className="mt-1 text-xs text-slate-500">
-              Ready for new orders
-            </p>
+            <p className="mt-1 text-xs text-slate-500">Ready for new orders</p>
           </div>
 
           <div className="rounded-3xl border border-slate-200 bg-white p-5">
-            <p className="text-sm text-slate-500">
-              Reserved
-            </p>
+            <p className="text-sm text-slate-500">Reserved</p>
 
             <p className="mt-2 text-3xl font-semibold text-slate-950">
               {reservedQuantity.toLocaleString()}
@@ -255,29 +213,22 @@ export function AdminInventoryList() {
           </div>
 
           <div className="rounded-3xl border border-slate-200 bg-white p-5">
-            <p className="text-sm text-slate-500">
-              Low stock
-            </p>
+            <p className="text-sm text-slate-500">Low stock</p>
 
             <p className="mt-2 text-3xl font-semibold text-slate-950">
               {lowStockCount}
             </p>
 
-            <p className="mt-1 text-xs text-slate-500">
-              Requires attention
-            </p>
+            <p className="mt-1 text-xs text-slate-500">Requires attention</p>
           </div>
         </section>
 
         <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-5">
           <div>
-            <h2 className="text-lg font-semibold text-slate-950">
-              Stock
-            </h2>
+            <h2 className="text-lg font-semibold text-slate-950">Stock</h2>
 
             <p className="mt-1 text-sm text-slate-500">
-              Current product inventory across active
-              warehouses.
+              Current product inventory across active warehouses.
             </p>
           </div>
 
@@ -285,29 +236,20 @@ export function AdminInventoryList() {
             <input
               type="search"
               value={search}
-              onChange={(event) =>
-                setSearch(event.target.value)
-              }
+              onChange={(event) => setSearch(event.target.value)}
               placeholder="Search product, SKU, or warehouse..."
               className="h-11 rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-slate-400"
             />
 
             <select
               value={warehouseFilter}
-              onChange={(event) =>
-                setWarehouseFilter(event.target.value)
-              }
+              onChange={(event) => setWarehouseFilter(event.target.value)}
               className="h-11 rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-slate-400"
             >
-              <option value="all">
-                All warehouses
-              </option>
+              <option value="all">All warehouses</option>
 
               {warehouses.map((warehouse) => (
-                <option
-                  key={warehouse.id}
-                  value={warehouse.id}
-                >
+                <option key={warehouse.id} value={warehouse.id}>
                   {warehouse.name} ({warehouse.code})
                 </option>
               ))}
@@ -317,11 +259,7 @@ export function AdminInventoryList() {
               <input
                 type="checkbox"
                 checked={lowStockOnly}
-                onChange={(event) =>
-                  setLowStockOnly(
-                    event.target.checked,
-                  )
-                }
+                onChange={(event) => setLowStockOnly(event.target.checked)}
                 className="h-4 w-4"
               />
               Low stock only
@@ -329,9 +267,7 @@ export function AdminInventoryList() {
           </div>
 
           {isLoading ? (
-            <p className="mt-6 text-sm text-slate-500">
-              Loading inventory...
-            </p>
+            <p className="mt-6 text-sm text-slate-500">Loading inventory...</p>
           ) : filteredStocks.length === 0 ? (
             <div className="mt-6 rounded-2xl bg-slate-50 p-5">
               <p className="text-sm font-medium text-slate-700">
@@ -339,8 +275,7 @@ export function AdminInventoryList() {
               </p>
 
               <p className="mt-1 text-xs text-slate-500">
-                Try changing the search or warehouse
-                filters.
+                Try changing the search or warehouse filters.
               </p>
             </div>
           ) : (
@@ -373,10 +308,7 @@ export function AdminInventoryList() {
                         </p>
 
                         <p className="mt-1 text-xs text-slate-400">
-                          Updated{" "}
-                          {formatDate(
-                            stock.last_updated,
-                          )}
+                          Updated {formatDate(stock.last_updated)}
                         </p>
                       </div>
 
@@ -437,12 +369,15 @@ export function AdminInventoryList() {
 
           {!isLoading && stocks.length > 0 ? (
             <p className="mt-4 text-xs text-slate-500">
-              Showing {filteredStocks.length} of{" "}
-              {stocks.length} stock records.
+              Showing {filteredStocks.length} of {stocks.length} stock records.
             </p>
           ) : null}
         </section>
-
+        <StockTransfersPanel
+          stocks={stocks}
+          warehouses={warehouses}
+          onInventoryChanged={refreshInventoryData}
+        />
         <StockMovementHistory
           movements={movements}
           warehouses={warehouses}

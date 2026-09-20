@@ -74,6 +74,18 @@ export const API_ENDPOINTS = {
     lowStock: "/api/inventory/stocks/low-stock/",
     stockMovements: "/api/inventory/stock-movements/",
     stockTransfers: "/api/inventory/stock-transfers/",
+
+    stockTransferDetail: (transferId: number | string) =>
+      `/api/inventory/stock-transfers/${transferId}/`,
+
+    stockTransferMarkInTransit: (transferId: number | string) =>
+      `/api/inventory/stock-transfers/${transferId}/mark-in-transit/`,
+
+    stockTransferComplete: (transferId: number | string) =>
+      `/api/inventory/stock-transfers/${transferId}/complete/`,
+
+    stockTransferCancel: (transferId: number | string) =>
+      `/api/inventory/stock-transfers/${transferId}/cancel/`,
   },
   reviews: {
     productReviews: "/api/reviews/product-reviews/",
