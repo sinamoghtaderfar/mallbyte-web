@@ -82,7 +82,7 @@ export type StockMovementDetail = StockMovementListItem & {
 };
 
 export type StockTransferStatus =
-  "pending" | "in_transit" | "completed" | "cancelled";
+  "pending" | "approved" | "in_transit" | "completed" | "cancelled";
 
 export type StockTransferListItem = {
   id: number;
@@ -111,8 +111,12 @@ export type StockTransferListItem = {
 
   reason: string;
 
+  requested_by: number | null;
   requested_by_name: string | null;
+
+  approved_by: number | null;
   approved_by_name: string | null;
+  approved_at: string | null;
 
   created_at: string;
   updated_at: string;
@@ -209,7 +213,14 @@ export async function createStockTransfer(payload: CreateStockTransferPayload) {
 
   return response.data;
 }
+export async function approveStockTransfer(transferId: number) {
+  const response = await apiClient.post<StockTransferDetail>(
+    API_ENDPOINTS.inventory.stockTransferApprove(transferId),
+    {},
+  );
 
+  return response.data;
+}
 export async function markStockTransferInTransit(
   transferId: number,
   trackingNumber: string,

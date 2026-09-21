@@ -78,6 +78,9 @@ export const API_ENDPOINTS = {
     stockTransferDetail: (transferId: number | string) =>
       `/api/inventory/stock-transfers/${transferId}/`,
 
+    stockTransferApprove: (transferId: number | string) =>
+      `/api/inventory/stock-transfers/${transferId}/approve/`,
+
     stockTransferMarkInTransit: (transferId: number | string) =>
       `/api/inventory/stock-transfers/${transferId}/mark-in-transit/`,
 

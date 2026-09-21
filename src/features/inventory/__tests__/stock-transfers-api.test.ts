@@ -1,13 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
-    cancelStockTransfer,
-    completeStockTransfer,
-    createStockTransfer,
-    getStockTransfers,
-    markStockTransferInTransit,
-    type StockTransferDetail,
-    type StockTransferListItem,
+  approveStockTransfer,
+  cancelStockTransfer,
+  completeStockTransfer,
+  createStockTransfer,
+  getStockTransfers,
+  markStockTransferInTransit,
+  type StockTransferDetail,
+  type StockTransferListItem,
 } from "@/features/inventory/api";
 import { apiClient } from "@/lib/api/client";
 import { API_ENDPOINTS } from "@/lib/api/endpoints";
@@ -52,8 +53,12 @@ function makeTransfer(
 
     reason: "Restock branch warehouse",
 
+    requested_by: 1,
     requested_by_name: "Inventory Manager",
+
+    approved_by: null,
     approved_by_name: null,
+    approved_at: null,
 
     created_at: "2026-09-20T20:00:00Z",
     updated_at: "2026-09-20T20:00:00Z",
@@ -67,8 +72,6 @@ function makeTransferDetail(
 ): StockTransferDetail {
   return {
     ...makeTransfer(),
-    requested_by: 1,
-    approved_by: null,
     ...overrides,
   };
 }
@@ -90,9 +93,7 @@ describe("stock transfer api", () => {
       },
     });
 
-    await expect(
-      getStockTransfers(),
-    ).resolves.toEqual([transfer]);
+    await expect(getStockTransfers()).resolves.toEqual([transfer]);
 
     expect(mockedGet).toHaveBeenCalledWith(
       API_ENDPOINTS.inventory.stockTransfers,
@@ -114,13 +115,32 @@ describe("stock transfer api", () => {
       reason: "Restock branch warehouse",
     };
 
-    await expect(
-      createStockTransfer(payload),
-    ).resolves.toEqual(transfer);
+    await expect(createStockTransfer(payload)).resolves.toEqual(transfer);
 
     expect(mockedPost).toHaveBeenCalledWith(
       API_ENDPOINTS.inventory.stockTransfers,
       payload,
+    );
+  });
+
+  it("approves a stock transfer", async () => {
+    const transfer = makeTransferDetail({
+      status: "approved",
+      status_display: "Approved",
+      approved_by: 2,
+      approved_by_name: "Inventory Supervisor",
+      approved_at: "2026-09-20T20:05:00Z",
+    });
+
+    mockedPost.mockResolvedValue({
+      data: transfer,
+    });
+
+    await expect(approveStockTransfer(1)).resolves.toEqual(transfer);
+
+    expect(mockedPost).toHaveBeenCalledWith(
+      API_ENDPOINTS.inventory.stockTransferApprove(1),
+      {},
     );
   });
 
@@ -129,6 +149,9 @@ describe("stock transfer api", () => {
       status: "in_transit",
       status_display: "In Transit",
       tracking_number: "TR-2026-001",
+      approved_by: 2,
+      approved_by_name: "Inventory Supervisor",
+      approved_at: "2026-09-20T20:05:00Z",
     });
 
     mockedPost.mockResolvedValue({
@@ -136,16 +159,11 @@ describe("stock transfer api", () => {
     });
 
     await expect(
-      markStockTransferInTransit(
-        1,
-        " TR-2026-001 ",
-      ),
+      markStockTransferInTransit(1, " TR-2026-001 "),
     ).resolves.toEqual(transfer);
 
     expect(mockedPost).toHaveBeenCalledWith(
-      API_ENDPOINTS.inventory.stockTransferMarkInTransit(
-        1,
-      ),
+      API_ENDPOINTS.inventory.stockTransferMarkInTransit(1),
       {
         tracking_number: "TR-2026-001",
       },
@@ -156,20 +174,21 @@ describe("stock transfer api", () => {
     const transfer = makeTransferDetail({
       status: "completed",
       status_display: "Completed",
+      approved_by: 2,
+      approved_by_name: "Inventory Supervisor",
+      approved_at: "2026-09-20T20:05:00Z",
+      shipped_at: "2026-09-20T20:10:00Z",
+      delivered_at: "2026-09-20T21:00:00Z",
     });
 
     mockedPost.mockResolvedValue({
       data: transfer,
     });
 
-    await expect(
-      completeStockTransfer(1),
-    ).resolves.toEqual(transfer);
+    await expect(completeStockTransfer(1)).resolves.toEqual(transfer);
 
     expect(mockedPost).toHaveBeenCalledWith(
-      API_ENDPOINTS.inventory.stockTransferComplete(
-        1,
-      ),
+      API_ENDPOINTS.inventory.stockTransferComplete(1),
       {},
     );
   });
@@ -184,14 +203,10 @@ describe("stock transfer api", () => {
       data: transfer,
     });
 
-    await expect(
-      cancelStockTransfer(1),
-    ).resolves.toEqual(transfer);
+    await expect(cancelStockTransfer(1)).resolves.toEqual(transfer);
 
     expect(mockedPost).toHaveBeenCalledWith(
-      API_ENDPOINTS.inventory.stockTransferCancel(
-        1,
-      ),
+      API_ENDPOINTS.inventory.stockTransferCancel(1),
       {},
     );
   });

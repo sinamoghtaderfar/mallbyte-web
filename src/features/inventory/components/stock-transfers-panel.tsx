@@ -2,7 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import { useAuthStore } from "@/features/auth/auth-store";
 import {
+  approveStockTransfer,
   cancelStockTransfer,
   completeStockTransfer,
   getStockTransfers,
@@ -13,6 +15,7 @@ import {
   type WarehouseListItem,
 } from "@/features/inventory/api";
 import { StockTransferModal } from "@/features/inventory/components/stock-transfer-modal";
+import { getMyPermissions } from "@/features/rbac/api";
 import { getApiErrorMessage } from "@/lib/api/errors";
 
 type StockTransfersPanelProps = {
@@ -27,6 +30,9 @@ function formatDate(value: string) {
 
 function statusClass(status: string) {
   switch (status) {
+    case "approved":
+      return "bg-violet-100 text-violet-700";
+
     case "completed":
       return "bg-green-100 text-green-700";
 
@@ -46,7 +52,10 @@ export function StockTransfersPanel({
   warehouses,
   onInventoryChanged,
 }: StockTransfersPanelProps) {
+  const user = useAuthStore((state) => state.user);
+
   const [transfers, setTransfers] = useState<StockTransferListItem[]>([]);
+  const [permissions, setPermissions] = useState<string[]>([]);
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -61,15 +70,16 @@ export function StockTransfersPanel({
     useState<StockTransferListItem | null>(null);
 
   const [trackingNumber, setTrackingNumber] = useState("");
-
   const [actionId, setActionId] = useState<number | null>(null);
+
+  const canManageTransfers = permissions.includes("manage_stock_transfers");
+  const canApproveTransfers = permissions.includes("approve_stock_transfers");
 
   async function loadTransfers() {
     try {
       setError("");
 
       const data = await getStockTransfers();
-
       setTransfers(data);
     } catch (caughtError) {
       setError(getApiErrorMessage(caughtError));
@@ -83,10 +93,14 @@ export function StockTransfersPanel({
 
     async function load() {
       try {
-        const data = await getStockTransfers();
+        const [transferData, permissionData] = await Promise.all([
+          getStockTransfers(),
+          getMyPermissions(),
+        ]);
 
         if (!cancelled) {
-          setTransfers(data);
+          setTransfers(transferData);
+          setPermissions(permissionData.permissions);
         }
       } catch (caughtError) {
         if (!cancelled) {
@@ -108,10 +122,35 @@ export function StockTransfersPanel({
 
   async function handleCreated(transfer: StockTransferDetail) {
     setShowCreateModal(false);
-
-    setMessage(`Transfer #${transfer.id} created successfully.`);
+    setMessage(`Transfer #${transfer.id} created and is waiting for approval.`);
 
     await loadTransfers();
+  }
+
+  async function handleApprove(transfer: StockTransferListItem) {
+    const confirmed = window.confirm(
+      `Approve transfer #${transfer.id} for ${transfer.quantity} units from ${transfer.from_warehouse_name} to ${transfer.to_warehouse_name}?`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setActionId(transfer.id);
+      setError("");
+      setMessage("");
+
+      await approveStockTransfer(transfer.id);
+
+      setMessage(`Transfer #${transfer.id} approved.`);
+
+      await loadTransfers();
+    } catch (caughtError) {
+      setError(getApiErrorMessage(caughtError));
+    } finally {
+      setActionId(null);
+    }
   }
 
   async function handleMarkInTransit() {
@@ -122,6 +161,7 @@ export function StockTransfersPanel({
     try {
       setActionId(trackingTransfer.id);
       setError("");
+      setMessage("");
 
       await markStockTransferInTransit(trackingTransfer.id, trackingNumber);
 
@@ -150,6 +190,7 @@ export function StockTransfersPanel({
     try {
       setActionId(transfer.id);
       setError("");
+      setMessage("");
 
       await completeStockTransfer(transfer.id);
 
@@ -173,6 +214,7 @@ export function StockTransfersPanel({
     try {
       setActionId(transfer.id);
       setError("");
+      setMessage("");
 
       await cancelStockTransfer(transfer.id);
 
@@ -196,7 +238,13 @@ export function StockTransfersPanel({
         transfer.product_sku.toLowerCase().includes(normalizedSearch) ||
         transfer.from_warehouse_name.toLowerCase().includes(normalizedSearch) ||
         transfer.to_warehouse_name.toLowerCase().includes(normalizedSearch) ||
-        transfer.tracking_number.toLowerCase().includes(normalizedSearch);
+        transfer.tracking_number.toLowerCase().includes(normalizedSearch) ||
+        (transfer.requested_by_name ?? "")
+          .toLowerCase()
+          .includes(normalizedSearch) ||
+        (transfer.approved_by_name ?? "")
+          .toLowerCase()
+          .includes(normalizedSearch);
 
       const matchesStatus =
         statusFilter === "all" || transfer.status === statusFilter;
@@ -215,20 +263,23 @@ export function StockTransfersPanel({
             </h2>
 
             <p className="mt-1 text-sm text-slate-500">
-              Move inventory between warehouses and track transfer progress.
+              Create transfer requests, approve them separately, and track
+              warehouse movement.
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={() => {
-              setMessage("");
-              setShowCreateModal(true);
-            }}
-            className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white hover:bg-slate-800"
-          >
-            New transfer
-          </button>
+          {canManageTransfers ? (
+            <button
+              type="button"
+              onClick={() => {
+                setMessage("");
+                setShowCreateModal(true);
+              }}
+              className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white hover:bg-slate-800"
+            >
+              New transfer
+            </button>
+          ) : null}
         </div>
 
         {error ? (
@@ -248,7 +299,7 @@ export function StockTransfersPanel({
             type="search"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search product, warehouse, tracking..."
+            placeholder="Search product, warehouse, requester..."
             className="h-11 rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-slate-400"
           />
 
@@ -259,6 +310,7 @@ export function StockTransfersPanel({
           >
             <option value="all">All statuses</option>
             <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
             <option value="in_transit">In transit</option>
             <option value="completed">Completed</option>
             <option value="cancelled">Cancelled</option>
@@ -274,141 +326,198 @@ export function StockTransfersPanel({
             </p>
 
             <p className="mt-1 text-xs text-slate-500">
-              Create a transfer to move inventory between warehouses.
+              Create a transfer request to move inventory between warehouses.
             </p>
           </div>
         ) : (
           <div className="mt-6 overflow-x-auto rounded-2xl border border-slate-200">
-            <div className="min-w-[1250px]">
-              <div className="grid grid-cols-[1.5fr_1.5fr_0.6fr_0.9fr_1fr_1fr_auto] gap-4 bg-slate-50 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <div className="min-w-[1450px]">
+              <div className="grid grid-cols-[1.35fr_1.35fr_0.5fr_0.8fr_1.1fr_1.2fr_1.1fr_auto] gap-4 bg-slate-50 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
                 <span>Product</span>
                 <span>Route</span>
                 <span>Qty</span>
                 <span>Status</span>
+                <span>Requested by</span>
+                <span>Approved by</span>
                 <span>Tracking</span>
-                <span>Created</span>
                 <span>Actions</span>
               </div>
 
               <div className="divide-y divide-slate-100">
-                {filteredTransfers.map((transfer) => (
-                  <div
-                    key={transfer.id}
-                    className="grid grid-cols-[1.5fr_1.5fr_0.6fr_0.9fr_1fr_1fr_auto] gap-4 px-4 py-4 text-sm"
-                  >
-                    <div>
-                      <p className="font-semibold text-slate-950">
-                        {transfer.product_name}
-                      </p>
+                {filteredTransfers.map((transfer) => {
+                  const isOwnTransfer = transfer.requested_by === user?.id;
 
-                      <p className="mt-1 text-xs text-slate-500">
-                        SKU: {transfer.product_sku}
-                      </p>
+                  const canReviewThisTransfer =
+                    canApproveTransfers && !isOwnTransfer;
 
-                      <p className="mt-1 text-xs text-slate-400">
-                        Transfer #{transfer.id}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p className="font-medium text-slate-800">
-                        {transfer.from_warehouse_name}
-                      </p>
-
-                      <p className="my-1 text-xs text-slate-400">↓</p>
-
-                      <p className="font-medium text-slate-800">
-                        {transfer.to_warehouse_name}
-                      </p>
-                    </div>
-
-                    <p className="font-semibold text-slate-950">
-                      {transfer.quantity}
-                    </p>
-
-                    <div>
-                      <span
-                        className={`inline-flex h-fit rounded-full px-3 py-1 text-xs font-medium ${statusClass(
-                          transfer.status,
-                        )}`}
-                      >
-                        {transfer.status_display}
-                      </span>
-                    </div>
-
-                    <p className="text-slate-600">
-                      {transfer.tracking_number || "—"}
-                    </p>
-
-                    <div>
-                      <p className="text-slate-600">
-                        {formatDate(transfer.created_at)}
-                      </p>
-
-                      {transfer.reason ? (
-                        <p className="mt-1 text-xs text-slate-500">
-                          {transfer.reason}
+                  return (
+                    <div
+                      key={transfer.id}
+                      className="grid grid-cols-[1.35fr_1.35fr_0.5fr_0.8fr_1.1fr_1.2fr_1.1fr_auto] gap-4 px-4 py-4 text-sm"
+                    >
+                      <div>
+                        <p className="font-semibold text-slate-950">
+                          {transfer.product_name}
                         </p>
-                      ) : null}
-                    </div>
 
-                    <div className="flex flex-wrap items-start gap-2">
-                      {transfer.status === "pending" ? (
-                        <>
-                          <button
-                            type="button"
-                            disabled={actionId === transfer.id}
-                            onClick={() => {
-                              setTrackingTransfer(transfer);
-                              setTrackingNumber(transfer.tracking_number);
-                            }}
-                            className="rounded-xl bg-slate-900 px-3 py-2 text-xs font-medium text-white hover:bg-slate-800 disabled:opacity-50"
-                          >
-                            Ship
-                          </button>
+                        <p className="mt-1 text-xs text-slate-500">
+                          SKU: {transfer.product_sku}
+                        </p>
 
-                          <button
-                            type="button"
-                            disabled={actionId === transfer.id}
-                            onClick={() => void handleCancel(transfer)}
-                            className="rounded-xl border border-red-200 px-3 py-2 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
-                          >
-                            Cancel
-                          </button>
-                        </>
-                      ) : null}
+                        <p className="mt-1 text-xs text-slate-400">
+                          Transfer #{transfer.id}
+                        </p>
 
-                      {transfer.status === "in_transit" ? (
-                        <>
-                          <button
-                            type="button"
-                            disabled={actionId === transfer.id}
-                            onClick={() => void handleComplete(transfer)}
-                            className="rounded-xl bg-green-700 px-3 py-2 text-xs font-medium text-white hover:bg-green-800 disabled:opacity-50"
-                          >
-                            Complete
-                          </button>
+                        {transfer.reason ? (
+                          <p className="mt-2 text-xs text-slate-500">
+                            {transfer.reason}
+                          </p>
+                        ) : null}
+                      </div>
 
-                          <button
-                            type="button"
-                            disabled={actionId === transfer.id}
-                            onClick={() => void handleCancel(transfer)}
-                            className="rounded-xl border border-red-200 px-3 py-2 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
-                          >
-                            Cancel
-                          </button>
-                        </>
-                      ) : null}
+                      <div>
+                        <p className="font-medium text-slate-800">
+                          {transfer.from_warehouse_name}
+                        </p>
 
-                      {transfer.status === "completed" ||
-                      transfer.status === "cancelled" ? (
-                        <span className="text-xs text-slate-400">
-                          No actions
+                        <p className="my-1 text-xs text-slate-400">↓</p>
+
+                        <p className="font-medium text-slate-800">
+                          {transfer.to_warehouse_name}
+                        </p>
+                      </div>
+
+                      <p className="font-semibold text-slate-950">
+                        {transfer.quantity}
+                      </p>
+
+                      <div>
+                        <span
+                          className={`inline-flex h-fit rounded-full px-3 py-1 text-xs font-medium ${statusClass(
+                            transfer.status,
+                          )}`}
+                        >
+                          {transfer.status_display}
                         </span>
-                      ) : null}
+                      </div>
+
+                      <div>
+                        <p className="font-medium text-slate-700">
+                          {transfer.requested_by_name || "—"}
+                        </p>
+
+                        <p className="mt-1 text-xs text-slate-400">
+                          {formatDate(transfer.created_at)}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="font-medium text-slate-700">
+                          {transfer.approved_by_name || "—"}
+                        </p>
+
+                        {transfer.approved_at ? (
+                          <p className="mt-1 text-xs text-slate-400">
+                            {formatDate(transfer.approved_at)}
+                          </p>
+                        ) : (
+                          <p className="mt-1 text-xs text-slate-400">
+                            Awaiting approval
+                          </p>
+                        )}
+                      </div>
+
+                      <p className="text-slate-600">
+                        {transfer.tracking_number || "—"}
+                      </p>
+
+                      <div className="flex flex-wrap items-start gap-2">
+                        {transfer.status === "pending" ? (
+                          canReviewThisTransfer ? (
+                            <>
+                              <button
+                                type="button"
+                                disabled={actionId === transfer.id}
+                                onClick={() => void handleApprove(transfer)}
+                                className="rounded-xl bg-violet-700 px-3 py-2 text-xs font-medium text-white hover:bg-violet-800 disabled:opacity-50"
+                              >
+                                Approve
+                              </button>
+
+                              <button
+                                type="button"
+                                disabled={actionId === transfer.id}
+                                onClick={() => void handleCancel(transfer)}
+                                className="rounded-xl border border-red-200 px-3 py-2 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
+                              >
+                                Cancel
+                              </button>
+                            </>
+                          ) : (
+                            <span className="text-xs text-slate-400">
+                              {isOwnTransfer
+                                ? "Awaiting approval"
+                                : "Approval required"}
+                            </span>
+                          )
+                        ) : null}
+
+                        {transfer.status === "approved" ? (
+                          <>
+                            {canManageTransfers ? (
+                              <button
+                                type="button"
+                                disabled={actionId === transfer.id}
+                                onClick={() => {
+                                  setTrackingTransfer(transfer);
+                                  setTrackingNumber(transfer.tracking_number);
+                                }}
+                                className="rounded-xl bg-slate-900 px-3 py-2 text-xs font-medium text-white hover:bg-slate-800 disabled:opacity-50"
+                              >
+                                Ship
+                              </button>
+                            ) : null}
+
+                            {canReviewThisTransfer ? (
+                              <button
+                                type="button"
+                                disabled={actionId === transfer.id}
+                                onClick={() => void handleCancel(transfer)}
+                                className="rounded-xl border border-red-200 px-3 py-2 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
+                              >
+                                Cancel
+                              </button>
+                            ) : null}
+                          </>
+                        ) : null}
+
+                        {transfer.status === "in_transit" ? (
+                          canManageTransfers ? (
+                            <button
+                              type="button"
+                              disabled={actionId === transfer.id}
+                              onClick={() => void handleComplete(transfer)}
+                              className="rounded-xl bg-green-700 px-3 py-2 text-xs font-medium text-white hover:bg-green-800 disabled:opacity-50"
+                            >
+                              Complete
+                            </button>
+                          ) : (
+                            <span className="text-xs text-slate-400">
+                              In transit
+                            </span>
+                          )
+                        ) : null}
+
+                        {transfer.status === "completed" ||
+                        transfer.status === "cancelled" ? (
+                          <span className="text-xs text-slate-400">
+                            No actions
+                          </span>
+                        ) : null}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -436,6 +545,11 @@ export function StockTransfersPanel({
               {trackingTransfer.from_warehouse_name}
               {" → "}
               {trackingTransfer.to_warehouse_name}
+            </p>
+
+            <p className="mt-2 text-xs text-slate-500">
+              Approved by{" "}
+              {trackingTransfer.approved_by_name || "unknown approver"}
             </p>
 
             <label className="mt-6 block">

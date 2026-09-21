@@ -1,23 +1,12 @@
-import {
-    fireEvent,
-    render,
-    screen,
-    waitFor,
-} from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import {
-    beforeEach,
-    describe,
-    expect,
-    it,
-    vi,
-} from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
-    createStockTransfer,
-    type StockListItem,
-    type StockTransferDetail,
-    type WarehouseListItem,
+  createStockTransfer,
+  type StockListItem,
+  type StockTransferDetail,
+  type WarehouseListItem,
 } from "@/features/inventory/api";
 import { StockTransferModal } from "../stock-transfer-modal";
 
@@ -32,8 +21,7 @@ vi.mock("@/features/inventory/api", async () => {
   };
 });
 
-const mockedCreateStockTransfer =
-  vi.mocked(createStockTransfer);
+const mockedCreateStockTransfer = vi.mocked(createStockTransfer);
 
 const warehouses: WarehouseListItem[] = [
   {
@@ -106,6 +94,7 @@ function makeTransfer(): StockTransferDetail {
 
     approved_by: null,
     approved_by_name: null,
+    approved_at: null,
 
     created_at: "2026-09-20T20:00:00Z",
     updated_at: "2026-09-20T20:00:00Z",
@@ -121,9 +110,7 @@ describe("StockTransferModal", () => {
     const user = userEvent.setup();
     const onCreated = vi.fn();
 
-    mockedCreateStockTransfer.mockResolvedValue(
-      makeTransfer(),
-    );
+    mockedCreateStockTransfer.mockResolvedValue(makeTransfer());
 
     render(
       <StockTransferModal
@@ -155,12 +142,9 @@ describe("StockTransferModal", () => {
       "2",
     );
 
-    const quantity = screen.getByRole(
-      "spinbutton",
-      {
-        name: /quantity/i,
-      },
-    );
+    const quantity = screen.getByRole("spinbutton", {
+      name: /quantity/i,
+    });
 
     await user.clear(quantity);
     await user.type(quantity, "5");
@@ -179,9 +163,7 @@ describe("StockTransferModal", () => {
     );
 
     await waitFor(() => {
-      expect(
-        mockedCreateStockTransfer,
-      ).toHaveBeenCalledWith({
+      expect(mockedCreateStockTransfer).toHaveBeenCalledWith({
         from_warehouse: 1,
         to_warehouse: 2,
         product: 10,
@@ -212,24 +194,15 @@ describe("StockTransferModal", () => {
       "1",
     );
 
-    const destination = screen.getByRole(
-      "combobox",
-      {
-        name: /destination warehouse/i,
-      },
-    );
+    const destination = screen.getByRole("combobox", {
+      name: /destination warehouse/i,
+    });
 
     expect(
-      destination.querySelector(
-        'option[value="1"]',
-      ),
+      destination.querySelector('option[value="1"]'),
     ).not.toBeInTheDocument();
 
-    expect(
-      destination.querySelector(
-        'option[value="2"]',
-      ),
-    ).toBeInTheDocument();
+    expect(destination.querySelector('option[value="2"]')).toBeInTheDocument();
   });
 
   it("rejects quantity above available stock", async () => {
@@ -265,38 +238,27 @@ describe("StockTransferModal", () => {
       "2",
     );
 
-    const quantity = screen.getByRole(
-      "spinbutton",
-      {
-        name: /quantity/i,
-      },
-    );
+    const quantity = screen.getByRole("spinbutton", {
+      name: /quantity/i,
+    });
 
     await user.clear(quantity);
     await user.type(quantity, "20");
 
-    const submitButton = screen.getByRole(
-      "button",
-      {
-        name: /create transfer/i,
-      },
-    );
+    const submitButton = screen.getByRole("button", {
+      name: /create transfer/i,
+    });
 
-    const form =
-      submitButton.closest("form");
+    const form = submitButton.closest("form");
 
     expect(form).not.toBeNull();
 
     fireEvent.submit(form!);
 
     expect(
-      await screen.findByText(
-        /only 16 units are available/i,
-      ),
+      await screen.findByText(/only 16 units are available/i),
     ).toBeInTheDocument();
 
-    expect(
-      mockedCreateStockTransfer,
-    ).not.toHaveBeenCalled();
+    expect(mockedCreateStockTransfer).not.toHaveBeenCalled();
   });
 });
