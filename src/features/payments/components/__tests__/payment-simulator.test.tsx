@@ -1,6 +1,6 @@
-import type { ReactNode } from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getOrder } from "@/features/orders/api";
@@ -189,6 +189,50 @@ describe("PaymentSimulator", () => {
     ).toBeInTheDocument();
   });
 
+it("requires a new attempt after a failed payment", async () => {
+  const user = userEvent.setup();
+
+  mockedGetOrder.mockResolvedValue(makeOrder());
+  mockedCreatePayment.mockResolvedValue(makePayment());
+
+  mockedMarkPaymentFailed.mockResolvedValue(
+    makePayment({
+      status: "failed",
+      status_display: "Failed",
+      failure_reason: "Payment declined.",
+    }),
+  );
+
+  render(<PaymentSimulator />);
+
+  await user.click(
+    await screen.findByRole("button", {
+      name: /create mock payment/i,
+    }),
+  );
+
+  await user.click(
+    screen.getByRole("button", {
+      name: /mark as failed/i,
+    }),
+  );
+
+  expect(
+    await screen.findByText("Payment marked as failed."),
+  ).toBeInTheDocument();
+
+  expect(
+    screen.queryByRole("button", {
+      name: /mark as paid/i,
+    }),
+  ).not.toBeInTheDocument();
+
+  expect(
+    screen.getByRole("button", {
+      name: /create mock payment/i,
+    }),
+  ).toBeInTheDocument();
+});
   it("marks payment as successful and refreshes the order", async () => {
     const user = userEvent.setup();
 

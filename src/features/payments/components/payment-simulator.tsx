@@ -237,12 +237,16 @@ export function PaymentSimulator() {
 
   const isOrderPaid = order.payment_status === "paid";
   const isOrderCancelled = order.status === "cancelled";
-  const canCreatePayment =
-    !isOrderPaid &&
-    !isOrderCancelled &&
-    (!payment || ["failed", "cancelled"].includes(payment.status));
-  const canResolvePayment =
-    payment && !["success", "cancelled"].includes(payment.status);
+const canCreatePayment =
+  order.status === "pending_payment" &&
+  order.payment_status !== "paid" &&
+  (!payment || ["failed", "cancelled"].includes(payment.status));
+
+const canResolvePayment =
+  order.status === "pending_payment" &&
+  order.payment_status !== "paid" &&
+  payment?.status === "pending" &&
+  payment.provider === "mock";
 
   return (
     <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
