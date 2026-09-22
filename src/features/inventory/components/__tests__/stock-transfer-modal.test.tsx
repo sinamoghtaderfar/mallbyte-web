@@ -84,8 +84,14 @@ function makeTransfer(): StockTransferDetail {
     status_display: "Pending",
 
     tracking_number: "",
+
+    shipped_by: null,
+    shipped_by_name: null,
     shipped_at: null,
-    delivered_at: null,
+
+    received_by: null,
+    received_by_name: null,
+    received_at: null,
 
     reason: "Restock branch warehouse",
 
@@ -170,12 +176,14 @@ describe("StockTransferModal", () => {
         quantity: 5,
         reason: "Restock branch warehouse",
       });
+
+      expect(onCreated).toHaveBeenCalledWith(makeTransfer());
     });
 
-    expect(onCreated).toHaveBeenCalled();
+    expect(mockedCreateStockTransfer).toHaveBeenCalledTimes(1);
   });
 
-  it("does not offer source warehouse as destination", async () => {
+  it("does not offer the source warehouse as a destination", async () => {
     const user = userEvent.setup();
 
     render(
@@ -205,7 +213,7 @@ describe("StockTransferModal", () => {
     expect(destination.querySelector('option[value="2"]')).toBeInTheDocument();
   });
 
-  it("rejects quantity above available stock", async () => {
+  it("rejects a quantity above available stock", async () => {
     const user = userEvent.setup();
 
     render(

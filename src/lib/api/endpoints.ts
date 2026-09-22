@@ -70,6 +70,7 @@ export const API_ENDPOINTS = {
   inventory: {
     warehouses: "/api/inventory/warehouses/",
     activeWarehouses: "/api/inventory/warehouses/active/",
+    myWarehouseAssignments: "/api/inventory/warehouses/my-assignments/",
     stocks: "/api/inventory/stocks/",
     lowStock: "/api/inventory/stocks/low-stock/",
     stockMovements: "/api/inventory/stock-movements/",
@@ -81,11 +82,11 @@ export const API_ENDPOINTS = {
     stockTransferApprove: (transferId: number | string) =>
       `/api/inventory/stock-transfers/${transferId}/approve/`,
 
-    stockTransferMarkInTransit: (transferId: number | string) =>
-      `/api/inventory/stock-transfers/${transferId}/mark-in-transit/`,
+    stockTransferShip: (transferId: number | string) =>
+      `/api/inventory/stock-transfers/${transferId}/ship/`,
 
-    stockTransferComplete: (transferId: number | string) =>
-      `/api/inventory/stock-transfers/${transferId}/complete/`,
+    stockTransferReceive: (transferId: number | string) =>
+      `/api/inventory/stock-transfers/${transferId}/receive/`,
 
     stockTransferCancel: (transferId: number | string) =>
       `/api/inventory/stock-transfers/${transferId}/cancel/`,

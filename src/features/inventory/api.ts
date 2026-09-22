@@ -106,8 +106,13 @@ export type StockTransferListItem = {
 
   tracking_number: string;
 
+  shipped_by: number | null;
+  shipped_by_name: string | null;
   shipped_at: string | null;
-  delivered_at: string | null;
+
+  received_by: number | null;
+  received_by_name: string | null;
+  received_at: string | null;
 
   reason: string;
 
@@ -179,7 +184,13 @@ export async function getWarehouses() {
     API_ENDPOINTS.inventory.activeWarehouses,
   );
 }
+export async function getMyWarehouseIds(): Promise<number[]> {
+  const response = await apiClient.get<{
+    warehouse_ids: number[];
+  }>(API_ENDPOINTS.inventory.myWarehouseAssignments);
 
+  return response.data.warehouse_ids;
+}
 export async function getStocks() {
   return getAllPages<StockListItem>(API_ENDPOINTS.inventory.stocks);
 }
@@ -221,12 +232,12 @@ export async function approveStockTransfer(transferId: number) {
 
   return response.data;
 }
-export async function markStockTransferInTransit(
+export async function shipStockTransfer(
   transferId: number,
   trackingNumber: string,
 ) {
   const response = await apiClient.post<StockTransferDetail>(
-    API_ENDPOINTS.inventory.stockTransferMarkInTransit(transferId),
+    API_ENDPOINTS.inventory.stockTransferShip(transferId),
     {
       tracking_number: trackingNumber.trim(),
     },
@@ -235,14 +246,16 @@ export async function markStockTransferInTransit(
   return response.data;
 }
 
-export async function completeStockTransfer(transferId: number) {
+export async function receiveStockTransfer(transferId: number) {
   const response = await apiClient.post<StockTransferDetail>(
-    API_ENDPOINTS.inventory.stockTransferComplete(transferId),
+    API_ENDPOINTS.inventory.stockTransferReceive(transferId),
     {},
   );
 
   return response.data;
 }
+
+
 
 export async function cancelStockTransfer(transferId: number) {
   const response = await apiClient.post<StockTransferDetail>(

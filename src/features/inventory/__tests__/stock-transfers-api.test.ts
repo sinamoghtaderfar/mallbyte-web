@@ -3,10 +3,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   approveStockTransfer,
   cancelStockTransfer,
-  completeStockTransfer,
   createStockTransfer,
+  getMyWarehouseIds,
   getStockTransfers,
-  markStockTransferInTransit,
+  receiveStockTransfer,
+  shipStockTransfer,
   type StockTransferDetail,
   type StockTransferListItem,
 } from "@/features/inventory/api";
@@ -48,8 +49,13 @@ function makeTransfer(
 
     tracking_number: "",
 
+    shipped_by: null,
+    shipped_by_name: null,
     shipped_at: null,
-    delivered_at: null,
+
+    received_by: null,
+    received_by_name: null,
+    received_at: null,
 
     reason: "Restock branch warehouse",
 
@@ -100,6 +106,20 @@ describe("stock transfer api", () => {
     );
   });
 
+  it("loads the current user's assigned warehouses", async () => {
+    mockedGet.mockResolvedValue({
+      data: {
+        warehouse_ids: [1, 2],
+      },
+    });
+
+    await expect(getMyWarehouseIds()).resolves.toEqual([1, 2]);
+
+    expect(mockedGet).toHaveBeenCalledWith(
+      API_ENDPOINTS.inventory.myWarehouseAssignments,
+    );
+  });
+
   it("creates a stock transfer", async () => {
     const transfer = makeTransferDetail();
 
@@ -127,6 +147,7 @@ describe("stock transfer api", () => {
     const transfer = makeTransferDetail({
       status: "approved",
       status_display: "Approved",
+
       approved_by: 2,
       approved_by_name: "Inventory Supervisor",
       approved_at: "2026-09-20T20:05:00Z",
@@ -144,51 +165,66 @@ describe("stock transfer api", () => {
     );
   });
 
-  it("marks transfer in transit", async () => {
+  it("ships an approved stock transfer", async () => {
     const transfer = makeTransferDetail({
       status: "in_transit",
       status_display: "In Transit",
+
       tracking_number: "TR-2026-001",
+
       approved_by: 2,
       approved_by_name: "Inventory Supervisor",
       approved_at: "2026-09-20T20:05:00Z",
+
+      shipped_by: 3,
+      shipped_by_name: "Source Warehouse Operator",
+      shipped_at: "2026-09-20T20:10:00Z",
     });
 
     mockedPost.mockResolvedValue({
       data: transfer,
     });
 
-    await expect(
-      markStockTransferInTransit(1, " TR-2026-001 "),
-    ).resolves.toEqual(transfer);
+    await expect(shipStockTransfer(1, " TR-2026-001 ")).resolves.toEqual(
+      transfer,
+    );
 
     expect(mockedPost).toHaveBeenCalledWith(
-      API_ENDPOINTS.inventory.stockTransferMarkInTransit(1),
+      API_ENDPOINTS.inventory.stockTransferShip(1),
       {
         tracking_number: "TR-2026-001",
       },
     );
   });
 
-  it("completes a stock transfer", async () => {
+  it("receives an in-transit stock transfer", async () => {
     const transfer = makeTransferDetail({
       status: "completed",
       status_display: "Completed",
+
+      tracking_number: "TR-2026-001",
+
       approved_by: 2,
       approved_by_name: "Inventory Supervisor",
       approved_at: "2026-09-20T20:05:00Z",
+
+      shipped_by: 3,
+      shipped_by_name: "Source Warehouse Operator",
       shipped_at: "2026-09-20T20:10:00Z",
-      delivered_at: "2026-09-20T21:00:00Z",
+
+      received_by: 4,
+      received_by_name: "Destination Warehouse Operator",
+      received_at: "2026-09-20T21:00:00Z",
     });
 
     mockedPost.mockResolvedValue({
       data: transfer,
     });
 
-    await expect(completeStockTransfer(1)).resolves.toEqual(transfer);
+    await expect(receiveStockTransfer(1)).resolves.toEqual(transfer);
 
     expect(mockedPost).toHaveBeenCalledWith(
-      API_ENDPOINTS.inventory.stockTransferComplete(1),
+      API_ENDPOINTS.inventory.stockTransferReceive(1),
       {},
     );
   });

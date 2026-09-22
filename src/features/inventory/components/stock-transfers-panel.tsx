@@ -6,15 +6,17 @@ import { useAuthStore } from "@/features/auth/auth-store";
 import {
   approveStockTransfer,
   cancelStockTransfer,
-  completeStockTransfer,
+  getMyWarehouseIds,
   getStockTransfers,
-  markStockTransferInTransit,
+  receiveStockTransfer,
+  shipStockTransfer,
   type StockListItem,
   type StockTransferDetail,
   type StockTransferListItem,
   type WarehouseListItem,
 } from "@/features/inventory/api";
 import { StockTransferModal } from "@/features/inventory/components/stock-transfer-modal";
+import { getTransferActions } from "@/features/inventory/transfer-actions";
 import { getMyPermissions } from "@/features/rbac/api";
 import { getApiErrorMessage } from "@/lib/api/errors";
 
@@ -24,28 +26,17 @@ type StockTransfersPanelProps = {
   onInventoryChanged: () => Promise<void>;
 };
 
-function formatDate(value: string) {
-  return new Date(value).toLocaleString();
+function formatDate(value: string | null) {
+  return value ? new Date(value).toLocaleString() : "—";
 }
 
-function statusClass(status: string) {
-  switch (status) {
-    case "approved":
-      return "bg-violet-100 text-violet-700";
-
-    case "completed":
-      return "bg-green-100 text-green-700";
-
-    case "in_transit":
-      return "bg-blue-100 text-blue-700";
-
-    case "cancelled":
-      return "bg-red-100 text-red-700";
-
-    default:
-      return "bg-amber-100 text-amber-700";
-  }
-}
+const statusClasses: Record<StockTransferListItem["status"], string> = {
+  pending: "bg-amber-100 text-amber-700",
+  approved: "bg-violet-100 text-violet-700",
+  in_transit: "bg-blue-100 text-blue-700",
+  completed: "bg-green-100 text-green-700",
+  cancelled: "bg-red-100 text-red-700",
+};
 
 export function StockTransfersPanel({
   stocks,
@@ -53,43 +44,45 @@ export function StockTransfersPanel({
   onInventoryChanged,
 }: StockTransfersPanelProps) {
   const user = useAuthStore((state) => state.user);
-
   const [transfers, setTransfers] = useState<StockTransferListItem[]>([]);
   const [permissions, setPermissions] = useState<string[]>([]);
-
+  const [warehouseIds, setWarehouseIds] = useState<number[]>([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
-
   const [showCreateModal, setShowCreateModal] = useState(false);
-
-  const [trackingTransfer, setTrackingTransfer] =
+  const [shippingTransfer, setShippingTransfer] =
     useState<StockTransferListItem | null>(null);
-
   const [trackingNumber, setTrackingNumber] = useState("");
   const [actionId, setActionId] = useState<number | null>(null);
 
-  const canManageTransfers = permissions.includes("manage_stock_transfers");
-  const canApproveTransfers = permissions.includes("approve_stock_transfers");
+  const isSuperuser = Boolean(user?.is_superuser);
+  const userId = user?.id;
+  const canCreateTransfers =
+    isSuperuser || permissions.includes("create_stock_transfers");
+  const canShipOrReceive =
+    isSuperuser ||
+    permissions.includes("ship_stock_transfers") ||
+    permissions.includes("receive_stock_transfers");
 
   async function loadTransfers() {
     try {
-      setError("");
-
       const data = await getStockTransfers();
       setTransfers(data);
     } catch (caughtError) {
       setError(getApiErrorMessage(caughtError));
-    } finally {
-      setIsLoading(false);
     }
   }
 
   useEffect(() => {
     let cancelled = false;
+    setIsLoading(true);
+    setPermissions([]);
+    setWarehouseIds([]);
+    setTransfers([]);
+    setError("");
 
     async function load() {
       try {
@@ -97,106 +90,63 @@ export function StockTransfersPanel({
           getStockTransfers(),
           getMyPermissions(),
         ]);
+        if (cancelled) return;
+        setTransfers(transferData);
+        setPermissions(permissionData.permissions);
 
-        if (!cancelled) {
-          setTransfers(transferData);
-          setPermissions(permissionData.permissions);
+        const needsAssignments =
+          permissionData.permissions.includes("ship_stock_transfers") ||
+          permissionData.permissions.includes("receive_stock_transfers");
+
+        if (needsAssignments && !isSuperuser) {
+          try {
+            const ids = await getMyWarehouseIds();
+            if (!cancelled) setWarehouseIds(ids);
+          } catch (caughtError) {
+            // Fail closed: never show warehouse operation buttons if membership
+            // cannot be verified. The backend independently enforces access.
+            if (!cancelled) {
+              setWarehouseIds([]);
+              setError(
+                `Warehouse assignments could not be loaded: ${getApiErrorMessage(caughtError)}`,
+              );
+            }
+          }
         }
       } catch (caughtError) {
-        if (!cancelled) {
-          setError(getApiErrorMessage(caughtError));
-        }
+        if (!cancelled) setError(getApiErrorMessage(caughtError));
       } finally {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
+        if (!cancelled) setIsLoading(false);
       }
     }
 
     void load();
-
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [userId, isSuperuser]);
 
   async function handleCreated(transfer: StockTransferDetail) {
     setShowCreateModal(false);
-    setMessage(`Transfer #${transfer.id} created and is waiting for approval.`);
-
+    setMessage(`Transfer #${transfer.id} is waiting for approval.`);
     await loadTransfers();
   }
 
   async function handleApprove(transfer: StockTransferListItem) {
-    const confirmed = window.confirm(
-      `Approve transfer #${transfer.id} for ${transfer.quantity} units from ${transfer.from_warehouse_name} to ${transfer.to_warehouse_name}?`,
-    );
-
-    if (!confirmed) {
+    if (
+      !window.confirm(
+        `Approve transfer #${transfer.id} for ${transfer.quantity} units?`,
+      )
+    ) {
       return;
     }
-
     try {
       setActionId(transfer.id);
       setError("");
       setMessage("");
-
       await approveStockTransfer(transfer.id);
-
       setMessage(`Transfer #${transfer.id} approved.`);
-
       await loadTransfers();
-    } catch (caughtError) {
-      setError(getApiErrorMessage(caughtError));
-    } finally {
-      setActionId(null);
-    }
-  }
-
-  async function handleMarkInTransit() {
-    if (!trackingTransfer) {
-      return;
-    }
-
-    try {
-      setActionId(trackingTransfer.id);
-      setError("");
-      setMessage("");
-
-      await markStockTransferInTransit(trackingTransfer.id, trackingNumber);
-
-      setTrackingTransfer(null);
-      setTrackingNumber("");
-
-      setMessage(`Transfer #${trackingTransfer.id} is now in transit.`);
-
-      await loadTransfers();
-    } catch (caughtError) {
-      setError(getApiErrorMessage(caughtError));
-    } finally {
-      setActionId(null);
-    }
-  }
-
-  async function handleComplete(transfer: StockTransferListItem) {
-    const confirmed = window.confirm(
-      `Complete transfer #${transfer.id}? This will move ${transfer.quantity} units from ${transfer.from_warehouse_name} to ${transfer.to_warehouse_name}.`,
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
-    try {
-      setActionId(transfer.id);
-      setError("");
-      setMessage("");
-
-      await completeStockTransfer(transfer.id);
-
-      setMessage(`Transfer #${transfer.id} completed.`);
-
-      await Promise.all([loadTransfers(), onInventoryChanged()]);
     } catch (caughtError) {
       setError(getApiErrorMessage(caughtError));
     } finally {
@@ -205,21 +155,13 @@ export function StockTransfersPanel({
   }
 
   async function handleCancel(transfer: StockTransferListItem) {
-    const confirmed = window.confirm(`Cancel transfer #${transfer.id}?`);
-
-    if (!confirmed) {
-      return;
-    }
-
+    if (!window.confirm(`Cancel transfer #${transfer.id}?`)) return;
     try {
       setActionId(transfer.id);
       setError("");
       setMessage("");
-
       await cancelStockTransfer(transfer.id);
-
       setMessage(`Transfer #${transfer.id} cancelled.`);
-
       await loadTransfers();
     } catch (caughtError) {
       setError(getApiErrorMessage(caughtError));
@@ -228,28 +170,76 @@ export function StockTransfersPanel({
     }
   }
 
+  async function handleShip() {
+    if (!shippingTransfer) return;
+    const transfer = shippingTransfer;
+    if (
+      !window.confirm(
+        `Ship ${transfer.quantity} units from ${transfer.from_warehouse_name}? ` +
+          "This immediately deducts stock from the source warehouse.",
+      )
+    )
+      return;
+
+    try {
+      setActionId(transfer.id);
+      setError("");
+      setMessage("");
+      await shipStockTransfer(transfer.id, trackingNumber);
+      setShippingTransfer(null);
+      setTrackingNumber("");
+      setMessage(`Transfer #${transfer.id} shipped. Stock is now in transit.`);
+      await Promise.all([loadTransfers(), onInventoryChanged()]);
+    } catch (caughtError) {
+      setError(getApiErrorMessage(caughtError));
+    } finally {
+      setActionId(null);
+    }
+  }
+
+  async function handleReceive(transfer: StockTransferListItem) {
+    if (
+      !window.confirm(
+        `Confirm receipt of ${transfer.quantity} units at ${transfer.to_warehouse_name}? ` +
+          "This adds stock to the destination warehouse.",
+      )
+    )
+      return;
+    try {
+      setActionId(transfer.id);
+      setError("");
+      setMessage("");
+      await receiveStockTransfer(transfer.id);
+      setMessage(`Transfer #${transfer.id} received and completed.`);
+      await Promise.all([loadTransfers(), onInventoryChanged()]);
+    } catch (caughtError) {
+      setError(getApiErrorMessage(caughtError));
+    } finally {
+      setActionId(null);
+    }
+  }
+
   const filteredTransfers = useMemo(() => {
-    const normalizedSearch = search.trim().toLowerCase();
-
+    const term = search.trim().toLowerCase();
     return transfers.filter((transfer) => {
-      const matchesSearch =
-        !normalizedSearch ||
-        transfer.product_name.toLowerCase().includes(normalizedSearch) ||
-        transfer.product_sku.toLowerCase().includes(normalizedSearch) ||
-        transfer.from_warehouse_name.toLowerCase().includes(normalizedSearch) ||
-        transfer.to_warehouse_name.toLowerCase().includes(normalizedSearch) ||
-        transfer.tracking_number.toLowerCase().includes(normalizedSearch) ||
-        (transfer.requested_by_name ?? "")
-          .toLowerCase()
-          .includes(normalizedSearch) ||
-        (transfer.approved_by_name ?? "")
-          .toLowerCase()
-          .includes(normalizedSearch);
-
-      const matchesStatus =
-        statusFilter === "all" || transfer.status === statusFilter;
-
-      return matchesSearch && matchesStatus;
+      const searchable = [
+        transfer.product_name,
+        transfer.product_sku,
+        transfer.from_warehouse_name,
+        transfer.to_warehouse_name,
+        transfer.tracking_number,
+        transfer.requested_by_name,
+        transfer.approved_by_name,
+        transfer.shipped_by_name,
+        transfer.received_by_name,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return (
+        (!term || searchable.includes(term)) &&
+        (statusFilter === "all" || transfer.status === statusFilter)
+      );
     });
   }, [transfers, search, statusFilter]);
 
@@ -261,14 +251,12 @@ export function StockTransfersPanel({
             <h2 className="text-lg font-semibold text-slate-950">
               Stock transfers
             </h2>
-
-            <p className="mt-1 text-sm text-slate-500">
-              Create transfer requests, approve them separately, and track
-              warehouse movement.
+            <p className="mt-1 max-w-2xl text-sm text-slate-500">
+              Managers request transfers, supervisors approve them, source
+              warehouses ship, and destination warehouses confirm receipt.
             </p>
           </div>
-
-          {canManageTransfers ? (
+          {canCreateTransfers && !isLoading ? (
             <button
               type="button"
               onClick={() => {
@@ -283,27 +271,43 @@ export function StockTransfersPanel({
         </div>
 
         {error ? (
-          <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          <div
+            role="alert"
+            className="mt-5 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+          >
             {error}
           </div>
         ) : null}
-
         {message ? (
-          <div className="mt-5 rounded-2xl border border-green-200 bg-green-50 p-4 text-sm text-green-700">
+          <div
+            role="status"
+            className="mt-5 rounded-2xl border border-green-200 bg-green-50 p-4 text-sm text-green-700"
+          >
             {message}
           </div>
+        ) : null}
+        {canShipOrReceive &&
+        !isSuperuser &&
+        warehouseIds.length === 0 &&
+        !isLoading &&
+        !error ? (
+          <p className="mt-5 rounded-2xl bg-amber-50 p-4 text-sm text-amber-800">
+            No active warehouse assignment found. Ask an administrator to assign
+            your warehouse.
+          </p>
         ) : null}
 
         <div className="mt-6 grid gap-3 md:grid-cols-[1fr_220px]">
           <input
             type="search"
+            aria-label="Search transfers"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search product, warehouse, requester..."
             className="h-11 rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-slate-400"
           />
-
           <select
+            aria-label="Filter transfer status"
             value={statusFilter}
             onChange={(event) => setStatusFilter(event.target.value)}
             className="h-11 rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-slate-400"
@@ -320,206 +324,192 @@ export function StockTransfersPanel({
         {isLoading ? (
           <p className="mt-6 text-sm text-slate-500">Loading transfers...</p>
         ) : filteredTransfers.length === 0 ? (
-          <div className="mt-6 rounded-2xl bg-slate-50 p-5">
-            <p className="text-sm font-medium text-slate-700">
-              No stock transfers found.
-            </p>
-
-            <p className="mt-1 text-xs text-slate-500">
-              Create a transfer request to move inventory between warehouses.
-            </p>
-          </div>
+          <p className="mt-6 rounded-2xl bg-slate-50 p-5 text-sm text-slate-600">
+            No stock transfers match these filters.
+          </p>
         ) : (
           <div className="mt-6 overflow-x-auto rounded-2xl border border-slate-200">
-            <div className="min-w-[1450px]">
-              <div className="grid grid-cols-[1.35fr_1.35fr_0.5fr_0.8fr_1.1fr_1.2fr_1.1fr_auto] gap-4 bg-slate-50 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                <span>Product</span>
-                <span>Route</span>
-                <span>Qty</span>
-                <span>Status</span>
-                <span>Requested by</span>
-                <span>Approved by</span>
-                <span>Tracking</span>
-                <span>Actions</span>
-              </div>
-
-              <div className="divide-y divide-slate-100">
+            <table className="w-full min-w-[1200px] text-left text-sm">
+              <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+                <tr>
+                  <th scope="col" className="px-4 py-3">
+                    Product
+                  </th>
+                  <th scope="col" className="px-4 py-3">
+                    Route
+                  </th>
+                  <th scope="col" className="px-4 py-3">
+                    Qty
+                  </th>
+                  <th scope="col" className="px-4 py-3">
+                    Status
+                  </th>
+                  <th scope="col" className="px-4 py-3">
+                    Requested by
+                  </th>
+                  <th scope="col" className="px-4 py-3">
+                    Approved by
+                  </th>
+                  <th scope="col" className="px-4 py-3">
+                    Shipping / Receiving
+                  </th>
+                  <th scope="col" className="px-4 py-3">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
                 {filteredTransfers.map((transfer) => {
-                  const isOwnTransfer = transfer.requested_by === user?.id;
-
-                  const canReviewThisTransfer =
-                    canApproveTransfers && !isOwnTransfer;
-
+                  const actions = getTransferActions(transfer, {
+                    userId: user?.id ?? null,
+                    permissions,
+                    warehouseIds,
+                    isSuperuser,
+                  });
+                  const isBusy = actionId === transfer.id;
+                  const hasAction =
+                    actions.canApprove ||
+                    actions.canCancel ||
+                    actions.canShip ||
+                    actions.canReceive;
                   return (
-                    <div
-                      key={transfer.id}
-                      className="grid grid-cols-[1.35fr_1.35fr_0.5fr_0.8fr_1.1fr_1.2fr_1.1fr_auto] gap-4 px-4 py-4 text-sm"
-                    >
-                      <div>
+                    <tr key={transfer.id} className="align-top">
+                      <td className="px-4 py-4">
                         <p className="font-semibold text-slate-950">
                           {transfer.product_name}
                         </p>
-
                         <p className="mt-1 text-xs text-slate-500">
-                          SKU: {transfer.product_sku}
+                          {transfer.product_sku}
                         </p>
-
                         <p className="mt-1 text-xs text-slate-400">
-                          Transfer #{transfer.id}
+                          #{transfer.id}
                         </p>
-
                         {transfer.reason ? (
-                          <p className="mt-2 text-xs text-slate-500">
+                          <p className="mt-2 max-w-[220px] text-xs text-slate-500">
                             {transfer.reason}
                           </p>
                         ) : null}
-                      </div>
-
-                      <div>
-                        <p className="font-medium text-slate-800">
-                          {transfer.from_warehouse_name}
-                        </p>
-
+                      </td>
+                      <td className="px-4 py-4 text-slate-700">
+                        <p>{transfer.from_warehouse_name}</p>
                         <p className="my-1 text-xs text-slate-400">↓</p>
-
-                        <p className="font-medium text-slate-800">
-                          {transfer.to_warehouse_name}
-                        </p>
-                      </div>
-
-                      <p className="font-semibold text-slate-950">
+                        <p>{transfer.to_warehouse_name}</p>
+                      </td>
+                      <td className="px-4 py-4 font-semibold">
                         {transfer.quantity}
-                      </p>
-
-                      <div>
+                      </td>
+                      <td className="px-4 py-4">
                         <span
-                          className={`inline-flex h-fit rounded-full px-3 py-1 text-xs font-medium ${statusClass(
-                            transfer.status,
-                          )}`}
+                          className={`rounded-full px-3 py-1 text-xs font-medium ${statusClasses[transfer.status]}`}
                         >
                           {transfer.status_display}
                         </span>
-                      </div>
-
-                      <div>
-                        <p className="font-medium text-slate-700">
-                          {transfer.requested_by_name || "—"}
-                        </p>
-
+                      </td>
+                      <td className="px-4 py-4">
+                        <p>{transfer.requested_by_name || "—"}</p>
                         <p className="mt-1 text-xs text-slate-400">
                           {formatDate(transfer.created_at)}
                         </p>
-                      </div>
-
-                      <div>
-                        <p className="font-medium text-slate-700">
-                          {transfer.approved_by_name || "—"}
+                      </td>
+                      <td className="px-4 py-4">
+                        <p>{transfer.approved_by_name || "—"}</p>
+                        <p className="mt-1 text-xs text-slate-400">
+                          {transfer.approved_at
+                            ? formatDate(transfer.approved_at)
+                            : transfer.status === "pending"
+                              ? "Awaiting approval"
+                              : transfer.status === "cancelled" &&
+                                  !transfer.approved_by
+                                ? "Cancelled before approval"
+                                : "Approval timestamp unavailable"}
                         </p>
-
-                        {transfer.approved_at ? (
-                          <p className="mt-1 text-xs text-slate-400">
-                            {formatDate(transfer.approved_at)}
+                      </td>
+                      <td className="px-4 py-4 text-xs text-slate-600">
+                        <p>Tracking: {transfer.tracking_number || "—"}</p>
+                        <p className="mt-2">
+                          Shipped by: {transfer.shipped_by_name || "—"}
+                        </p>
+                        {transfer.shipped_at ? (
+                          <p className="mt-1 text-slate-400">
+                            {formatDate(transfer.shipped_at)}
                           </p>
-                        ) : (
-                          <p className="mt-1 text-xs text-slate-400">
-                            Awaiting approval
+                        ) : null}
+                        <p className="mt-2">
+                          Received by: {transfer.received_by_name || "—"}
+                        </p>
+                        {transfer.received_at ? (
+                          <p className="mt-1 text-slate-400">
+                            {formatDate(transfer.received_at)}
                           </p>
-                        )}
-                      </div>
-
-                      <p className="text-slate-600">
-                        {transfer.tracking_number || "—"}
-                      </p>
-
-                      <div className="flex flex-wrap items-start gap-2">
-                        {transfer.status === "pending" ? (
-                          canReviewThisTransfer ? (
-                            <>
-                              <button
-                                type="button"
-                                disabled={actionId === transfer.id}
-                                onClick={() => void handleApprove(transfer)}
-                                className="rounded-xl bg-violet-700 px-3 py-2 text-xs font-medium text-white hover:bg-violet-800 disabled:opacity-50"
-                              >
-                                Approve
-                              </button>
-
-                              <button
-                                type="button"
-                                disabled={actionId === transfer.id}
-                                onClick={() => void handleCancel(transfer)}
-                                className="rounded-xl border border-red-200 px-3 py-2 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
-                              >
-                                Cancel
-                              </button>
-                            </>
-                          ) : (
-                            <span className="text-xs text-slate-400">
-                              {isOwnTransfer
-                                ? "Awaiting approval"
-                                : "Approval required"}
-                            </span>
-                          )
                         ) : null}
-
-                        {transfer.status === "approved" ? (
-                          <>
-                            {canManageTransfers ? (
-                              <button
-                                type="button"
-                                disabled={actionId === transfer.id}
-                                onClick={() => {
-                                  setTrackingTransfer(transfer);
-                                  setTrackingNumber(transfer.tracking_number);
-                                }}
-                                className="rounded-xl bg-slate-900 px-3 py-2 text-xs font-medium text-white hover:bg-slate-800 disabled:opacity-50"
-                              >
-                                Ship
-                              </button>
-                            ) : null}
-
-                            {canReviewThisTransfer ? (
-                              <button
-                                type="button"
-                                disabled={actionId === transfer.id}
-                                onClick={() => void handleCancel(transfer)}
-                                className="rounded-xl border border-red-200 px-3 py-2 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
-                              >
-                                Cancel
-                              </button>
-                            ) : null}
-                          </>
-                        ) : null}
-
-                        {transfer.status === "in_transit" ? (
-                          canManageTransfers ? (
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="flex min-w-[120px] flex-wrap gap-2">
+                          {actions.canApprove ? (
                             <button
                               type="button"
-                              disabled={actionId === transfer.id}
-                              onClick={() => void handleComplete(transfer)}
+                              aria-label={`Approve transfer ${transfer.id}`}
+                              disabled={isBusy}
+                              onClick={() => void handleApprove(transfer)}
+                              className="rounded-xl bg-violet-700 px-3 py-2 text-xs font-medium text-white hover:bg-violet-800 disabled:opacity-50"
+                            >
+                              Approve
+                            </button>
+                          ) : null}
+                          {actions.canCancel ? (
+                            <button
+                              type="button"
+                              aria-label={`Cancel transfer ${transfer.id}`}
+                              disabled={isBusy}
+                              onClick={() => void handleCancel(transfer)}
+                              className="rounded-xl border border-red-200 px-3 py-2 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
+                            >
+                              Cancel
+                            </button>
+                          ) : null}
+                          {actions.canShip ? (
+                            <button
+                              type="button"
+                              aria-label={`Ship transfer ${transfer.id}`}
+                              disabled={isBusy}
+                              onClick={() => {
+                                setShippingTransfer(transfer);
+                                setTrackingNumber(transfer.tracking_number);
+                              }}
+                              className="rounded-xl bg-slate-900 px-3 py-2 text-xs font-medium text-white hover:bg-slate-800 disabled:opacity-50"
+                            >
+                              Ship
+                            </button>
+                          ) : null}
+                          {actions.canReceive ? (
+                            <button
+                              type="button"
+                              aria-label={`Receive transfer ${transfer.id}`}
+                              disabled={isBusy}
+                              onClick={() => void handleReceive(transfer)}
                               className="rounded-xl bg-green-700 px-3 py-2 text-xs font-medium text-white hover:bg-green-800 disabled:opacity-50"
                             >
-                              Complete
+                              Receive
                             </button>
-                          ) : (
+                          ) : null}
+                          {!hasAction ? (
                             <span className="text-xs text-slate-400">
-                              In transit
+                              {transfer.status === "pending"
+                                ? "Awaiting independent approval"
+                                : transfer.status === "approved"
+                                  ? "Awaiting source warehouse"
+                                  : transfer.status === "in_transit"
+                                    ? "Awaiting destination warehouse"
+                                    : "No actions"}
                             </span>
-                          )
-                        ) : null}
-
-                        {transfer.status === "completed" ||
-                        transfer.status === "cancelled" ? (
-                          <span className="text-xs text-slate-400">
-                            No actions
-                          </span>
-                        ) : null}
-                      </div>
-                    </div>
+                          ) : null}
+                        </div>
+                      </td>
+                    </tr>
                   );
                 })}
-              </div>
-            </div>
+              </tbody>
+            </table>
           </div>
         )}
       </section>
@@ -533,61 +523,63 @@ export function StockTransfersPanel({
         />
       ) : null}
 
-      {trackingTransfer ? (
+      {shippingTransfer ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
-          <div className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-xl">
-            <h2 className="text-xl font-semibold text-slate-950">
-              Mark transfer in transit
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="ship-transfer-title"
+            className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-xl"
+          >
+            <h2
+              id="ship-transfer-title"
+              className="text-xl font-semibold text-slate-950"
+            >
+              Ship stock transfer
             </h2>
-
             <p className="mt-2 text-sm text-slate-600">
-              Transfer #{trackingTransfer.id}:{" "}
-              {trackingTransfer.from_warehouse_name}
-              {" → "}
-              {trackingTransfer.to_warehouse_name}
+              Transfer #{shippingTransfer.id}:{" "}
+              {shippingTransfer.from_warehouse_name} →{" "}
+              {shippingTransfer.to_warehouse_name}
             </p>
-
-            <p className="mt-2 text-xs text-slate-500">
-              Approved by{" "}
-              {trackingTransfer.approved_by_name || "unknown approver"}
+            <p className="mt-3 rounded-2xl bg-amber-50 p-3 text-sm text-amber-800">
+              Shipping deducts {shippingTransfer.quantity} units from the source
+              warehouse immediately.
             </p>
-
             <label className="mt-6 block">
               <span className="text-sm font-medium text-slate-700">
-                Tracking number
+                Tracking number (optional)
               </span>
-
               <input
                 type="text"
                 value={trackingNumber}
                 onChange={(event) => setTrackingNumber(event.target.value)}
-                placeholder="Optional tracking number"
+                maxLength={100}
+                placeholder="Tracking number"
                 className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-slate-400"
               />
             </label>
-
             <div className="mt-6 flex justify-end gap-3">
               <button
                 type="button"
+                disabled={actionId === shippingTransfer.id}
                 onClick={() => {
-                  setTrackingTransfer(null);
+                  setShippingTransfer(null);
                   setTrackingNumber("");
                 }}
-                disabled={actionId === trackingTransfer.id}
-                className="h-11 rounded-2xl border border-slate-200 px-5 text-sm font-medium text-slate-700"
+                className="h-11 rounded-2xl border border-slate-200 px-5 text-sm font-medium text-slate-700 disabled:opacity-50"
               >
-                Cancel
+                Back
               </button>
-
               <button
                 type="button"
-                onClick={() => void handleMarkInTransit()}
-                disabled={actionId === trackingTransfer.id}
+                disabled={actionId === shippingTransfer.id}
+                onClick={() => void handleShip()}
                 className="h-11 rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white disabled:opacity-50"
               >
-                {actionId === trackingTransfer.id
-                  ? "Updating..."
-                  : "Mark in transit"}
+                {actionId === shippingTransfer.id
+                  ? "Shipping..."
+                  : "Confirm shipment"}
               </button>
             </div>
           </div>

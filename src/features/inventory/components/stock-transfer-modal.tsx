@@ -4,10 +4,10 @@ import type { FormEvent } from "react";
 import { useMemo, useState } from "react";
 
 import {
-    createStockTransfer,
-    type StockListItem,
-    type StockTransferDetail,
-    type WarehouseListItem,
+  createStockTransfer,
+  type StockListItem,
+  type StockTransferDetail,
+  type WarehouseListItem,
 } from "@/features/inventory/api";
 import { getApiErrorMessage } from "@/lib/api/errors";
 
