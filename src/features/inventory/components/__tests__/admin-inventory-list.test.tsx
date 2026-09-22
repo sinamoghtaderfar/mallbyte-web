@@ -11,7 +11,23 @@ import {
   type StockMovementListItem,
   type WarehouseListItem,
 } from "@/features/inventory/api";
+import { getMyPermissions } from "@/features/rbac/api";
+
 import { AdminInventoryList } from "../admin-inventory-list";
+
+// Keep authentication deterministic across tests.
+const authState = vi.hoisted(() => ({
+  user: {
+    id: 1,
+    is_superuser: false,
+  },
+}));
+
+vi.mock("@/features/auth/auth-store", () => ({
+  useAuthStore: (
+    selector: (state: { user: typeof authState.user }) => unknown,
+  ) => selector({ user: authState.user }),
+}));
 
 vi.mock("next/link", () => ({
   default: ({
@@ -41,6 +57,14 @@ vi.mock("@/features/inventory/api", async () => {
     getStockMovements: vi.fn(),
   };
 });
+
+vi.mock("@/features/rbac/api", () => ({
+  getMyPermissions: vi.fn(),
+}));
+
+vi.mock("@/features/inventory/components/stock-transfers-panel", () => ({
+  StockTransfersPanel: () => <div data-testid="stock-transfers-panel" />,
+}));
 
 vi.mock("@/features/inventory/components/stock-adjustment-modal", () => ({
   StockAdjustmentModal: ({
@@ -106,6 +130,7 @@ vi.mock("@/features/inventory/components/stock-adjustment-modal", () => ({
 const mockedGetStocks = vi.mocked(getStocks);
 const mockedGetWarehouses = vi.mocked(getWarehouses);
 const mockedGetStockMovements = vi.mocked(getStockMovements);
+const mockedGetMyPermissions = vi.mocked(getMyPermissions);
 
 function makeStock(overrides: Partial<StockListItem> = {}): StockListItem {
   return {
@@ -162,13 +187,30 @@ function makeMovement(): StockMovementListItem {
 
 describe("AdminInventoryList", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
+
+    authState.user = {
+      id: 1,
+      is_superuser: false,
+    };
 
     mockedGetWarehouses.mockResolvedValue([makeWarehouse()]);
 
     mockedGetStocks.mockResolvedValue([makeStock()]);
 
     mockedGetStockMovements.mockResolvedValue([]);
+
+    // Default user: Inventory Manager.
+    mockedGetMyPermissions.mockResolvedValue({
+      user_id: 1,
+      email: "inventory-manager@example.com",
+      permissions: [
+        "view_inventory",
+        "manage_inventory",
+        "create_stock_transfers",
+      ],
+      permissions_count: 3,
+    });
   });
 
   it("renders inventory summaries and stock records", async () => {
@@ -193,6 +235,14 @@ describe("AdminInventoryList", () => {
     ).toHaveTextContent("0");
 
     expect(screen.getByText(/MB-KEYBOARD-001/)).toBeInTheDocument();
+
+    expect(
+      screen.getByRole("button", {
+        name: /^adjust$/i,
+      }),
+    ).toBeInTheDocument();
+
+    expect(mockedGetMyPermissions).toHaveBeenCalledTimes(1);
   });
 
   it("refetches stock and movements after an adjustment", async () => {
@@ -215,7 +265,7 @@ describe("AdminInventoryList", () => {
 
     await user.click(
       screen.getByRole("button", {
-        name: /adjust/i,
+        name: /^adjust$/i,
       }),
     );
 
@@ -247,5 +297,61 @@ describe("AdminInventoryList", () => {
     expect(screen.getByText("+5")).toBeInTheDocument();
 
     expect(screen.getByText("18 → 23")).toBeInTheDocument();
+  });
+
+  it("hides stock adjustments from supervisors", async () => {
+    authState.user = {
+      id: 2,
+      is_superuser: false,
+    };
+
+    mockedGetMyPermissions.mockResolvedValue({
+      user_id: 2,
+      email: "inventory-supervisor@example.com",
+      permissions: ["view_inventory", "approve_stock_transfers"],
+      permissions_count: 2,
+    });
+
+    render(<AdminInventoryList />);
+
+    expect(await screen.findByText("Mechanical Keyboard")).toBeInTheDocument();
+
+    expect(screen.getByText("Total stock").parentElement).toHaveTextContent(
+      "18",
+    );
+
+    expect(
+      screen.queryByRole("button", {
+        name: /^adjust$/i,
+      }),
+    ).not.toBeInTheDocument();
+
+    expect(
+      screen.queryByText(/adjustment modal for mechanical keyboard/i),
+    ).not.toBeInTheDocument();
+  });
+
+  it("allows superusers to adjust inventory", async () => {
+    authState.user = {
+      id: 3,
+      is_superuser: true,
+    };
+
+    mockedGetMyPermissions.mockResolvedValue({
+      user_id: 3,
+      email: "superuser@example.com",
+      permissions: ["view_inventory"],
+      permissions_count: 1,
+    });
+
+    render(<AdminInventoryList />);
+
+    expect(await screen.findByText("Mechanical Keyboard")).toBeInTheDocument();
+
+    expect(
+      screen.getByRole("button", {
+        name: /^adjust$/i,
+      }),
+    ).toBeInTheDocument();
   });
 });

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
+import { useAuthStore } from "@/features/auth/auth-store";
 import {
   getStockMovements,
   getStocks,
@@ -15,6 +16,7 @@ import {
 import { StockAdjustmentModal } from "@/features/inventory/components/stock-adjustment-modal";
 import { StockMovementHistory } from "@/features/inventory/components/stock-movement-history";
 import { StockTransfersPanel } from "@/features/inventory/components/stock-transfers-panel";
+import { getMyPermissions } from "@/features/rbac/api";
 import { getApiErrorMessage } from "@/lib/api/errors";
 
 function formatDate(value: string) {
@@ -22,9 +24,39 @@ function formatDate(value: string) {
 }
 
 export function AdminInventoryList() {
+  const user = useAuthStore((state) => state.user);
+
+  // A new account gets a fresh component, including fresh permissions,
+  // inventory data, selected stock, and transfer panel state.
+  if (!user) {
+    return (
+      <main className="mx-auto max-w-7xl px-4 py-10 text-sm text-slate-500">
+        Sign in to view inventory.
+      </main>
+    );
+  }
+
+  return (
+    <AdminInventoryContent
+      key={`${user.id}:${Boolean(user.is_superuser)}`}
+      userId={user.id}
+      isSuperuser={Boolean(user.is_superuser)}
+    />
+  );
+}
+
+function AdminInventoryContent({
+  userId,
+  isSuperuser,
+}: {
+  userId: number;
+  isSuperuser: boolean;
+}) {
   const [stocks, setStocks] = useState<StockListItem[]>([]);
   const [warehouses, setWarehouses] = useState<WarehouseListItem[]>([]);
   const [movements, setMovements] = useState<StockMovementListItem[]>([]);
+
+  const [permissions, setPermissions] = useState<string[]>([]);
 
   const [search, setSearch] = useState("");
   const [warehouseFilter, setWarehouseFilter] = useState("all");
@@ -38,33 +70,58 @@ export function AdminInventoryList() {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
+  const canManageInventory =
+    isSuperuser || permissions.includes("manage_inventory");
+
   useEffect(() => {
     let cancelled = false;
 
     async function loadInventory() {
-      try {
-        const [stockData, warehouseData, movementData] = await Promise.all([
+      // Permissions are independent of the read-only inventory requests.
+      // If RBAC is unavailable, fail closed for Adjust while still showing
+      // the stock information that was retrieved successfully.
+      const [stockResult, warehouseResult, movementResult, permissionResult] =
+        await Promise.allSettled([
           getStocks(),
           getWarehouses(),
           getStockMovements(),
+          getMyPermissions(),
         ]);
 
-        if (cancelled) {
-          return;
-        }
+      if (cancelled) return;
 
-        setStocks(stockData);
-        setWarehouses(warehouseData);
-        setMovements(movementData);
-      } catch (caughtError) {
-        if (!cancelled) {
-          setError(getApiErrorMessage(caughtError));
-        }
-      } finally {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
+      const errors: string[] = [];
+
+      if (stockResult.status === "fulfilled") {
+        setStocks(stockResult.value);
+      } else {
+        errors.push(getApiErrorMessage(stockResult.reason));
       }
+
+      if (warehouseResult.status === "fulfilled") {
+        setWarehouses(warehouseResult.value);
+      } else {
+        errors.push(getApiErrorMessage(warehouseResult.reason));
+      }
+
+      if (movementResult.status === "fulfilled") {
+        setMovements(movementResult.value);
+      } else {
+        errors.push(getApiErrorMessage(movementResult.reason));
+      }
+
+      if (permissionResult.status === "fulfilled") {
+        setPermissions(permissionResult.value.permissions);
+      } else {
+        // Never grant write actions when permission verification fails.
+        setPermissions([]);
+        errors.push(
+          `Could not verify inventory permissions: ${getApiErrorMessage(permissionResult.reason)}`,
+        );
+      }
+
+      setError(errors.join(" "));
+      setIsLoading(false);
     }
 
     void loadInventory();
@@ -72,7 +129,7 @@ export function AdminInventoryList() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [userId]);
 
   async function refreshInventoryData() {
     try {
@@ -152,8 +209,8 @@ export function AdminInventoryList() {
             </h1>
 
             <p className="mt-2 max-w-2xl text-sm text-slate-600">
-              Monitor and adjust stock across warehouses, review reserved
-              inventory, and audit inventory movements.
+              Monitor stock across warehouses, review reserved inventory, audit
+              movements, and manage transfers.
             </p>
           </div>
 
@@ -350,16 +407,20 @@ export function AdminInventoryList() {
                         )}
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setMessage("");
-                          setSelectedStock(stock);
-                        }}
-                        className="inline-flex h-10 items-center justify-center rounded-2xl bg-slate-900 px-4 text-sm font-medium text-white transition hover:bg-slate-800"
-                      >
-                        Adjust
-                      </button>
+                      <div className="flex justify-end">
+                        {canManageInventory ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setMessage("");
+                              setSelectedStock(stock);
+                            }}
+                            className="inline-flex h-10 items-center justify-center rounded-2xl bg-slate-900 px-4 text-sm font-medium text-white transition hover:bg-slate-800"
+                          >
+                            Adjust
+                          </button>
+                        ) : null}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -373,11 +434,14 @@ export function AdminInventoryList() {
             </p>
           ) : null}
         </section>
+
         <StockTransfersPanel
+          key={`${userId}:${isSuperuser}`}
           stocks={stocks}
           warehouses={warehouses}
           onInventoryChanged={refreshInventoryData}
         />
+
         <StockMovementHistory
           movements={movements}
           warehouses={warehouses}
@@ -385,7 +449,7 @@ export function AdminInventoryList() {
         />
       </main>
 
-      {selectedStock ? (
+      {selectedStock && canManageInventory ? (
         <StockAdjustmentModal
           key={selectedStock.id}
           stock={selectedStock}

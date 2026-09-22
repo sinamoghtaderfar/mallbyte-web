@@ -26,6 +26,11 @@ type StockTransfersPanelProps = {
   onInventoryChanged: () => Promise<void>;
 };
 
+type StockTransfersPanelContentProps = StockTransfersPanelProps & {
+  userId: number | null;
+  isSuperuser: boolean;
+};
+
 function formatDate(value: string | null) {
   return value ? new Date(value).toLocaleString() : "—";
 }
@@ -38,34 +43,66 @@ const statusClasses: Record<StockTransferListItem["status"], string> = {
   cancelled: "bg-red-100 text-red-700",
 };
 
-export function StockTransfersPanel({
+/**
+ * Remount the content when the authenticated user changes.
+ * This prevents permissions, transfers and open dialogs
+ * from carrying over between accounts.
+ */
+export function StockTransfersPanel(props: StockTransfersPanelProps) {
+  const user = useAuthStore((state) => state.user);
+
+  const userId = user?.id ?? null;
+  const isSuperuser = Boolean(user?.is_superuser);
+
+  return (
+    <StockTransfersPanelContent
+      key={`${userId ?? "guest"}:${isSuperuser}`}
+      {...props}
+      userId={userId}
+      isSuperuser={isSuperuser}
+    />
+  );
+}
+
+function StockTransfersPanelContent({
   stocks,
   warehouses,
   onInventoryChanged,
-}: StockTransfersPanelProps) {
-  const user = useAuthStore((state) => state.user);
+  userId,
+  isSuperuser,
+}: StockTransfersPanelContentProps) {
   const [transfers, setTransfers] = useState<StockTransferListItem[]>([]);
+
   const [permissions, setPermissions] = useState<string[]>([]);
+
   const [warehouseIds, setWarehouseIds] = useState<number[]>([]);
+
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [isLoading, setIsLoading] = useState(true);
+
+  const [isLoading, setIsLoading] = useState(userId !== null);
+
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+
   const [showCreateModal, setShowCreateModal] = useState(false);
+
   const [shippingTransfer, setShippingTransfer] =
     useState<StockTransferListItem | null>(null);
+
   const [trackingNumber, setTrackingNumber] = useState("");
+
   const [actionId, setActionId] = useState<number | null>(null);
 
-  const isSuperuser = Boolean(user?.is_superuser);
-  const userId = user?.id;
   const canCreateTransfers =
-    isSuperuser || permissions.includes("create_stock_transfers");
+    userId !== null &&
+    (isSuperuser || permissions.includes("create_stock_transfers"));
+
   const canShipOrReceive =
-    isSuperuser ||
-    permissions.includes("ship_stock_transfers") ||
-    permissions.includes("receive_stock_transfers");
+    userId !== null &&
+    (isSuperuser ||
+      permissions.includes("ship_stock_transfers") ||
+      permissions.includes("receive_stock_transfers"));
 
   async function loadTransfers() {
     try {
@@ -77,12 +114,11 @@ export function StockTransfersPanel({
   }
 
   useEffect(() => {
+    if (userId === null) {
+      return;
+    }
+
     let cancelled = false;
-    setIsLoading(true);
-    setPermissions([]);
-    setWarehouseIds([]);
-    setTransfers([]);
-    setError("");
 
     async function load() {
       try {
@@ -90,7 +126,11 @@ export function StockTransfersPanel({
           getStockTransfers(),
           getMyPermissions(),
         ]);
-        if (cancelled) return;
+
+        if (cancelled) {
+          return;
+        }
+
         setTransfers(transferData);
         setPermissions(permissionData.permissions);
 
@@ -101,12 +141,16 @@ export function StockTransfersPanel({
         if (needsAssignments && !isSuperuser) {
           try {
             const ids = await getMyWarehouseIds();
-            if (!cancelled) setWarehouseIds(ids);
+
+            if (!cancelled) {
+              setWarehouseIds(ids);
+            }
           } catch (caughtError) {
-            // Fail closed: never show warehouse operation buttons if membership
-            // cannot be verified. The backend independently enforces access.
+            // Fail closed if warehouse membership cannot
+            // be verified. The backend also checks access.
             if (!cancelled) {
               setWarehouseIds([]);
+
               setError(
                 `Warehouse assignments could not be loaded: ${getApiErrorMessage(caughtError)}`,
               );
@@ -114,13 +158,18 @@ export function StockTransfersPanel({
           }
         }
       } catch (caughtError) {
-        if (!cancelled) setError(getApiErrorMessage(caughtError));
+        if (!cancelled) {
+          setError(getApiErrorMessage(caughtError));
+        }
       } finally {
-        if (!cancelled) setIsLoading(false);
+        if (!cancelled) {
+          setIsLoading(false);
+        }
       }
     }
 
     void load();
+
     return () => {
       cancelled = true;
     };
@@ -128,7 +177,9 @@ export function StockTransfersPanel({
 
   async function handleCreated(transfer: StockTransferDetail) {
     setShowCreateModal(false);
+
     setMessage(`Transfer #${transfer.id} is waiting for approval.`);
+
     await loadTransfers();
   }
 
@@ -140,12 +191,16 @@ export function StockTransfersPanel({
     ) {
       return;
     }
+
     try {
       setActionId(transfer.id);
       setError("");
       setMessage("");
+
       await approveStockTransfer(transfer.id);
+
       setMessage(`Transfer #${transfer.id} approved.`);
+
       await loadTransfers();
     } catch (caughtError) {
       setError(getApiErrorMessage(caughtError));
@@ -155,13 +210,19 @@ export function StockTransfersPanel({
   }
 
   async function handleCancel(transfer: StockTransferListItem) {
-    if (!window.confirm(`Cancel transfer #${transfer.id}?`)) return;
+    if (!window.confirm(`Cancel transfer #${transfer.id}?`)) {
+      return;
+    }
+
     try {
       setActionId(transfer.id);
       setError("");
       setMessage("");
+
       await cancelStockTransfer(transfer.id);
+
       setMessage(`Transfer #${transfer.id} cancelled.`);
+
       await loadTransfers();
     } catch (caughtError) {
       setError(getApiErrorMessage(caughtError));
@@ -171,24 +232,33 @@ export function StockTransfersPanel({
   }
 
   async function handleShip() {
-    if (!shippingTransfer) return;
+    if (!shippingTransfer) {
+      return;
+    }
+
     const transfer = shippingTransfer;
+
     if (
       !window.confirm(
         `Ship ${transfer.quantity} units from ${transfer.from_warehouse_name}? ` +
           "This immediately deducts stock from the source warehouse.",
       )
-    )
+    ) {
       return;
+    }
 
     try {
       setActionId(transfer.id);
       setError("");
       setMessage("");
+
       await shipStockTransfer(transfer.id, trackingNumber);
+
       setShippingTransfer(null);
       setTrackingNumber("");
+
       setMessage(`Transfer #${transfer.id} shipped. Stock is now in transit.`);
+
       await Promise.all([loadTransfers(), onInventoryChanged()]);
     } catch (caughtError) {
       setError(getApiErrorMessage(caughtError));
@@ -203,14 +273,19 @@ export function StockTransfersPanel({
         `Confirm receipt of ${transfer.quantity} units at ${transfer.to_warehouse_name}? ` +
           "This adds stock to the destination warehouse.",
       )
-    )
+    ) {
       return;
+    }
+
     try {
       setActionId(transfer.id);
       setError("");
       setMessage("");
+
       await receiveStockTransfer(transfer.id);
+
       setMessage(`Transfer #${transfer.id} received and completed.`);
+
       await Promise.all([loadTransfers(), onInventoryChanged()]);
     } catch (caughtError) {
       setError(getApiErrorMessage(caughtError));
@@ -221,6 +296,7 @@ export function StockTransfersPanel({
 
   const filteredTransfers = useMemo(() => {
     const term = search.trim().toLowerCase();
+
     return transfers.filter((transfer) => {
       const searchable = [
         transfer.product_name,
@@ -236,6 +312,7 @@ export function StockTransfersPanel({
         .filter(Boolean)
         .join(" ")
         .toLowerCase();
+
       return (
         (!term || searchable.includes(term)) &&
         (statusFilter === "all" || transfer.status === statusFilter)
@@ -251,11 +328,13 @@ export function StockTransfersPanel({
             <h2 className="text-lg font-semibold text-slate-950">
               Stock transfers
             </h2>
+
             <p className="mt-1 max-w-2xl text-sm text-slate-500">
               Managers request transfers, supervisors approve them, source
               warehouses ship, and destination warehouses confirm receipt.
             </p>
           </div>
+
           {canCreateTransfers && !isLoading ? (
             <button
               type="button"
@@ -278,6 +357,7 @@ export function StockTransfersPanel({
             {error}
           </div>
         ) : null}
+
         {message ? (
           <div
             role="status"
@@ -286,6 +366,7 @@ export function StockTransfersPanel({
             {message}
           </div>
         ) : null}
+
         {canShipOrReceive &&
         !isSuperuser &&
         warehouseIds.length === 0 &&
@@ -306,6 +387,7 @@ export function StockTransfersPanel({
             placeholder="Search product, warehouse, requester..."
             className="h-11 rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-slate-400"
           />
+
           <select
             aria-label="Filter transfer status"
             value={statusFilter}
@@ -313,10 +395,15 @@ export function StockTransfersPanel({
             className="h-11 rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-slate-400"
           >
             <option value="all">All statuses</option>
+
             <option value="pending">Pending</option>
+
             <option value="approved">Approved</option>
+
             <option value="in_transit">In transit</option>
+
             <option value="completed">Completed</option>
+
             <option value="cancelled">Cancelled</option>
           </select>
         </div>
@@ -335,69 +422,88 @@ export function StockTransfersPanel({
                   <th scope="col" className="px-4 py-3">
                     Product
                   </th>
+
                   <th scope="col" className="px-4 py-3">
                     Route
                   </th>
+
                   <th scope="col" className="px-4 py-3">
                     Qty
                   </th>
+
                   <th scope="col" className="px-4 py-3">
                     Status
                   </th>
+
                   <th scope="col" className="px-4 py-3">
                     Requested by
                   </th>
+
                   <th scope="col" className="px-4 py-3">
                     Approved by
                   </th>
+
                   <th scope="col" className="px-4 py-3">
                     Shipping / Receiving
                   </th>
+
                   <th scope="col" className="px-4 py-3">
                     Actions
                   </th>
                 </tr>
               </thead>
+
               <tbody className="divide-y divide-slate-100">
                 {filteredTransfers.map((transfer) => {
                   const actions = getTransferActions(transfer, {
-                    userId: user?.id ?? null,
+                    userId,
                     permissions,
                     warehouseIds,
                     isSuperuser,
                   });
+
                   const isBusy = actionId === transfer.id;
+
                   const hasAction =
                     actions.canApprove ||
                     actions.canCancel ||
                     actions.canShip ||
                     actions.canReceive;
+
                   return (
                     <tr key={transfer.id} className="align-top">
                       <td className="px-4 py-4">
                         <p className="font-semibold text-slate-950">
                           {transfer.product_name}
                         </p>
+
                         <p className="mt-1 text-xs text-slate-500">
                           {transfer.product_sku}
                         </p>
+
                         <p className="mt-1 text-xs text-slate-400">
                           #{transfer.id}
                         </p>
+
                         {transfer.reason ? (
                           <p className="mt-2 max-w-[220px] text-xs text-slate-500">
                             {transfer.reason}
                           </p>
                         ) : null}
                       </td>
+
                       <td className="px-4 py-4 text-slate-700">
                         <p>{transfer.from_warehouse_name}</p>
+
                         <p className="my-1 text-xs text-slate-400">↓</p>
+
                         <p>{transfer.to_warehouse_name}</p>
                       </td>
+
                       <td className="px-4 py-4 font-semibold">
                         {transfer.quantity}
                       </td>
+
                       <td className="px-4 py-4">
                         <span
                           className={`rounded-full px-3 py-1 text-xs font-medium ${statusClasses[transfer.status]}`}
@@ -405,14 +511,18 @@ export function StockTransfersPanel({
                           {transfer.status_display}
                         </span>
                       </td>
+
                       <td className="px-4 py-4">
                         <p>{transfer.requested_by_name || "—"}</p>
+
                         <p className="mt-1 text-xs text-slate-400">
                           {formatDate(transfer.created_at)}
                         </p>
                       </td>
+
                       <td className="px-4 py-4">
                         <p>{transfer.approved_by_name || "—"}</p>
+
                         <p className="mt-1 text-xs text-slate-400">
                           {transfer.approved_at
                             ? formatDate(transfer.approved_at)
@@ -424,25 +534,31 @@ export function StockTransfersPanel({
                                 : "Approval timestamp unavailable"}
                         </p>
                       </td>
+
                       <td className="px-4 py-4 text-xs text-slate-600">
                         <p>Tracking: {transfer.tracking_number || "—"}</p>
+
                         <p className="mt-2">
                           Shipped by: {transfer.shipped_by_name || "—"}
                         </p>
+
                         {transfer.shipped_at ? (
                           <p className="mt-1 text-slate-400">
                             {formatDate(transfer.shipped_at)}
                           </p>
                         ) : null}
+
                         <p className="mt-2">
                           Received by: {transfer.received_by_name || "—"}
                         </p>
+
                         {transfer.received_at ? (
                           <p className="mt-1 text-slate-400">
                             {formatDate(transfer.received_at)}
                           </p>
                         ) : null}
                       </td>
+
                       <td className="px-4 py-4">
                         <div className="flex min-w-[120px] flex-wrap gap-2">
                           {actions.canApprove ? (
@@ -456,6 +572,7 @@ export function StockTransfersPanel({
                               Approve
                             </button>
                           ) : null}
+
                           {actions.canCancel ? (
                             <button
                               type="button"
@@ -467,6 +584,7 @@ export function StockTransfersPanel({
                               Cancel
                             </button>
                           ) : null}
+
                           {actions.canShip ? (
                             <button
                               type="button"
@@ -481,6 +599,7 @@ export function StockTransfersPanel({
                               Ship
                             </button>
                           ) : null}
+
                           {actions.canReceive ? (
                             <button
                               type="button"
@@ -492,6 +611,7 @@ export function StockTransfersPanel({
                               Receive
                             </button>
                           ) : null}
+
                           {!hasAction ? (
                             <span className="text-xs text-slate-400">
                               {transfer.status === "pending"
@@ -514,7 +634,7 @@ export function StockTransfersPanel({
         )}
       </section>
 
-      {showCreateModal ? (
+      {showCreateModal && canCreateTransfers ? (
         <StockTransferModal
           stocks={stocks}
           warehouses={warehouses}
@@ -537,19 +657,23 @@ export function StockTransfersPanel({
             >
               Ship stock transfer
             </h2>
+
             <p className="mt-2 text-sm text-slate-600">
               Transfer #{shippingTransfer.id}:{" "}
               {shippingTransfer.from_warehouse_name} →{" "}
               {shippingTransfer.to_warehouse_name}
             </p>
+
             <p className="mt-3 rounded-2xl bg-amber-50 p-3 text-sm text-amber-800">
               Shipping deducts {shippingTransfer.quantity} units from the source
               warehouse immediately.
             </p>
+
             <label className="mt-6 block">
               <span className="text-sm font-medium text-slate-700">
                 Tracking number (optional)
               </span>
+
               <input
                 type="text"
                 value={trackingNumber}
@@ -559,6 +683,7 @@ export function StockTransfersPanel({
                 className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-slate-400"
               />
             </label>
+
             <div className="mt-6 flex justify-end gap-3">
               <button
                 type="button"
@@ -571,6 +696,7 @@ export function StockTransfersPanel({
               >
                 Back
               </button>
+
               <button
                 type="button"
                 disabled={actionId === shippingTransfer.id}

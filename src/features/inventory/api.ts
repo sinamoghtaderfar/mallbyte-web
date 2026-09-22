@@ -255,8 +255,6 @@ export async function receiveStockTransfer(transferId: number) {
   return response.data;
 }
 
-
-
 export async function cancelStockTransfer(transferId: number) {
   const response = await apiClient.post<StockTransferDetail>(
     API_ENDPOINTS.inventory.stockTransferCancel(transferId),
