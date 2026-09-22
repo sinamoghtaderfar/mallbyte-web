@@ -146,7 +146,7 @@ export type CreateStockMovementPayload = {
   movement_type: StockMovementType;
   quantity: number;
   reference_id?: string;
-  reason?: string;
+  reason: string;
   notes?: string;
 };
 
