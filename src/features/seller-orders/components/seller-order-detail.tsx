@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import { getApiErrorMessage } from "@/lib/api/errors";
 
 import { getSellerOrder, updateSellerOrderStatus } from "../api";
+
 import type {
   SellerOrderDetail as SellerOrderDetailType,
   SellerOrderStatusPayload,
@@ -17,7 +18,9 @@ function formatMoney(value: string) {
 }
 
 function formatDate(value: string | null) {
-  if (!value) return "Not set";
+  if (!value) {
+    return "Not set";
+  }
 
   return new Intl.DateTimeFormat("en", {
     dateStyle: "medium",
@@ -28,33 +31,30 @@ function formatDate(value: string | null) {
 function getNextStatus(
   status: SellerOrderDetailType["seller_status"],
 ): SellerOrderStatusPayload["status"] | null {
-  if (status === "paid") return "processing";
-  if (status === "processing") return "shipped";
-  if (status === "shipped") return "delivered";
-
-  return null;
-}
-
-function getStatusButtonLabel(status: SellerOrderStatusPayload["status"]) {
-  if (status === "processing") return "Mark as processing";
-  if (status === "shipped") return "Mark as shipped";
-  return "Mark as delivered";
+  return status === "paid" ? "processing" : null;
 }
 
 export function SellerOrderDetail() {
   const params = useParams<{ id: string }>();
 
   const [order, setOrder] = useState<SellerOrderDetailType | null>(null);
+
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
+
   const [error, setError] = useState("");
   const [actionError, setActionError] = useState("");
   const [actionMessage, setActionMessage] = useState("");
 
   const nextStatus = useMemo(() => {
-    if (!order) return null;
+    if (!order) {
+      return null;
+    }
 
-    if (order.payment_status !== "paid") return null;
+    if (order.payment_status !== "paid") {
+      return null;
+    }
+
     if (order.status === "cancelled" || order.status === "refunded") {
       return null;
     }
@@ -86,7 +86,7 @@ export function SellerOrderDetail() {
       }
     }
 
-    loadOrder();
+    void loadOrder();
 
     return () => {
       isMounted = false;
@@ -107,6 +107,7 @@ export function SellerOrderDetail() {
       });
 
       setOrder(updatedOrder);
+
       setActionMessage("Your fulfillment status was updated.");
     } catch (updateError) {
       setActionError(getApiErrorMessage(updateError));
@@ -153,6 +154,7 @@ export function SellerOrderDetail() {
           <p className="mt-6 text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">
             Seller order
           </p>
+
           <h1 className="mt-2 text-3xl font-bold text-slate-950">
             {order.order_number}
           </h1>
@@ -161,13 +163,22 @@ export function SellerOrderDetail() {
             <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
               Your fulfillment: {order.seller_status_display}
             </span>
+
             <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
               Overall order: {order.status_display}
             </span>
+
             <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
               Payment: {order.payment_status_display}
             </span>
           </div>
+
+          {order.seller_status === "processing" ? (
+            <p className="mt-3 text-sm text-slate-600">
+              Your items are in preparation. The shipping team will update
+              shipped and delivered statuses when your shipment is processed.
+            </p>
+          ) : null}
         </div>
 
         {nextStatus ? (
@@ -177,7 +188,7 @@ export function SellerOrderDetail() {
             disabled={isUpdating}
             className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-950 px-5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isUpdating ? "Updating..." : getStatusButtonLabel(nextStatus)}
+            {isUpdating ? "Updating..." : "Mark as processing"}
           </button>
         ) : null}
       </div>
@@ -209,9 +220,11 @@ export function SellerOrderDetail() {
                     <p className="font-medium text-slate-950">
                       {item.product_name}
                     </p>
+
                     <p className="mt-1 text-xs text-slate-500">
                       SKU: {item.product_sku}
                     </p>
+
                     <p className="mt-1 text-xs text-slate-500">
                       Quantity: {item.quantity}
                     </p>
@@ -226,6 +239,7 @@ export function SellerOrderDetail() {
 
             <div className="mt-4 flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3 text-sm">
               <span className="text-slate-600">Seller total</span>
+
               <span className="font-bold text-slate-950">
                 {formatMoney(order.seller_total_amount)}
               </span>
@@ -256,9 +270,11 @@ export function SellerOrderDetail() {
                     <p className="font-medium text-slate-950">
                       {event.old_status || "created"} → {event.new_status}
                     </p>
+
                     {event.note ? (
                       <p className="mt-1 text-slate-600">{event.note}</p>
                     ) : null}
+
                     <p className="mt-2 text-xs text-slate-500">
                       {formatDate(event.created_at)}
                     </p>
@@ -278,26 +294,33 @@ export function SellerOrderDetail() {
             <dl className="mt-4 space-y-3 text-sm">
               <div>
                 <dt className="text-slate-500">Receiver</dt>
+
                 <dd className="font-medium text-slate-950">
                   {order.receiver_name}
                 </dd>
               </div>
+
               <div>
                 <dt className="text-slate-500">Phone</dt>
+
                 <dd className="font-medium text-slate-950">
                   {order.receiver_phone}
                 </dd>
               </div>
+
               <div>
                 <dt className="text-slate-500">Address</dt>
+
                 <dd className="font-medium text-slate-950">
                   {order.address}, {order.city}, {order.province},{" "}
                   {order.postal_code}
                 </dd>
               </div>
+
               {order.customer_note ? (
                 <div>
                   <dt className="text-slate-500">Customer note</dt>
+
                   <dd className="font-medium text-slate-950">
                     {order.customer_note}
                   </dd>
@@ -314,18 +337,23 @@ export function SellerOrderDetail() {
             <dl className="mt-4 space-y-3 text-sm">
               <div>
                 <dt className="text-slate-500">Created</dt>
+
                 <dd className="font-medium text-slate-950">
                   {formatDate(order.created_at)}
                 </dd>
               </div>
+
               <div>
                 <dt className="text-slate-500">Paid</dt>
+
                 <dd className="font-medium text-slate-950">
                   {formatDate(order.paid_at)}
                 </dd>
               </div>
+
               <div>
                 <dt className="text-slate-500">Delivered</dt>
+
                 <dd className="font-medium text-slate-950">
                   {formatDate(order.delivered_at)}
                 </dd>

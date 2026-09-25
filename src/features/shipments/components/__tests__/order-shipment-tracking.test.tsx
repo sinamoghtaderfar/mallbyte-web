@@ -1,7 +1,8 @@
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { getOrderShipment, type ShipmentDetail } from "../../api";
+import { getOrderShipments, type ShipmentDetail } from "../../api";
+
 import { OrderShipmentTracking } from "../order-shipment-tracking";
 
 vi.mock("../../api", async () => {
@@ -9,11 +10,11 @@ vi.mock("../../api", async () => {
 
   return {
     ...actual,
-    getOrderShipment: vi.fn(),
+    getOrderShipments: vi.fn(),
   };
 });
 
-const mockedGetOrderShipment = vi.mocked(getOrderShipment);
+const mockedGetOrderShipments = vi.mocked(getOrderShipments);
 
 function makeShipment(overrides: Partial<ShipmentDetail> = {}): ShipmentDetail {
   return {
@@ -22,8 +23,12 @@ function makeShipment(overrides: Partial<ShipmentDetail> = {}): ShipmentDetail {
     order: 9,
     order_number: "ORD-20260916-7F55D1",
     user: 1,
-    user_email: "sina@example.com",
-    user_full_name: "Sina Moghtader Far",
+    user_email: "buyer@example.com",
+    user_full_name: "Test Buyer",
+    seller_fulfillment: 101,
+    seller: 11,
+    seller_name: "Seller A",
+    seller_status: "shipped",
     carrier: "post",
     carrier_display: "Post",
     status: "shipped",
@@ -31,12 +36,12 @@ function makeShipment(overrides: Partial<ShipmentDetail> = {}): ShipmentDetail {
     tracking_number: "TPX-123456",
     tracking_url: "https://tracking.example.com/TPX-123456",
     shipping_cost: "0",
-    receiver_name: "Sina",
-    receiver_phone: "+4917612345678",
-    province: "Bavaria",
-    city: "Bamberg",
-    address: "Main street 1",
-    postal_code: "96047",
+    receiver_name: "Buyer",
+    receiver_phone: "09120000000",
+    province: "Tehran",
+    city: "Tehran",
+    address: "Example street",
+    postal_code: "1234567890",
     notes: "",
     shipped_at: "2026-09-17T19:26:46Z",
     delivered_at: null,
@@ -55,16 +60,6 @@ function makeShipment(overrides: Partial<ShipmentDetail> = {}): ShipmentDetail {
         created_by_name: "Admin User",
         created_at: "2026-09-17T19:26:46Z",
       },
-      {
-        id: 1,
-        old_status: "",
-        new_status: "pending",
-        message: "Shipment created from paid order.",
-        data: {},
-        created_by: 1,
-        created_by_name: "Admin User",
-        created_at: "2026-09-17T19:26:04Z",
-      },
     ],
     ...overrides,
   };
@@ -75,22 +70,19 @@ describe("OrderShipmentTracking", () => {
     vi.clearAllMocks();
   });
 
-  it("renders shipment status, carrier, tracking link, dates, and events", async () => {
-    mockedGetOrderShipment.mockResolvedValue(makeShipment());
+  it("shows the seller, tracking number, carrier and events", async () => {
+    mockedGetOrderShipments.mockResolvedValue([makeShipment()]);
 
     render(<OrderShipmentTracking orderId={9} />);
 
     expect(await screen.findByText("SHP-20260917-44F730")).toBeInTheDocument();
 
-    expect(
-      screen.getByRole("heading", {
-        name: /shipment tracking/i,
-      }),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Seller A")).toBeInTheDocument();
 
-    expect(screen.getByText("SHP-20260917-44F730")).toBeInTheDocument();
     expect(screen.getByText("Shipped")).toBeInTheDocument();
+
     expect(screen.getByText("Post")).toBeInTheDocument();
+
     expect(screen.getByText("TPX-123456")).toBeInTheDocument();
 
     expect(
@@ -100,17 +92,44 @@ describe("OrderShipmentTracking", () => {
     ).toHaveAttribute("href", "https://tracking.example.com/TPX-123456");
 
     expect(screen.getByText("Pending → Shipped")).toBeInTheDocument();
+
     expect(screen.getByText("Package prepared")).toBeInTheDocument();
 
-    expect(
-      screen.getByText("Shipment created from paid order."),
-    ).toBeInTheDocument();
-
-    expect(mockedGetOrderShipment).toHaveBeenCalledWith(9);
+    expect(mockedGetOrderShipments).toHaveBeenCalledWith(9);
   });
 
-  it("shows an empty state when the order has no shipment", async () => {
-    mockedGetOrderShipment.mockResolvedValue(null);
+  it("shows two separate shipments for two sellers", async () => {
+    mockedGetOrderShipments.mockResolvedValue([
+      makeShipment(),
+
+      makeShipment({
+        id: 3,
+        seller: 12,
+        seller_name: "Seller B",
+        shipment_number: "SHP-SELLER-B",
+        status: "delivered",
+        status_display: "Delivered",
+        tracking_number: "DHL-999",
+        tracking_url: "https://tracking.example.com/DHL-999",
+        events: [],
+      }),
+    ]);
+
+    render(<OrderShipmentTracking orderId={9} />);
+
+    expect(await screen.findByText("Seller A")).toBeInTheDocument();
+
+    expect(screen.getByText("Seller B")).toBeInTheDocument();
+
+    expect(screen.getByText("TPX-123456")).toBeInTheDocument();
+
+    expect(screen.getByText("DHL-999")).toBeInTheDocument();
+
+    expect(screen.getByText("2 shipments for this order.")).toBeInTheDocument();
+  });
+
+  it("shows an empty state when no shipment exists", async () => {
+    mockedGetOrderShipments.mockResolvedValue([]);
 
     render(<OrderShipmentTracking orderId={9} />);
 
@@ -120,7 +139,7 @@ describe("OrderShipmentTracking", () => {
   });
 
   it("shows delivered shipment information", async () => {
-    mockedGetOrderShipment.mockResolvedValue(
+    mockedGetOrderShipments.mockResolvedValue([
       makeShipment({
         status: "delivered",
         status_display: "Delivered",
@@ -138,7 +157,7 @@ describe("OrderShipmentTracking", () => {
           },
         ],
       }),
-    );
+    ]);
 
     render(<OrderShipmentTracking orderId={9} />);
 
@@ -149,8 +168,8 @@ describe("OrderShipmentTracking", () => {
     expect(screen.getByText("Shipment delivered.")).toBeInTheDocument();
   });
 
-  it("shows a load error", async () => {
-    mockedGetOrderShipment.mockRejectedValue(
+  it("shows an error when shipment loading fails", async () => {
+    mockedGetOrderShipments.mockRejectedValue(
       new Error("Shipment information is not available."),
     );
 

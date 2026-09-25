@@ -173,6 +173,14 @@ export function AdminShipmentDetail() {
           <p className="mt-2 text-sm text-slate-600">
             Order {shipment.order_number} · {shipment.user_email}
           </p>
+          <p className="mt-2 text-sm font-medium text-slate-800">
+            {shipment.seller_name
+              ? `Seller: ${shipment.seller_name}`
+              : "Legacy order shipment"}
+            {shipment.seller_status
+              ? ` · Fulfillment: ${shipment.seller_status.replaceAll("_", " ")}`
+              : ""}
+          </p>
         </div>
 
         <span className="w-fit rounded-full bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700">

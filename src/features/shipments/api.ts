@@ -14,6 +14,15 @@ export type ShipmentStatus =
 
 export type ShipmentCarrier = "post" | "dhl" | "tipax" | "snapbox" | "other";
 
+export type SellerFulfillmentStatus =
+  | "pending_payment"
+  | "paid"
+  | "processing"
+  | "shipped"
+  | "delivered"
+  | "cancelled"
+  | "refunded";
+
 export const SHIPMENT_STATUS_LABELS: Record<ShipmentStatus, string> = {
   pending: "Pending",
   ready_to_ship: "Ready to ship",
@@ -52,6 +61,13 @@ export type ShipmentListItem = {
   order_number: string;
   user: number;
   user_email: string;
+
+  // Nullable for shipments created before seller-specific shipping.
+  seller_fulfillment?: number | null;
+  seller?: number | null;
+  seller_name?: string | null;
+  seller_status?: SellerFulfillmentStatus | null;
+
   carrier: ShipmentCarrier;
   carrier_display: string;
   status: ShipmentStatus;
@@ -77,17 +93,25 @@ export type ShipmentEvent = {
 export type ShipmentDetail = ShipmentListItem & {
   user_full_name: string;
   tracking_url: string;
+
   receiver_name: string;
   receiver_phone: string;
   province: string;
   city: string;
   address: string;
   postal_code: string;
+
   notes: string;
   cancelled_at: string | null;
   created_by: number | null;
   updated_at: string;
   events: ShipmentEvent[];
+};
+
+export type EligibleShipmentSeller = {
+  id: number;
+  name: string;
+  status: SellerFulfillmentStatus;
 };
 
 export type EligibleShipmentOrder = {
@@ -96,14 +120,20 @@ export type EligibleShipmentOrder = {
   user: number;
   user_email: string;
   user_full_name: string;
+
   total_amount: string;
   shipping_cost: string;
+
   receiver_name: string;
   receiver_phone: string;
   province: string;
   city: string;
+
   paid_at: string | null;
   created_at: string;
+
+  eligible_sellers?: EligibleShipmentSeller[];
+  requires_seller_selection?: boolean;
 };
 
 type PaginatedShipmentsResponse = {
@@ -115,6 +145,7 @@ type PaginatedShipmentsResponse = {
 
 export type CreateShipmentPayload = {
   order: number;
+  seller?: number;
   carrier?: ShipmentCarrier;
 };
 
@@ -128,16 +159,34 @@ export type MarkShippedPayload = {
   note?: string;
 };
 
-export async function getShipments() {
-  const response = await apiClient.get<
-    ShipmentListItem[] | PaginatedShipmentsResponse
-  >(API_ENDPOINTS.shipping.shipments);
+/**
+ * Get all shipments visible to the current user.
+ * Supports both plain arrays and paginated DRF responses.
+ */
+export async function getShipments(): Promise<ShipmentListItem[]> {
+  const shipments: ShipmentListItem[] = [];
+  let next: string | null = API_ENDPOINTS.shipping.shipments;
 
-  if (Array.isArray(response.data)) {
-    return response.data;
+  const visited = new Set<string>();
+
+  while (next && !visited.has(next)) {
+    const url: string = next;
+    visited.add(url);
+
+    const response = await apiClient.get<
+      ShipmentListItem[] | PaginatedShipmentsResponse
+    >(url);
+
+    if (Array.isArray(response.data)) {
+      shipments.push(...response.data);
+      break;
+    }
+
+    shipments.push(...response.data.results);
+    next = response.data.next;
   }
 
-  return response.data.results;
+  return shipments;
 }
 
 export async function getEligibleShipmentOrders() {
@@ -156,23 +205,44 @@ export async function getShipment(shipmentId: number | string) {
   return response.data;
 }
 
-export async function getOrderShipment(orderId: number | string) {
+/**
+ * Retrieve all shipments for one buyer's order.
+ * An order may have separate shipments from different sellers.
+ */
+export async function getOrderShipments(
+  orderId: number | string,
+): Promise<ShipmentDetail[]> {
   const shipments = await getShipments();
-  const normalizedOrderId = Number(orderId);
 
   const orderShipments = shipments
-    .filter((shipment) => shipment.order === normalizedOrderId)
+    .filter((shipment) => shipment.order === Number(orderId))
     .sort(
       (left, right) =>
         new Date(right.created_at).getTime() -
         new Date(left.created_at).getTime(),
     );
 
-  if (orderShipments.length === 0) {
-    return null;
-  }
+  return Promise.all(
+    orderShipments.map((shipment) => getShipment(shipment.id)),
+  );
+}
 
-  return getShipment(orderShipments[0].id);
+/**
+ * Backward compatibility for components that need
+ * only the most recent shipment.
+ */
+export async function getOrderShipment(orderId: number | string) {
+  const shipments = await getShipments();
+
+  const orderShipments = shipments
+    .filter((shipment) => shipment.order === Number(orderId))
+    .sort(
+      (left, right) =>
+        new Date(right.created_at).getTime() -
+        new Date(left.created_at).getTime(),
+    );
+
+  return orderShipments.length ? getShipment(orderShipments[0].id) : null;
 }
 
 export async function createShipment(payload: CreateShipmentPayload) {

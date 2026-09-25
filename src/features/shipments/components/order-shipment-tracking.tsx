@@ -3,11 +3,12 @@
 import { useEffect, useState } from "react";
 
 import {
-  getOrderShipment,
+  getOrderShipments,
   getShipmentCarrierLabel,
   getShipmentStatusLabel,
   type ShipmentDetail,
 } from "@/features/shipments/api";
+
 import { getApiErrorMessage } from "@/lib/api/errors";
 
 type OrderShipmentTrackingProps = {
@@ -15,11 +16,7 @@ type OrderShipmentTrackingProps = {
 };
 
 function formatDate(value: string | null | undefined) {
-  if (!value) {
-    return "Not available";
-  }
-
-  return new Date(value).toLocaleString();
+  return value ? new Date(value).toLocaleString() : "Not available";
 }
 
 function getStatusClass(status: string) {
@@ -39,19 +36,19 @@ function getStatusClass(status: string) {
 }
 
 export function OrderShipmentTracking({ orderId }: OrderShipmentTrackingProps) {
-  const [shipment, setShipment] = useState<ShipmentDetail | null>(null);
+  const [shipments, setShipments] = useState<ShipmentDetail[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
     let cancelled = false;
 
-    async function loadShipment() {
+    async function loadShipments() {
       try {
-        const data = await getOrderShipment(orderId);
+        const data = await getOrderShipments(orderId);
 
         if (!cancelled) {
-          setShipment(data);
+          setShipments(data);
         }
       } catch (caughtError) {
         if (!cancelled) {
@@ -64,7 +61,7 @@ export function OrderShipmentTracking({ orderId }: OrderShipmentTrackingProps) {
       }
     }
 
-    void loadShipment();
+    void loadShipments();
 
     return () => {
       cancelled = true;
@@ -101,7 +98,7 @@ export function OrderShipmentTracking({ orderId }: OrderShipmentTrackingProps) {
     );
   }
 
-  if (!shipment) {
+  if (!shipments.length) {
     return (
       <section className="mt-8 rounded-3xl border border-slate-200 p-5">
         <h2 className="text-lg font-semibold text-slate-950">
@@ -123,116 +120,141 @@ export function OrderShipmentTracking({ orderId }: OrderShipmentTrackingProps) {
   }
 
   return (
-    <section className="mt-8 rounded-3xl border border-slate-200 p-5">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-slate-950">
-            Shipment tracking
-          </h2>
+    <section className="mt-8 space-y-4">
+      <div>
+        <h2 className="text-lg font-semibold text-slate-950">
+          Shipment tracking
+        </h2>
 
-          <p className="mt-1 text-sm text-slate-500">
-            {shipment.shipment_number}
-          </p>
-        </div>
+        <p className="mt-1 text-sm text-slate-500">
+          {shipments.length} shipment
+          {shipments.length === 1 ? "" : "s"} for this order.
+        </p>
+      </div>
 
-        <span
-          className={[
-            "w-fit rounded-full px-3 py-1 text-xs font-medium",
-            getStatusClass(shipment.status),
-          ].join(" ")}
+      {shipments.map((shipment) => (
+        <article
+          key={shipment.id}
+          className="rounded-3xl border border-slate-200 p-5"
         >
-          {shipment.status_display || getShipmentStatusLabel(shipment.status)}
-        </span>
-      </div>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h3 className="text-base font-semibold text-slate-950">
+                {shipment.seller_name || "Order shipment"}
+              </h3>
 
-      <div className="mt-5 grid gap-4 rounded-2xl bg-slate-50 p-4 sm:grid-cols-2">
-        <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-            Carrier
-          </p>
+              <p className="mt-1 text-sm text-slate-500">
+                {shipment.shipment_number}
+              </p>
+            </div>
 
-          <p className="mt-1 text-sm font-medium text-slate-900">
-            {shipment.carrier_display ||
-              getShipmentCarrierLabel(shipment.carrier)}
-          </p>
-        </div>
-
-        <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-            Tracking number
-          </p>
-
-          <p className="mt-1 text-sm font-medium text-slate-900">
-            {shipment.tracking_number || "Not available"}
-          </p>
-
-          {shipment.tracking_url ? (
-            <a
-              href={shipment.tracking_url}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-1 inline-block text-sm font-medium text-blue-700 underline underline-offset-4"
+            <span
+              className={[
+                "w-fit rounded-full px-3 py-1 text-xs font-medium",
+                getStatusClass(shipment.status),
+              ].join(" ")}
             >
-              Track shipment
-            </a>
-          ) : null}
-        </div>
-
-        <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-            Shipped at
-          </p>
-
-          <p className="mt-1 text-sm text-slate-700">
-            {formatDate(shipment.shipped_at)}
-          </p>
-        </div>
-
-        <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-            Delivered at
-          </p>
-
-          <p className="mt-1 text-sm text-slate-700">
-            {formatDate(shipment.delivered_at)}
-          </p>
-        </div>
-      </div>
-
-      {shipment.events.length ? (
-        <div className="mt-6">
-          <h3 className="text-sm font-semibold text-slate-950">
-            Delivery updates
-          </h3>
-
-          <div className="mt-3 space-y-3">
-            {shipment.events.map((event) => (
-              <div
-                key={event.id}
-                className="rounded-2xl border border-slate-200 p-4"
-              >
-                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="text-sm font-medium text-slate-900">
-                    {event.old_status
-                      ? `${getShipmentStatusLabel(event.old_status)} → ${getShipmentStatusLabel(event.new_status)}`
-                      : getShipmentStatusLabel(event.new_status)}
-                  </p>
-
-                  <p className="text-xs text-slate-500">
-                    {formatDate(event.created_at)}
-                  </p>
-                </div>
-
-                {event.message ? (
-                  <p className="mt-2 text-sm text-slate-600">{event.message}</p>
-                ) : null}
-              </div>
-            ))}
+              {shipment.status_display ||
+                getShipmentStatusLabel(shipment.status)}
+            </span>
           </div>
-        </div>
-      ) : (
-        <p className="mt-5 text-sm text-slate-500">No delivery updates yet.</p>
-      )}
+
+          <div className="mt-5 grid gap-4 rounded-2xl bg-slate-50 p-4 sm:grid-cols-2">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                Carrier
+              </p>
+
+              <p className="mt-1 text-sm font-medium text-slate-900">
+                {shipment.carrier_display ||
+                  getShipmentCarrierLabel(shipment.carrier)}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                Tracking number
+              </p>
+
+              <p className="mt-1 text-sm font-medium text-slate-900">
+                {shipment.tracking_number || "Not available"}
+              </p>
+
+              {shipment.tracking_url ? (
+                <a
+                  href={shipment.tracking_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-1 inline-block text-sm font-medium text-blue-700 underline underline-offset-4"
+                >
+                  Track shipment
+                </a>
+              ) : null}
+            </div>
+
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                Shipped at
+              </p>
+
+              <p className="mt-1 text-sm text-slate-700">
+                {formatDate(shipment.shipped_at)}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                Delivered at
+              </p>
+
+              <p className="mt-1 text-sm text-slate-700">
+                {formatDate(shipment.delivered_at)}
+              </p>
+            </div>
+          </div>
+
+          {shipment.events.length ? (
+            <div className="mt-6">
+              <h4 className="text-sm font-semibold text-slate-950">
+                Delivery updates
+              </h4>
+
+              <div className="mt-3 space-y-3">
+                {shipment.events.map((event) => (
+                  <div
+                    key={event.id}
+                    className="rounded-2xl border border-slate-200 p-4"
+                  >
+                    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                      <p className="text-sm font-medium text-slate-900">
+                        {event.old_status
+                          ? `${getShipmentStatusLabel(
+                              event.old_status,
+                            )} → ${getShipmentStatusLabel(event.new_status)}`
+                          : getShipmentStatusLabel(event.new_status)}
+                      </p>
+
+                      <p className="text-xs text-slate-500">
+                        {formatDate(event.created_at)}
+                      </p>
+                    </div>
+
+                    {event.message ? (
+                      <p className="mt-2 text-sm text-slate-600">
+                        {event.message}
+                      </p>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <p className="mt-5 text-sm text-slate-500">
+              No delivery updates yet.
+            </p>
+          )}
+        </article>
+      ))}
     </section>
   );
 }

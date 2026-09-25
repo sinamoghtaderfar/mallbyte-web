@@ -38,6 +38,9 @@ export function AdminShipmentsList() {
     "all",
   );
   const [carrier, setCarrier] = useState<ShipmentCarrier>("post");
+  const [selectedSeller, setSelectedSeller] = useState<Record<number, string>>(
+    {},
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [creatingOrderId, setCreatingOrderId] = useState<number | null>(null);
   const [error, setError] = useState("");
@@ -71,32 +74,34 @@ export function AdminShipmentsList() {
           getShipments(),
           getEligibleShipmentOrders(),
         ]);
-
-        if (cancelled) {
-          return;
-        }
-
+        if (cancelled) return;
         setShipments(shipmentData);
         setEligibleOrders(eligibleOrderData);
       } catch (caughtError) {
-        if (!cancelled) {
-          setError(getApiErrorMessage(caughtError));
-        }
+        if (!cancelled) setError(getApiErrorMessage(caughtError));
       } finally {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
+        if (!cancelled) setIsLoading(false);
       }
     }
 
     void loadInitialShippingData();
-
     return () => {
       cancelled = true;
     };
   }, []);
 
   async function handleCreateShipment(order: EligibleShipmentOrder) {
+    const available = order.eligible_sellers ?? [];
+    const sellerId =
+      available.length === 1
+        ? available[0].id
+        : Number(selectedSeller[order.id] || 0);
+
+    if (available.length > 1 && !sellerId) {
+      setError("Please select the seller before creating a shipment.");
+      return;
+    }
+
     try {
       setCreatingOrderId(order.id);
       setError("");
@@ -105,13 +110,15 @@ export function AdminShipmentsList() {
       const shipment = await createShipment({
         order: order.id,
         carrier,
+        ...(sellerId ? { seller: sellerId } : {}),
       });
 
       setMessage(
-        `Shipment ${shipment.shipment_number} created for order ${order.order_number}.`,
+        `Shipment ${shipment.shipment_number} created for order ${order.order_number}${shipment.seller_name ? ` (${shipment.seller_name})` : ""}.`,
       );
 
       await loadShippingData();
+      setSelectedSeller((previous) => ({ ...previous, [order.id]: "" }));
     } catch (caughtError) {
       setError(getApiErrorMessage(caughtError));
     } finally {
@@ -216,8 +223,8 @@ export function AdminShipmentsList() {
               Eligible paid orders
             </h2>
             <p className="mt-2 text-sm text-slate-600">
-              These orders are paid and do not currently have an active
-              shipment.
+              Create a separate shipment for each eligible seller. Orders remain
+              here while another seller still needs a shipment.
             </p>
           </div>
 
@@ -267,6 +274,10 @@ export function AdminShipmentsList() {
             <div className="divide-y divide-slate-100">
               {eligibleOrders.map((order) => {
                 const isCreating = creatingOrderId === order.id;
+                const availableSellers = order.eligible_sellers ?? [];
+                const needsChoice = availableSellers.length > 1;
+                const sellerChosen =
+                  !needsChoice || Boolean(selectedSeller[order.id]);
 
                 return (
                   <div
@@ -280,6 +291,33 @@ export function AdminShipmentsList() {
                       <p className="mt-1 text-xs text-slate-500">
                         Order ID: {order.id}
                       </p>
+                      {needsChoice ? (
+                        <label className="mt-3 block text-xs font-medium text-slate-700">
+                          Seller for {order.order_number}
+                          <select
+                            value={selectedSeller[order.id] ?? ""}
+                            disabled={creatingOrderId !== null}
+                            onChange={(event) =>
+                              setSelectedSeller((previous) => ({
+                                ...previous,
+                                [order.id]: event.target.value,
+                              }))
+                            }
+                            className="mt-1 block h-10 w-full rounded-xl border border-slate-200 bg-white px-2 text-sm"
+                          >
+                            <option value="">Select seller</option>
+                            {availableSellers.map((seller) => (
+                              <option key={seller.id} value={seller.id}>
+                                {seller.name} ({seller.status})
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      ) : availableSellers.length === 1 ? (
+                        <p className="mt-2 text-xs text-slate-600">
+                          Seller: {availableSellers[0].name}
+                        </p>
+                      ) : null}
                     </div>
 
                     <div>
@@ -310,7 +348,7 @@ export function AdminShipmentsList() {
 
                     <button
                       type="button"
-                      disabled={creatingOrderId !== null}
+                      disabled={creatingOrderId !== null || !sellerChosen}
                       onClick={() => void handleCreateShipment(order)}
                       className="inline-flex h-10 items-center justify-center rounded-2xl bg-slate-900 px-4 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
                     >
@@ -379,9 +417,12 @@ export function AdminShipmentsList() {
                     </p>
                   </div>
 
-                  <p className="text-sm text-slate-600">
-                    {shipment.order_number}
-                  </p>
+                  <div className="text-sm text-slate-600">
+                    <p>{shipment.order_number}</p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      {shipment.seller_name ?? "Legacy order shipment"}
+                    </p>
+                  </div>
 
                   <span className="w-fit rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
                     {shipment.status_display ||
