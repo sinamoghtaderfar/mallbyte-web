@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -45,9 +44,7 @@ export default function AdminOrdersPage() {
   const filteredOrders = useMemo(() => {
     if (filter === "all") return orders;
 
-    return orders.filter(
-      (order) => order.status === filter,
-    );
+    return orders.filter((order) => order.status === filter);
   }, [orders, filter]);
 
   return (
@@ -62,8 +59,8 @@ export default function AdminOrdersPage() {
         </h1>
 
         <p className="mt-2 text-sm text-slate-600">
-          Review orders and manage their fulfillment
-          through Shipping and Returns.
+          Review orders and manage their fulfillment through Shipping and
+          Returns.
         </p>
       </div>
 
@@ -103,17 +100,13 @@ export default function AdminOrdersPage() {
         </label>
 
         {isLoading ? (
-          <p className="mt-6 text-sm text-slate-500">
-            Loading orders...
-          </p>
+          <p className="mt-6 text-sm text-slate-500">Loading orders...</p>
         ) : error ? (
           <p role="alert" className="mt-6 text-sm text-red-700">
             {error}
           </p>
         ) : filteredOrders.length === 0 ? (
-          <p className="mt-6 text-sm text-slate-500">
-            No orders found.
-          </p>
+          <p className="mt-6 text-sm text-slate-500">No orders found.</p>
         ) : (
           <div className="mt-6 overflow-x-auto">
             <table className="w-full text-left text-sm">
@@ -130,21 +123,14 @@ export default function AdminOrdersPage() {
 
               <tbody>
                 {filteredOrders.map((order) => (
-                  <tr
-                    key={order.id}
-                    className="border-b border-slate-100"
-                  >
+                  <tr key={order.id} className="border-b border-slate-100">
                     <td className="py-4 font-medium text-slate-950">
                       {order.order_number}
                     </td>
 
-                    <td className="py-4">
-                      {order.status_display}
-                    </td>
+                    <td className="py-4">{order.status_display}</td>
 
-                    <td className="py-4">
-                      {order.payment_status_display}
-                    </td>
+                    <td className="py-4">{order.payment_status_display}</td>
 
                     <td className="py-4">
                       {Number(order.total_amount).toLocaleString()} IRR

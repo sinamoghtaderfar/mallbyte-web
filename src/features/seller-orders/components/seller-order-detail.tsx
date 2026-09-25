@@ -26,7 +26,7 @@ function formatDate(value: string | null) {
 }
 
 function getNextStatus(
-  status: SellerOrderDetailType["status"],
+  status: SellerOrderDetailType["seller_status"],
 ): SellerOrderStatusPayload["status"] | null {
   if (status === "paid") return "processing";
   if (status === "processing") return "shipped";
@@ -55,8 +55,11 @@ export function SellerOrderDetail() {
     if (!order) return null;
 
     if (order.payment_status !== "paid") return null;
+    if (order.status === "cancelled" || order.status === "refunded") {
+      return null;
+    }
 
-    return getNextStatus(order.status);
+    return getNextStatus(order.seller_status);
   }, [order]);
 
   useEffect(() => {
@@ -100,11 +103,11 @@ export function SellerOrderDetail() {
 
       const updatedOrder = await updateSellerOrderStatus(params.id, {
         status,
-        note: `Seller changed order status to ${status}.`,
+        note: `Seller changed their fulfillment status to ${status}.`,
       });
 
       setOrder(updatedOrder);
-      setActionMessage("Order status updated.");
+      setActionMessage("Your fulfillment status was updated.");
     } catch (updateError) {
       setActionError(getApiErrorMessage(updateError));
     } finally {
@@ -156,7 +159,10 @@ export function SellerOrderDetail() {
 
           <div className="mt-4 flex flex-wrap gap-2">
             <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
-              {order.status_display}
+              Your fulfillment: {order.seller_status_display}
+            </span>
+            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+              Overall order: {order.status_display}
             </span>
             <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
               Payment: {order.payment_status_display}
@@ -228,8 +234,13 @@ export function SellerOrderDetail() {
 
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <h2 className="text-lg font-semibold text-slate-950">
-              Status history
+              Overall order history
             </h2>
+
+            <p className="mt-2 text-sm text-slate-500">
+              This is the overall order history, not the individual seller
+              fulfillment history.
+            </p>
 
             {order.status_history.length === 0 ? (
               <p className="mt-4 text-sm text-slate-600">

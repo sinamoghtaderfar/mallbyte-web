@@ -22,6 +22,8 @@ export type SellerOrderListItem = {
   created_at: string;
   paid_at: string | null;
   delivered_at: string | null;
+  seller_status: SellerOrderStatus;
+  seller_status_display: string;
 };
 
 export type SellerOrderItem = {

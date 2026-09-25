@@ -139,34 +139,32 @@ describe("StockAdjustmentModal", () => {
       }),
     );
   });
-  
-it("requires a reason before submitting an adjustment", async () => {
-  const user = userEvent.setup();
 
-  render(
-    <StockAdjustmentModal
-      stock={makeStock()}
-      onClose={vi.fn()}
-      onCreated={vi.fn()}
-    />,
-  );
+  it("requires a reason before submitting an adjustment", async () => {
+    const user = userEvent.setup();
 
-  const reason = screen.getByRole("textbox", {
-    name: /^reason$/i,
+    render(
+      <StockAdjustmentModal
+        stock={makeStock()}
+        onClose={vi.fn()}
+        onCreated={vi.fn()}
+      />,
+    );
+
+    const reason = screen.getByRole("textbox", {
+      name: /^reason$/i,
+    });
+
+    expect(reason).toBeRequired();
+
+    await user.click(
+      screen.getByRole("button", {
+        name: /save adjustment/i,
+      }),
+    );
+
+    expect(mockedCreateStockMovement).not.toHaveBeenCalled();
   });
-
-  expect(reason).toBeRequired();
-
-  await user.click(
-    screen.getByRole("button", {
-      name: /save adjustment/i,
-    }),
-  );
-
-  expect(
-    mockedCreateStockMovement,
-  ).not.toHaveBeenCalled();
-});
   it("converts damaged quantity to a negative movement", async () => {
     const user = userEvent.setup();
 

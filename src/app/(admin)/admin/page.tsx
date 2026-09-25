@@ -29,12 +29,11 @@ const adminSections = [
     status: "Ready",
   },
   {
-  title: "Order management",
-  description:
-    "Review orders, payment status, and fulfillment progress.",
-  href: "/admin/orders",
-  status: "Ready",
-},
+    title: "Order management",
+    description: "Review orders, payment status, and fulfillment progress.",
+    href: "/admin/orders",
+    status: "Ready",
+  },
 ];
 
 const upcomingSections = ["Support tickets", "Analytics", "Observability"];

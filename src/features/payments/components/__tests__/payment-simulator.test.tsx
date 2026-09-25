@@ -189,50 +189,50 @@ describe("PaymentSimulator", () => {
     ).toBeInTheDocument();
   });
 
-it("requires a new attempt after a failed payment", async () => {
-  const user = userEvent.setup();
+  it("requires a new attempt after a failed payment", async () => {
+    const user = userEvent.setup();
 
-  mockedGetOrder.mockResolvedValue(makeOrder());
-  mockedCreatePayment.mockResolvedValue(makePayment());
+    mockedGetOrder.mockResolvedValue(makeOrder());
+    mockedCreatePayment.mockResolvedValue(makePayment());
 
-  mockedMarkPaymentFailed.mockResolvedValue(
-    makePayment({
-      status: "failed",
-      status_display: "Failed",
-      failure_reason: "Payment declined.",
-    }),
-  );
+    mockedMarkPaymentFailed.mockResolvedValue(
+      makePayment({
+        status: "failed",
+        status_display: "Failed",
+        failure_reason: "Payment declined.",
+      }),
+    );
 
-  render(<PaymentSimulator />);
+    render(<PaymentSimulator />);
 
-  await user.click(
-    await screen.findByRole("button", {
-      name: /create mock payment/i,
-    }),
-  );
+    await user.click(
+      await screen.findByRole("button", {
+        name: /create mock payment/i,
+      }),
+    );
 
-  await user.click(
-    screen.getByRole("button", {
-      name: /mark as failed/i,
-    }),
-  );
+    await user.click(
+      screen.getByRole("button", {
+        name: /mark as failed/i,
+      }),
+    );
 
-  expect(
-    await screen.findByText("Payment marked as failed."),
-  ).toBeInTheDocument();
+    expect(
+      await screen.findByText("Payment marked as failed."),
+    ).toBeInTheDocument();
 
-  expect(
-    screen.queryByRole("button", {
-      name: /mark as paid/i,
-    }),
-  ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", {
+        name: /mark as paid/i,
+      }),
+    ).not.toBeInTheDocument();
 
-  expect(
-    screen.getByRole("button", {
-      name: /create mock payment/i,
-    }),
-  ).toBeInTheDocument();
-});
+    expect(
+      screen.getByRole("button", {
+        name: /create mock payment/i,
+      }),
+    ).toBeInTheDocument();
+  });
   it("marks payment as successful and refreshes the order", async () => {
     const user = userEvent.setup();
 

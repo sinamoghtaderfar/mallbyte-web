@@ -119,7 +119,7 @@ export function SellerOrdersList() {
                 </div>
 
                 <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
-                  {order.status_display}
+                  {order.seller_status_display}
                 </span>
 
                 <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
