@@ -1,9 +1,12 @@
+
 "use client";
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import type { OrderDetail } from "@/features/orders/types";
 import { getReturns } from "@/features/returns/api";
+import { getReturnAvailability } from "@/features/returns/eligibility";
 
 type CustomerReturn = Awaited<ReturnType<typeof getReturns>>[number] & {
   id: number;
@@ -107,16 +110,6 @@ const statusPriority: Record<string, number> = {
   closed: 5,
 };
 
-let customerReturnsPromise: Promise<CustomerReturn[]> | null = null;
-
-function loadCustomerReturns() {
-  customerReturnsPromise ??= getReturns().then((returns) =>
-    returns.map((returnRequest) => returnRequest as CustomerReturn),
-  );
-
-  return customerReturnsPromise;
-}
-
 function getReturnOrderId(returnRequest: CustomerReturn) {
   return String(returnRequest.order ?? returnRequest.order_id ?? "");
 }
@@ -193,7 +186,8 @@ export function OrderReturnBadge({
 
     async function loadReturnStatus() {
       try {
-        const returns = await loadCustomerReturns();
+        const returns = await getReturns();
+
         const matchingReturn = pickMostRelevantReturn(
           returns,
           orderId,
@@ -255,7 +249,8 @@ export function OrderReturnStatusCard({
 
     async function loadReturnStatus() {
       try {
-        const returns = await loadCustomerReturns();
+        const returns = await getReturns();
+
         const matchingReturn = pickMostRelevantReturn(
           returns,
           orderId,
@@ -292,10 +287,13 @@ export function OrderReturnStatusCard({
           <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">
             Return status
           </p>
+
           <h2 className="mt-2 text-xl font-semibold text-slate-950">
             {config.label}
           </h2>
+
           <p className="mt-1 text-sm text-slate-600">{config.description}</p>
+
           {returnRequest.request_number ? (
             <p className="mt-2 text-sm text-slate-500">
               Request {returnRequest.request_number}
@@ -318,52 +316,66 @@ type OrderReturnActionButtonProps = {
   orderId: number | string;
   orderNumber?: string;
   canRequestReturn: boolean;
+  order?: OrderDetail;
+};
+
+type ReturnAvailabilityState = {
+  orderId: number;
+  available: boolean;
 };
 
 export function OrderReturnActionButton({
   orderId,
-  orderNumber,
   canRequestReturn,
+  order,
 }: OrderReturnActionButtonProps) {
-  const [hasLoaded, setHasLoaded] = useState(false);
-  const [returnRequest, setReturnRequest] = useState<CustomerReturn | null>(
-    null,
-  );
+  const [availability, setAvailability] =
+    useState<ReturnAvailabilityState | null>(null);
 
   useEffect(() => {
-    let isMounted = true;
-
-    async function loadReturnStatus() {
-      try {
-        const returns = await loadCustomerReturns();
-        const matchingReturn = pickMostRelevantReturn(
-          returns,
-          orderId,
-          orderNumber,
-        );
-
-        if (isMounted) {
-          setReturnRequest(matchingReturn ?? null);
-        }
-      } catch {
-        if (isMounted) {
-          setReturnRequest(null);
-        }
-      } finally {
-        if (isMounted) {
-          setHasLoaded(true);
-        }
-      }
+    if (!order || !canRequestReturn) {
+      return;
     }
 
-    void loadReturnStatus();
+    let mounted = true;
+
+    getReturnAvailability(order)
+      .then((quantities) => {
+        if (!mounted) {
+          return;
+        }
+
+        setAvailability({
+          orderId: order.id,
+          available: Object.values(quantities).some(
+            (quantity) => quantity > 0,
+          ),
+        });
+      })
+      .catch(() => {
+        if (!mounted) {
+          return;
+        }
+
+        setAvailability({
+          orderId: order.id,
+          available: false,
+        });
+      });
 
     return () => {
-      isMounted = false;
+      mounted = false;
     };
-  }, [orderId, orderNumber]);
+  }, [order, canRequestReturn]);
 
-  if (!canRequestReturn || !hasLoaded || returnRequest) {
+  const available = Boolean(
+    canRequestReturn &&
+      order &&
+      availability?.orderId === order.id &&
+      availability.available,
+  );
+
+  if (!available) {
     return null;
   }
 

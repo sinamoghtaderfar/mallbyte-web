@@ -5,25 +5,12 @@ import { useParams, useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useMemo, useState } from "react";
 
 import { getOrder } from "@/features/orders/api";
+import type { OrderDetail } from "@/features/orders/types";
+import { getReturnAvailability } from "../eligibility";
 import { getApiErrorMessage } from "@/lib/api/errors";
 
 import { createReturnRequest } from "../api";
 import type { ReturnItemCondition, ReturnReason } from "../types";
-
-type ReturnableOrderItem = {
-  id: number;
-  product_name: string;
-  product_sku: string;
-  quantity: number;
-  total_price: string;
-};
-
-type ReturnableOrder = {
-  id: number;
-  order_number: string;
-  status: string;
-  items: ReturnableOrderItem[];
-};
 
 type ItemFormState = {
   enabled: boolean;
@@ -69,7 +56,7 @@ export function ReturnRequestForm() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
 
-  const [order, setOrder] = useState<ReturnableOrder | null>(null);
+  const [order, setOrder] = useState<OrderDetail | null>(null);
   const [items, setItems] = useState<Record<number, ItemFormState>>({});
 
   const [isLoading, setIsLoading] = useState(true);
@@ -79,7 +66,7 @@ export function ReturnRequestForm() {
 
   const selectedItems = useMemo(() => {
     return Object.entries(items)
-      .filter(([, item]) => item.enabled)
+      .filter(([, item]) => item.enabled && item.maxQuantity > 0)
       .map(([orderItemId, item]) => ({
         order_item: Number(orderItemId),
         quantity: clampQuantity(item.quantity, item.maxQuantity),
@@ -97,7 +84,8 @@ export function ReturnRequestForm() {
         setIsLoading(true);
         setError("");
 
-        const data = (await getOrder(params.id)) as ReturnableOrder;
+        const data = await getOrder(params.id);
+        const available = await getReturnAvailability(data);
 
         if (!isMounted) return;
 
@@ -107,7 +95,7 @@ export function ReturnRequestForm() {
             acc[item.id] = {
               enabled: false,
               quantity: 1,
-              maxQuantity: item.quantity,
+              maxQuantity: available[item.id] ?? 0,
               reason: "other",
               condition: "unknown",
               customer_note: "",
@@ -216,14 +204,14 @@ export function ReturnRequestForm() {
     );
   }
 
-  if (order.status !== "delivered") {
+  if (!Object.values(items).some((item) => item.maxQuantity > 0)) {
     return (
       <section className="rounded-3xl border border-amber-200 bg-amber-50 p-8">
         <h1 className="text-2xl font-bold text-amber-950">
           This order is not returnable yet
         </h1>
         <p className="mt-2 text-sm text-amber-800">
-          Only delivered orders can be returned.
+          No delivered items with remaining returnable quantity were found.
         </p>
         <Link
           href={`/orders/${order.id}`}
@@ -276,6 +264,7 @@ export function ReturnRequestForm() {
                     <input
                       type="checkbox"
                       checked={itemState?.enabled ?? false}
+                      disabled={!itemState?.maxQuantity}
                       onChange={(event) =>
                         updateItem(item.id, { enabled: event.target.checked })
                       }
@@ -291,6 +280,11 @@ export function ReturnRequestForm() {
                       </span>
                       <span className="mt-1 block text-xs text-slate-500">
                         Ordered quantity: {item.quantity}
+                      </span>
+                      <span className="mt-1 block text-xs text-slate-500">
+                        {itemState?.maxQuantity
+                          ? `${itemState.maxQuantity} returnable`
+                          : "Not yet delivered or no returnable quantity left"}
                       </span>
                     </span>
 

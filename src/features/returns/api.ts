@@ -15,16 +15,22 @@ type PaginatedReturnsResponse = {
   results: ReturnListItem[];
 };
 
-export async function getReturns() {
-  const response = await apiClient.get<
-    ReturnListItem[] | PaginatedReturnsResponse
-  >(API_ENDPOINTS.returns.requests);
+export async function getReturns(): Promise<ReturnListItem[]> {
+  const all: ReturnListItem[] = [];
+  const visited = new Set<string>();
+  let next: string | null = API_ENDPOINTS.returns.requests;
+  while (next) {
+    if (visited.has(next)) throw new Error("Returns pagination loop detected");
+    visited.add(next);
+    const page: ReturnListItem[] | PaginatedReturnsResponse = (
+      await apiClient.get<ReturnListItem[] | PaginatedReturnsResponse>(next)
+    ).data;
 
-  if (Array.isArray(response.data)) {
-    return response.data;
+    if (Array.isArray(page)) return [...all, ...page];
+    all.push(...page.results);
+    next = page.next;
   }
-
-  return response.data.results;
+  return all;
 }
 
 export async function getReturnRequest(returnId: number | string) {

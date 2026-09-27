@@ -152,7 +152,9 @@ export function OrderDetail() {
   const canCancel = order?.status === "pending_payment";
   const canPay =
     order?.status === "pending_payment" && order.payment_status !== "paid";
-  const canRequestReturn = order?.status === "delivered";
+  const canRequestReturn =
+    order?.payment_status === "paid" &&
+    !["cancelled", "refunded"].includes(order.status);
 
   if (isLoading) {
     return (
@@ -407,6 +409,7 @@ export function OrderDetail() {
             orderId={order.id}
             orderNumber={order.order_number}
             canRequestReturn={canRequestReturn}
+            order={order}
           />
 
           {canCancel ? (

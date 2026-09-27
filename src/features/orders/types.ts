@@ -14,6 +14,7 @@ export type OrderItem = {
   id: number;
   product: number;
   product_id: number;
+  seller_id?: number;
   warehouse: number;
   warehouse_name: string;
   product_name: string;
