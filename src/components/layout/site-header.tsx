@@ -9,6 +9,7 @@ import { useAuthStore } from "@/features/auth/auth-store";
 import { isAdminUser, isSellerUser } from "@/features/auth/roles";
 import { useCartStore } from "@/features/cart/cart-store";
 import { CartLink } from "@/features/cart/components/cart-link";
+import { NotificationBell } from "@/features/notifications/components/notification-bell";
 import { getApiErrorMessage } from "@/lib/api/errors";
 
 const navItems = [
@@ -112,7 +113,7 @@ export function SiteHeader() {
 
         <div className="flex items-center gap-3">
           <CartLink />
-
+          {isAuthenticated ? <NotificationBell /> : null}
           {error ? (
             <p className="hidden text-sm text-red-600 lg:block">{error}</p>
           ) : null}

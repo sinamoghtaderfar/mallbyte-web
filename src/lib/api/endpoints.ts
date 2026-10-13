@@ -167,7 +167,28 @@ export const API_ENDPOINTS = {
     orderCancel: (orderId: number | string) =>
       `/api/orders/orders/${orderId}/cancel/`,
   },
+  notifications: {
+  notifications: "/api/notifications/",
+  detail: (notificationId: number | string) =>
+    `/api/notifications/${notificationId}/`,
 
+  unreadCount: "/api/notifications/unread-count/",
+  summary: "/api/notifications/summary/",
+  preferences: "/api/notifications/preferences/",
+
+  markRead: (notificationId: number | string) =>
+    `/api/notifications/${notificationId}/mark-read/`,
+  markUnread: (notificationId: number | string) =>
+    `/api/notifications/${notificationId}/mark-unread/`,
+
+  markAllRead: "/api/notifications/mark-all-read/",
+  markSelectedRead: "/api/notifications/mark-selected-read/",
+  markSelectedUnread: "/api/notifications/mark-selected-unread/",
+
+  deleteSelected: "/api/notifications/delete-selected/",
+  clearRead: "/api/notifications/clear-read/",
+  clearAll: "/api/notifications/clear-all/",
+},
   analytics: {
     dashboard: "/api/analytics/dashboard/",
     timeseries: "/api/analytics/timeseries/",
