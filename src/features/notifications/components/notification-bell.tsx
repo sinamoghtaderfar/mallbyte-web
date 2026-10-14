@@ -1,12 +1,15 @@
 "use client";
 
 import { Bell } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import {
-    getNotifications,
-    getUnreadNotificationCount,
-    markNotificationRead,
+  getNotifications,
+  getUnreadNotificationCount,
+  markAllNotificationsRead,
+  markNotificationRead,
 } from "@/features/notifications/api";
 import type { Notification } from "@/features/notifications/types";
 
@@ -18,10 +21,13 @@ function formatNotificationTime(value: string) {
 }
 
 export function NotificationBell() {
+  const router = useRouter();
+
   const [isOpen, setIsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isMarkingAllRead, setIsMarkingAllRead] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -66,23 +72,49 @@ export function NotificationBell() {
     }
   }
 
-  async function handleMarkRead(notification: Notification) {
-    if (notification.is_read) {
-      return;
-    }
-
+  async function handleNotificationClick(notification: Notification) {
     try {
-      const updated = await markNotificationRead(notification.id);
+      if (!notification.is_read) {
+        const updated = await markNotificationRead(notification.id);
 
-      setNotifications((current) =>
-        current.map((item) =>
-          item.id === updated.id ? updated : item,
-        ),
-      );
+        setNotifications((current) =>
+          current.map((item) =>
+            item.id === updated.id ? updated : item,
+          ),
+        );
 
-      setUnreadCount((current) => Math.max(0, current - 1));
+        setUnreadCount((current) => Math.max(0, current - 1));
+      }
+
+      setIsOpen(false);
+
+      if (notification.action_url.startsWith("/")) {
+        router.push(notification.action_url);
+      }
     } catch {
       setError("Could not update notification.");
+    }
+  }
+
+  async function handleMarkAllRead() {
+    try {
+      setIsMarkingAllRead(true);
+      setError("");
+
+      await markAllNotificationsRead();
+
+      setNotifications((current) =>
+        current.map((notification) => ({
+          ...notification,
+          is_read: true,
+        })),
+      );
+
+      setUnreadCount(0);
+    } catch {
+      setError("Could not mark notifications as read.");
+    } finally {
+      setIsMarkingAllRead(false);
     }
   }
 
@@ -111,10 +143,22 @@ export function NotificationBell() {
               <h2 className="font-semibold text-slate-950">
                 Notifications
               </h2>
+
               <p className="mt-1 text-xs text-slate-500">
                 {unreadCount} unread
               </p>
             </div>
+
+            {unreadCount > 0 ? (
+              <button
+                type="button"
+                onClick={() => void handleMarkAllRead()}
+                disabled={isMarkingAllRead}
+                className="text-xs font-semibold text-blue-600 transition hover:text-blue-700 disabled:opacity-50"
+              >
+                {isMarkingAllRead ? "Updating..." : "Mark all read"}
+              </button>
+            ) : null}
           </div>
 
           {isLoading ? (
@@ -139,10 +183,14 @@ export function NotificationBell() {
                 <button
                   key={notification.id}
                   type="button"
-                  onClick={() => void handleMarkRead(notification)}
+                  onClick={() =>
+                    void handleNotificationClick(notification)
+                  }
                   className={[
                     "block w-full border-b border-slate-100 px-5 py-4 text-left transition last:border-b-0 hover:bg-slate-50",
-                    notification.is_read ? "bg-white" : "bg-blue-50/60",
+                    notification.is_read
+                      ? "bg-white"
+                      : "bg-blue-50/60",
                   ].join(" ")}
                 >
                   <div className="flex items-start gap-3">
@@ -173,6 +221,16 @@ export function NotificationBell() {
               ))}
             </div>
           ) : null}
+
+          <div className="border-t border-slate-100 p-3">
+            <Link
+              href="/notifications"
+              onClick={() => setIsOpen(false)}
+              className="flex h-10 items-center justify-center rounded-2xl text-sm font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-slate-950"
+            >
+              View all notifications
+            </Link>
+          </div>
         </div>
       ) : null}
     </div>
