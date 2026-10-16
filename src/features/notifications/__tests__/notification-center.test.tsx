@@ -313,6 +313,16 @@ describe("NotificationCenter", () => {
     );
 
     expect(mockedMarkAllRead).toHaveBeenCalledTimes(1);
+
+    expect(
+      useNotificationStore.getState().unreadCount,
+    ).toBe(0);
+
+    expect(
+      screen.getByRole("status"),
+    ).toHaveTextContent(
+      "Notifications marked as read.",
+    );
   });
 
   it("toggles one notification to read", async () => {
@@ -336,6 +346,16 @@ describe("NotificationCenter", () => {
     );
 
     expect(mockedMarkRead).toHaveBeenCalledWith(1);
+
+    expect(
+      useNotificationStore.getState().unreadCount,
+    ).toBe(0);
+
+    expect(
+      screen.getByRole("status"),
+    ).toHaveTextContent(
+      "Notification marked as read.",
+    );
   });
 
   it("toggles one notification to unread", async () => {
@@ -361,6 +381,16 @@ describe("NotificationCenter", () => {
     );
 
     expect(mockedMarkUnread).toHaveBeenCalledWith(2);
+
+    expect(
+      useNotificationStore.getState().unreadCount,
+    ).toBe(2);
+
+    expect(
+      screen.getByRole("status"),
+    ).toHaveTextContent(
+      "Notification marked as unread.",
+    );
   });
 
   it("opens the related page when a notification is clicked", async () => {
@@ -449,6 +479,12 @@ describe("NotificationCenter", () => {
     expect(
       screen.queryByText("1 selected"),
     ).not.toBeInTheDocument();
+
+    expect(
+      screen.getByRole("status"),
+    ).toHaveTextContent(
+      "Selected notifications marked as read.",
+    );
   });
 
   it("marks selected notifications as unread", async () => {
@@ -481,54 +517,18 @@ describe("NotificationCenter", () => {
         mockedMarkSelectedUnread,
       ).toHaveBeenCalledWith([2]);
     });
-  });
-
-  it("deletes selected notifications after confirmation", async () => {
-    const user = userEvent.setup();
-
-    vi.spyOn(window, "confirm").mockReturnValue(true);
-
-    render(<NotificationCenter />);
-
-    await screen.findByText("Shipment delivered");
-
-    await user.click(
-      screen.getByRole("checkbox", {
-        name: "Select Shipment delivered",
-      }),
-    );
-
-    const toolbar = screen
-      .getByText("1 selected")
-      .closest("div");
-
-    expect(toolbar).not.toBeNull();
-
-    await user.click(
-      within(toolbar as HTMLElement).getByRole("button", {
-        name: "Delete",
-      }),
-    );
-
-    await waitFor(() => {
-      expect(
-        mockedDeleteSelected,
-      ).toHaveBeenCalledWith([1]);
-    });
 
     expect(
-      screen.queryByText("Shipment delivered"),
-    ).not.toBeInTheDocument();
-
-    expect(
-      screen.getByText("Payment received"),
-    ).toBeInTheDocument();
+      screen.getByRole("status"),
+    ).toHaveTextContent(
+      "Selected notifications marked as unread.",
+    );
   });
 
-  it("does not delete selected notifications when confirmation is cancelled", async () => {
+  it("deletes selected notifications only after dialog confirmation", async () => {
     const user = userEvent.setup();
 
-    vi.spyOn(window, "confirm").mockReturnValue(false);
+    mockedGetUnreadCount.mockResolvedValueOnce(0);
 
     render(<NotificationCenter />);
 
@@ -556,15 +556,97 @@ describe("NotificationCenter", () => {
       mockedDeleteSelected,
     ).not.toHaveBeenCalled();
 
+    const dialog = screen.getByRole("dialog");
+
+    expect(
+      within(dialog).getByText(
+        "Delete selected notifications?",
+      ),
+    ).toBeInTheDocument();
+
+    await user.click(
+      within(dialog).getByRole("button", {
+        name: "Delete",
+      }),
+    );
+
+    await waitFor(() => {
+      expect(
+        mockedDeleteSelected,
+      ).toHaveBeenCalledWith([1]);
+    });
+
+    expect(
+      screen.queryByText("Shipment delivered"),
+    ).not.toBeInTheDocument();
+
+    expect(
+      screen.getByText("Payment received"),
+    ).toBeInTheDocument();
+
+    expect(
+      useNotificationStore.getState().unreadCount,
+    ).toBe(0);
+
+    expect(
+      screen.getByRole("status"),
+    ).toHaveTextContent(
+      "Selected notifications deleted.",
+    );
+  });
+
+  it("does not delete selected notifications when dialog confirmation is cancelled", async () => {
+    const user = userEvent.setup();
+
+    render(<NotificationCenter />);
+
+    await screen.findByText("Shipment delivered");
+
+    await user.click(
+      screen.getByRole("checkbox", {
+        name: "Select Shipment delivered",
+      }),
+    );
+
+    const toolbar = screen
+      .getByText("1 selected")
+      .closest("div");
+
+    expect(toolbar).not.toBeNull();
+
+    await user.click(
+      within(toolbar as HTMLElement).getByRole("button", {
+        name: "Delete",
+      }),
+    );
+
+    expect(
+      mockedDeleteSelected,
+    ).not.toHaveBeenCalled();
+
+    const dialog = screen.getByRole("dialog");
+
+    await user.click(
+      within(dialog).getByRole("button", {
+        name: "Cancel",
+      }),
+    );
+
+    expect(
+      screen.queryByRole("dialog"),
+    ).not.toBeInTheDocument();
+
+    expect(
+      mockedDeleteSelected,
+    ).not.toHaveBeenCalled();
+
     expect(
       screen.getByText("Shipment delivered"),
     ).toBeInTheDocument();
   });
 
-  it("clears read notifications after confirmation", async () => {
+  it("clears read notifications only after dialog confirmation", async () => {
     const user = userEvent.setup();
-
-    vi.spyOn(window, "confirm").mockReturnValue(true);
 
     render(<NotificationCenter />);
 
@@ -576,8 +658,22 @@ describe("NotificationCenter", () => {
       }),
     );
 
+    expect(
+      mockedClearRead,
+    ).not.toHaveBeenCalled();
+
+    const dialog = screen.getByRole("dialog");
+
+    await user.click(
+      within(dialog).getByRole("button", {
+        name: "Clear read",
+      }),
+    );
+
     await waitFor(() => {
-      expect(mockedClearRead).toHaveBeenCalledTimes(1);
+      expect(
+        mockedClearRead,
+      ).toHaveBeenCalledTimes(1);
     });
 
     expect(
@@ -587,12 +683,20 @@ describe("NotificationCenter", () => {
     expect(
       screen.getByText("Shipment delivered"),
     ).toBeInTheDocument();
+
+    expect(
+      useNotificationStore.getState().unreadCount,
+    ).toBe(1);
+
+    expect(
+      screen.getByRole("status"),
+    ).toHaveTextContent(
+      "Read notifications cleared.",
+    );
   });
 
-  it("clears all notifications after confirmation", async () => {
+  it("clears all notifications only after dialog confirmation", async () => {
     const user = userEvent.setup();
-
-    vi.spyOn(window, "confirm").mockReturnValue(true);
 
     render(<NotificationCenter />);
 
@@ -604,8 +708,22 @@ describe("NotificationCenter", () => {
       }),
     );
 
+    expect(
+      mockedClearAll,
+    ).not.toHaveBeenCalled();
+
+    const dialog = screen.getByRole("dialog");
+
+    await user.click(
+      within(dialog).getByRole("button", {
+        name: "Clear all",
+      }),
+    );
+
     await waitFor(() => {
-      expect(mockedClearAll).toHaveBeenCalledTimes(1);
+      expect(
+        mockedClearAll,
+      ).toHaveBeenCalledTimes(1);
     });
 
     expect(
@@ -619,5 +737,15 @@ describe("NotificationCenter", () => {
     expect(
       screen.getByText("No notifications"),
     ).toBeInTheDocument();
+
+    expect(
+      useNotificationStore.getState().unreadCount,
+    ).toBe(0);
+
+    expect(
+      screen.getByRole("status"),
+    ).toHaveTextContent(
+      "All notifications cleared.",
+    );
   });
 });

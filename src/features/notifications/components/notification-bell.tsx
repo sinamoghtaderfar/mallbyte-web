@@ -98,7 +98,7 @@ export function NotificationBell() {
       return;
     }
 
-    function handleMouseDown(
+    function handlePointerDown(
       event: MouseEvent,
     ) {
       const target = event.target;
@@ -125,7 +125,7 @@ export function NotificationBell() {
 
     document.addEventListener(
       "mousedown",
-      handleMouseDown,
+      handlePointerDown,
     );
 
     document.addEventListener(
@@ -136,7 +136,7 @@ export function NotificationBell() {
     return () => {
       document.removeEventListener(
         "mousedown",
-        handleMouseDown,
+        handlePointerDown,
       );
 
       document.removeEventListener(

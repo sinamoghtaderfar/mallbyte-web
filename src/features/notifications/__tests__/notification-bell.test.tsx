@@ -1,6 +1,18 @@
-import { render, screen } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 
 import {
   getNotificationsPage,
@@ -8,6 +20,7 @@ import {
   markAllNotificationsRead,
   markNotificationRead,
 } from "@/features/notifications/api";
+import { useNotificationStore } from "@/features/notifications/notification-store";
 import type { Notification } from "@/features/notifications/types";
 
 import { NotificationBell } from "../components/notification-bell";
@@ -27,10 +40,18 @@ vi.mock("@/features/notifications/api", () => ({
   markNotificationRead: vi.fn(),
 }));
 
-const mockedGetNotificationsPage = vi.mocked(getNotificationsPage);
-const mockedGetUnreadCount = vi.mocked(getUnreadNotificationCount);
-const mockedMarkAllRead = vi.mocked(markAllNotificationsRead);
-const mockedMarkRead = vi.mocked(markNotificationRead);
+const mockedGetNotificationsPage = vi.mocked(
+  getNotificationsPage,
+);
+const mockedGetUnreadCount = vi.mocked(
+  getUnreadNotificationCount,
+);
+const mockedMarkAllRead = vi.mocked(
+  markAllNotificationsRead,
+);
+const mockedMarkRead = vi.mocked(
+  markNotificationRead,
+);
 
 function makeNotification(
   overrides: Partial<Notification> = {},
@@ -60,6 +81,11 @@ describe("NotificationBell", () => {
     vi.clearAllMocks();
     pushMock.mockReset();
 
+    useNotificationStore.setState({
+      unreadCount: 0,
+      isRefreshing: false,
+    });
+
     mockedGetUnreadCount.mockResolvedValue(2);
 
     mockedGetNotificationsPage.mockResolvedValue({
@@ -78,6 +104,10 @@ describe("NotificationBell", () => {
     });
 
     mockedMarkAllRead.mockResolvedValue(2);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("shows unread count and loads the first notification page when opened", async () => {
@@ -101,13 +131,87 @@ describe("NotificationBell", () => {
       screen.getByText("Return approved"),
     ).toBeInTheDocument();
 
-    expect(mockedGetNotificationsPage).toHaveBeenCalledTimes(1);
+    expect(
+      mockedGetNotificationsPage,
+    ).toHaveBeenCalledTimes(1);
 
-    expect(mockedGetNotificationsPage).toHaveBeenCalledWith(
+    expect(
+      mockedGetNotificationsPage,
+    ).toHaveBeenCalledWith(
       {},
       1,
       6,
     );
+  });
+
+  it("refreshes unread count while polling when the tab is visible", async () => {
+    vi.useFakeTimers();
+
+    render(<NotificationBell />);
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(
+      mockedGetUnreadCount,
+    ).toHaveBeenCalledTimes(1);
+
+    mockedGetUnreadCount.mockClear();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(45_000);
+    });
+
+    expect(
+      mockedGetUnreadCount,
+    ).toHaveBeenCalledTimes(1);
+  });
+
+  it("closes the notification panel on Escape", async () => {
+    const user = userEvent.setup();
+
+    render(<NotificationBell />);
+
+    await user.click(
+      screen.getByRole("button", {
+        name: "Notifications",
+      }),
+    );
+
+    expect(
+      await screen.findByText("Shipment shipped"),
+    ).toBeInTheDocument();
+
+    fireEvent.keyDown(document, {
+      key: "Escape",
+    });
+
+    expect(
+      screen.queryByText("Shipment shipped"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("closes the notification panel on outside click", async () => {
+    const user = userEvent.setup();
+
+    render(<NotificationBell />);
+
+    await user.click(
+      screen.getByRole("button", {
+        name: "Notifications",
+      }),
+    );
+
+    expect(
+      await screen.findByText("Shipment shipped"),
+    ).toBeInTheDocument();
+
+    fireEvent.mouseDown(document.body);
+
+    expect(
+      screen.queryByText("Shipment shipped"),
+    ).not.toBeInTheDocument();
   });
 
   it("marks all notifications as read", async () => {
@@ -140,6 +244,10 @@ describe("NotificationBell", () => {
     expect(
       screen.getByText("0 unread"),
     ).toBeInTheDocument();
+
+    expect(
+      useNotificationStore.getState().unreadCount,
+    ).toBe(0);
   });
 
   it("links to the full notifications page", async () => {
@@ -175,22 +283,29 @@ describe("NotificationBell", () => {
 
     render(<NotificationBell />);
 
+    await screen.findByText("2");
+
     await user.click(
       screen.getByRole("button", {
         name: "Notifications",
       }),
     );
 
-    const notificationButton = await screen.findByRole(
-      "button",
-      {
-        name: /Shipment shipped/i,
-      },
-    );
+    const notificationButton =
+      await screen.findByRole(
+        "button",
+        {
+          name: /Shipment shipped/i,
+        },
+      );
 
     await user.click(notificationButton);
 
     expect(mockedMarkRead).toHaveBeenCalledWith(1);
     expect(pushMock).toHaveBeenCalledWith("/orders/12");
+
+    expect(
+      useNotificationStore.getState().unreadCount,
+    ).toBe(1);
   });
 });

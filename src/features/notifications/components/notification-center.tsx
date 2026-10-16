@@ -7,7 +7,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import {
   clearAllNotifications,
@@ -20,10 +20,17 @@ import {
   markSelectedNotificationsRead,
   markSelectedNotificationsUnread,
 } from "@/features/notifications/api";
+import { NotificationConfirmDialog } from "@/features/notifications/components/notification-confirm-dialog";
+import { NotificationToast } from "@/features/notifications/components/notification-toast";
 import { useNotificationStore } from "@/features/notifications/notification-store";
 import type { Notification } from "@/features/notifications/types";
 
 type NotificationFilter = "all" | "unread" | "read";
+
+type ConfirmAction =
+  | "delete-selected"
+  | "clear-read"
+  | "clear-all";
 
 function formatNotificationTime(value: string) {
   return new Intl.DateTimeFormat("en", {
@@ -75,6 +82,14 @@ export function NotificationCenter() {
     useState(false);
 
   const [error, setError] = useState("");
+  const [feedback, setFeedback] = useState("");
+
+  const [confirmAction, setConfirmAction] =
+    useState<ConfirmAction | null>(null);
+
+  const clearFeedback = useCallback(() => {
+    setFeedback("");
+  }, []);
 
   const isLoading = loadedFilter !== filter;
 
@@ -223,6 +238,7 @@ export function NotificationCenter() {
         );
 
         decrementUnreadCount();
+        setFeedback("Notification marked as read.");
       }
 
       if (
@@ -290,6 +306,12 @@ export function NotificationCenter() {
             : item,
         );
       });
+
+      setFeedback(
+        updated.is_read
+          ? "Notification marked as read."
+          : "Notification marked as unread.",
+      );
     } catch {
       setError(
         "Could not update notification.",
@@ -322,6 +344,7 @@ export function NotificationCenter() {
 
       setSelectedIds(new Set());
       setUnreadCount(0);
+      setFeedback("Notifications marked as read.");
     } catch {
       setError(
         "Could not mark all notifications as read.",
@@ -388,6 +411,7 @@ export function NotificationCenter() {
       }
 
       setSelectedIds(new Set());
+      setFeedback("Selected notifications marked as read.");
     } catch {
       setError(
         "Could not mark selected notifications as read.",
@@ -452,6 +476,7 @@ export function NotificationCenter() {
       }
 
       setSelectedIds(new Set());
+      setFeedback("Selected notifications marked as unread.");
     } catch {
       setError(
         "Could not mark selected notifications as unread.",
@@ -461,20 +486,27 @@ export function NotificationCenter() {
     }
   }
 
-  async function handleDeleteSelected() {
-    const ids = Array.from(selectedIds);
-
-    if (ids.length === 0) {
+  function handleDeleteSelected() {
+    if (selectedIds.size === 0) {
       return;
     }
 
-    const confirmed = window.confirm(
-      `Delete ${ids.length} selected notification${
-        ids.length === 1 ? "" : "s"
-      }?`,
-    );
+    setConfirmAction("delete-selected");
+  }
 
-    if (!confirmed) {
+  function handleClearRead() {
+    setConfirmAction("clear-read");
+  }
+
+  function handleClearAll() {
+    setConfirmAction("clear-all");
+  }
+
+  async function executeDeleteSelected() {
+    const ids = Array.from(selectedIds);
+
+    if (ids.length === 0) {
+      setConfirmAction(null);
       return;
     }
 
@@ -482,9 +514,7 @@ export function NotificationCenter() {
       setIsBulkActionRunning(true);
       setError("");
 
-      await deleteSelectedNotifications(
-        ids,
-      );
+      await deleteSelectedNotifications(ids);
 
       setNotifications((current) =>
         current.filter(
@@ -496,8 +526,13 @@ export function NotificationCenter() {
       );
 
       setSelectedIds(new Set());
+      setConfirmAction(null);
 
       await refreshUnreadCount();
+
+      setFeedback(
+        "Selected notifications deleted.",
+      );
     } catch {
       setError(
         "Could not delete selected notifications.",
@@ -507,15 +542,7 @@ export function NotificationCenter() {
     }
   }
 
-  async function handleClearRead() {
-    const confirmed = window.confirm(
-      "Delete all read notifications?",
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
+  async function executeClearRead() {
     try {
       setIsBulkActionRunning(true);
       setError("");
@@ -530,8 +557,13 @@ export function NotificationCenter() {
       );
 
       setSelectedIds(new Set());
+      setConfirmAction(null);
 
       await refreshUnreadCount();
+
+      setFeedback(
+        "Read notifications cleared.",
+      );
     } catch {
       setError(
         "Could not clear read notifications.",
@@ -541,15 +573,7 @@ export function NotificationCenter() {
     }
   }
 
-  async function handleClearAll() {
-    const confirmed = window.confirm(
-      "Delete all notifications? This action cannot be undone.",
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
+  async function executeClearAll() {
     try {
       setIsBulkActionRunning(true);
       setError("");
@@ -559,6 +583,11 @@ export function NotificationCenter() {
       setNotifications([]);
       setSelectedIds(new Set());
       setUnreadCount(0);
+      setConfirmAction(null);
+
+      setFeedback(
+        "All notifications cleared.",
+      );
     } catch {
       setError(
         "Could not clear notifications.",
@@ -636,9 +665,7 @@ export function NotificationCenter() {
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
-            onClick={() =>
-              void handleClearRead()
-            }
+            onClick={handleClearRead}
             disabled={
               isBulkActionRunning
             }
@@ -649,9 +676,7 @@ export function NotificationCenter() {
 
           <button
             type="button"
-            onClick={() =>
-              void handleClearAll()
-            }
+            onClick={handleClearAll}
             disabled={
               isBulkActionRunning
             }
@@ -698,9 +723,7 @@ export function NotificationCenter() {
 
           <button
             type="button"
-            onClick={() =>
-              void handleDeleteSelected()
-            }
+            onClick={handleDeleteSelected}
             disabled={
               isBulkActionRunning
             }
@@ -873,6 +896,52 @@ export function NotificationCenter() {
           </button>
         </div>
       ) : null}
+
+      <NotificationConfirmDialog
+        open={confirmAction === "delete-selected"}
+        title="Delete selected notifications?"
+        description={`This will permanently delete ${selectedIds.size} selected notification${
+          selectedIds.size === 1 ? "" : "s"
+        }.`}
+        confirmLabel="Delete"
+        danger
+        isBusy={isBulkActionRunning}
+        onCancel={() => setConfirmAction(null)}
+        onConfirm={() =>
+          void executeDeleteSelected()
+        }
+      />
+
+      <NotificationConfirmDialog
+        open={confirmAction === "clear-read"}
+        title="Clear read notifications?"
+        description="All notifications that are already read will be permanently deleted."
+        confirmLabel="Clear read"
+        danger
+        isBusy={isBulkActionRunning}
+        onCancel={() => setConfirmAction(null)}
+        onConfirm={() =>
+          void executeClearRead()
+        }
+      />
+
+      <NotificationConfirmDialog
+        open={confirmAction === "clear-all"}
+        title="Clear all notifications?"
+        description="Every notification in your account will be permanently deleted. This cannot be undone."
+        confirmLabel="Clear all"
+        danger
+        isBusy={isBulkActionRunning}
+        onCancel={() => setConfirmAction(null)}
+        onConfirm={() =>
+          void executeClearAll()
+        }
+      />
+
+      <NotificationToast
+        message={feedback}
+        onClose={clearFeedback}
+      />
     </section>
   );
 }

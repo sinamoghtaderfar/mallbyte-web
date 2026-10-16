@@ -25,7 +25,10 @@ export const useNotificationStore = create<NotificationStore>(
 
     incrementUnreadCount: (amount = 1) => {
       set((state) => ({
-        unreadCount: state.unreadCount + amount,
+        unreadCount: Math.max(
+          0,
+          state.unreadCount + amount,
+        ),
       }));
     },
 
@@ -49,7 +52,12 @@ export const useNotificationStore = create<NotificationStore>(
         const unreadCount =
           await getUnreadNotificationCount();
 
-        set({ unreadCount });
+        set({
+          unreadCount: Math.max(
+            0,
+            unreadCount,
+          ),
+        });
       } finally {
         set({ isRefreshing: false });
       }
