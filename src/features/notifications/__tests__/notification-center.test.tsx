@@ -19,6 +19,7 @@ import {
   clearReadNotifications,
   deleteSelectedNotifications,
   getNotifications,
+  getUnreadNotificationCount,
   markAllNotificationsRead,
   markNotificationRead,
   markNotificationUnread,
@@ -28,6 +29,7 @@ import {
 import type { Notification } from "@/features/notifications/types";
 
 import { NotificationCenter } from "../components/notification-center";
+import { useNotificationStore } from "../notification-store";
 
 const pushMock = vi.fn();
 
@@ -37,11 +39,13 @@ vi.mock("next/navigation", () => ({
   }),
 }));
 
+
 vi.mock("@/features/notifications/api", () => ({
   clearAllNotifications: vi.fn(),
   clearReadNotifications: vi.fn(),
   deleteSelectedNotifications: vi.fn(),
   getNotifications: vi.fn(),
+  getUnreadNotificationCount: vi.fn(),
   markAllNotificationsRead: vi.fn(),
   markNotificationRead: vi.fn(),
   markNotificationUnread: vi.fn(),
@@ -53,7 +57,9 @@ const mockedGetNotifications = vi.mocked(getNotifications);
 const mockedMarkAllRead = vi.mocked(markAllNotificationsRead);
 const mockedMarkRead = vi.mocked(markNotificationRead);
 const mockedMarkUnread = vi.mocked(markNotificationUnread);
-
+const mockedGetUnreadCount = vi.mocked(
+  getUnreadNotificationCount,
+);
 const mockedMarkSelectedRead = vi.mocked(
   markSelectedNotificationsRead,
 );
@@ -100,6 +106,13 @@ function makeNotification(
 describe("NotificationCenter", () => {
   beforeEach(() => {
     pushMock.mockReset();
+
+  useNotificationStore.setState({
+    unreadCount: 1,
+    isRefreshing: false,
+  });
+
+  mockedGetUnreadCount.mockResolvedValue(1);
 
     mockedGetNotifications.mockResolvedValue([
       makeNotification(),
