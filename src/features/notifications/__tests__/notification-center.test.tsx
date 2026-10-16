@@ -18,7 +18,7 @@ import {
   clearAllNotifications,
   clearReadNotifications,
   deleteSelectedNotifications,
-  getNotifications,
+  getNotificationsPage,
   getUnreadNotificationCount,
   markAllNotificationsRead,
   markNotificationRead,
@@ -44,7 +44,7 @@ vi.mock("@/features/notifications/api", () => ({
   clearAllNotifications: vi.fn(),
   clearReadNotifications: vi.fn(),
   deleteSelectedNotifications: vi.fn(),
-  getNotifications: vi.fn(),
+  getNotificationsPage: vi.fn(),
   getUnreadNotificationCount: vi.fn(),
   markAllNotificationsRead: vi.fn(),
   markNotificationRead: vi.fn(),
@@ -53,7 +53,9 @@ vi.mock("@/features/notifications/api", () => ({
   markSelectedNotificationsUnread: vi.fn(),
 }));
 
-const mockedGetNotifications = vi.mocked(getNotifications);
+const mockedGetNotificationsPage = vi.mocked(
+  getNotificationsPage,
+);
 const mockedMarkAllRead = vi.mocked(markAllNotificationsRead);
 const mockedMarkRead = vi.mocked(markNotificationRead);
 const mockedMarkUnread = vi.mocked(markNotificationUnread);
@@ -114,18 +116,23 @@ describe("NotificationCenter", () => {
 
   mockedGetUnreadCount.mockResolvedValue(1);
 
-    mockedGetNotifications.mockResolvedValue([
-      makeNotification(),
-      makeNotification({
-        id: 2,
-        title: "Payment received",
-        message: "Your payment was received.",
-        notification_type: "payment",
-        is_read: true,
-        read_at: "2026-10-14T18:15:00Z",
-        action_url: "/orders/13",
-      }),
-    ]);
+    mockedGetNotificationsPage.mockResolvedValue({
+      count: 2,
+      next: null,
+      previous: null,
+      results: [
+        makeNotification(),
+        makeNotification({
+          id: 2,
+          title: "Payment received",
+          message: "Your payment was received.",
+          notification_type: "payment",
+          is_read: true,
+          read_at: "2026-10-14T18:15:00Z",
+          action_url: "/orders/13",
+        }),
+      ],
+    });
 
     mockedMarkAllRead.mockResolvedValue(1);
     mockedMarkSelectedRead.mockResolvedValue(1);
@@ -150,7 +157,80 @@ describe("NotificationCenter", () => {
       screen.getByText("Payment received"),
     ).toBeInTheDocument();
 
-    expect(mockedGetNotifications).toHaveBeenCalledWith({});
+    expect(mockedGetNotificationsPage).toHaveBeenCalledWith(
+      {},
+      1,
+    );
+  });
+
+  it("loads more notifications and appends the next page", async () => {
+    const user = userEvent.setup();
+
+    const first = makeNotification({
+      id: 1,
+      title: "First notification",
+    });
+
+    const second = makeNotification({
+      id: 2,
+      title: "Second notification",
+      is_read: true,
+      read_at: "2026-10-14T18:15:00Z",
+    });
+
+    mockedGetNotificationsPage
+      .mockResolvedValueOnce({
+        count: 2,
+        next: "/api/notifications/?page=2",
+        previous: null,
+        results: [first],
+      })
+      .mockResolvedValueOnce({
+        count: 2,
+        next: null,
+        previous: "/api/notifications/",
+        results: [second],
+      });
+
+    render(<NotificationCenter />);
+
+    expect(
+      await screen.findByText("First notification"),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole("button", {
+        name: "Load more",
+      }),
+    ).toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("button", {
+        name: "Load more",
+      }),
+    );
+
+    expect(
+      await screen.findByText("Second notification"),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText("First notification"),
+    ).toBeInTheDocument();
+
+    expect(
+      mockedGetNotificationsPage,
+    ).toHaveBeenNthCalledWith(
+      2,
+      {},
+      2,
+    );
+
+    expect(
+      screen.queryByRole("button", {
+        name: "Load more",
+      }),
+    ).not.toBeInTheDocument();
   });
 
   it("loads unread notifications when unread filter is selected", async () => {
@@ -160,9 +240,12 @@ describe("NotificationCenter", () => {
 
     await screen.findByText("Shipment delivered");
 
-    mockedGetNotifications.mockResolvedValueOnce([
-      makeNotification(),
-    ]);
+    mockedGetNotificationsPage.mockResolvedValueOnce({
+      count: 1,
+      next: null,
+      previous: null,
+      results: [makeNotification()],
+    });
 
     await user.click(
       screen.getByRole("button", {
@@ -170,9 +253,14 @@ describe("NotificationCenter", () => {
       }),
     );
 
-    expect(mockedGetNotifications).toHaveBeenLastCalledWith({
-      is_read: false,
-    });
+    expect(
+      mockedGetNotificationsPage,
+    ).toHaveBeenLastCalledWith(
+      {
+        is_read: false,
+      },
+      1,
+    );
   });
 
   it("loads read notifications when read filter is selected", async () => {
@@ -182,13 +270,18 @@ describe("NotificationCenter", () => {
 
     await screen.findByText("Shipment delivered");
 
-    mockedGetNotifications.mockResolvedValueOnce([
-      makeNotification({
-        id: 2,
-        title: "Payment received",
-        is_read: true,
-      }),
-    ]);
+    mockedGetNotificationsPage.mockResolvedValueOnce({
+      count: 1,
+      next: null,
+      previous: null,
+      results: [
+        makeNotification({
+          id: 2,
+          title: "Payment received",
+          is_read: true,
+        }),
+      ],
+    });
 
     await user.click(
       screen.getByRole("button", {
@@ -196,9 +289,14 @@ describe("NotificationCenter", () => {
       }),
     );
 
-    expect(mockedGetNotifications).toHaveBeenLastCalledWith({
-      is_read: true,
-    });
+    expect(
+      mockedGetNotificationsPage,
+    ).toHaveBeenLastCalledWith(
+      {
+        is_read: true,
+      },
+      1,
+    );
   });
 
   it("marks all notifications as read", async () => {

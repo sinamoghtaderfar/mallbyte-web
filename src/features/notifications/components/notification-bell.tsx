@@ -10,7 +10,7 @@ import {
 } from "react";
 
 import {
-  getNotifications,
+  getNotificationsPage,
   markAllNotificationsRead,
   markNotificationRead,
 } from "@/features/notifications/api";
@@ -159,9 +159,13 @@ export function NotificationBell() {
       setIsLoading(true);
       setError("");
 
-      const data = await getNotifications();
+      const page = await getNotificationsPage(
+        {},
+        1,
+        6,
+      );
 
-      setNotifications(data.slice(0, 6));
+      setNotifications(page.results);
 
       await refreshUnreadCount();
     } catch {

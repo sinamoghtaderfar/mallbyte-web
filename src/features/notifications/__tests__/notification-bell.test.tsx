@@ -3,10 +3,10 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
-    getNotifications,
-    getUnreadNotificationCount,
-    markAllNotificationsRead,
-    markNotificationRead,
+  getNotificationsPage,
+  getUnreadNotificationCount,
+  markAllNotificationsRead,
+  markNotificationRead,
 } from "@/features/notifications/api";
 import type { Notification } from "@/features/notifications/types";
 
@@ -21,13 +21,13 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("@/features/notifications/api", () => ({
-  getNotifications: vi.fn(),
+  getNotificationsPage: vi.fn(),
   getUnreadNotificationCount: vi.fn(),
   markAllNotificationsRead: vi.fn(),
   markNotificationRead: vi.fn(),
 }));
 
-const mockedGetNotifications = vi.mocked(getNotifications);
+const mockedGetNotificationsPage = vi.mocked(getNotificationsPage);
 const mockedGetUnreadCount = vi.mocked(getUnreadNotificationCount);
 const mockedMarkAllRead = vi.mocked(markAllNotificationsRead);
 const mockedMarkRead = vi.mocked(markNotificationRead);
@@ -57,23 +57,30 @@ function makeNotification(
 
 describe("NotificationBell", () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     pushMock.mockReset();
 
     mockedGetUnreadCount.mockResolvedValue(2);
-    mockedGetNotifications.mockResolvedValue([
-      makeNotification(),
-      makeNotification({
-        id: 2,
-        title: "Return approved",
-        notification_type: "return",
-        action_url: "/returns/5",
-      }),
-    ]);
+
+    mockedGetNotificationsPage.mockResolvedValue({
+      count: 2,
+      next: null,
+      previous: null,
+      results: [
+        makeNotification(),
+        makeNotification({
+          id: 2,
+          title: "Return approved",
+          notification_type: "return",
+          action_url: "/returns/5",
+        }),
+      ],
+    });
 
     mockedMarkAllRead.mockResolvedValue(2);
   });
 
-  it("shows unread count and loads notifications when opened", async () => {
+  it("shows unread count and loads the first notification page when opened", async () => {
     const user = userEvent.setup();
 
     render(<NotificationBell />);
@@ -94,7 +101,13 @@ describe("NotificationBell", () => {
       screen.getByText("Return approved"),
     ).toBeInTheDocument();
 
-    expect(mockedGetNotifications).toHaveBeenCalledTimes(1);
+    expect(mockedGetNotificationsPage).toHaveBeenCalledTimes(1);
+
+    expect(mockedGetNotificationsPage).toHaveBeenCalledWith(
+      {},
+      1,
+      6,
+    );
   });
 
   it("marks all notifications as read", async () => {

@@ -4,24 +4,25 @@ import { apiClient } from "@/lib/api/client";
 import { API_ENDPOINTS } from "@/lib/api/endpoints";
 
 import {
-    clearAllNotifications,
-    clearReadNotifications,
-    deleteSelectedNotifications,
-    getNotificationPreferences,
-    getNotifications,
-    getNotificationSummary,
-    getUnreadNotificationCount,
-    markAllNotificationsRead,
-    markNotificationRead,
-    markNotificationUnread,
-    markSelectedNotificationsRead,
-    markSelectedNotificationsUnread,
-    updateNotificationPreferences,
+  clearAllNotifications,
+  clearReadNotifications,
+  deleteSelectedNotifications,
+  getNotificationPreferences,
+  getNotifications,
+  getNotificationsPage,
+  getNotificationSummary,
+  getUnreadNotificationCount,
+  markAllNotificationsRead,
+  markNotificationRead,
+  markNotificationUnread,
+  markSelectedNotificationsRead,
+  markSelectedNotificationsUnread,
+  updateNotificationPreferences,
 } from "../api";
 
 import type {
-    Notification,
-    NotificationPreferences,
+  Notification,
+  NotificationPreferences,
 } from "../types";
 
 vi.mock("@/lib/api/client", () => ({
@@ -133,7 +134,74 @@ describe("notifications api", () => {
       },
     );
   });
+  it("gets one paginated notification page", async () => {
+  const notification = makeNotification();
 
+  const page = {
+    count: 25,
+    next: "/api/notifications/?page=2",
+    previous: null,
+    results: [notification],
+  };
+
+  mockedGet.mockResolvedValue({
+    data: page,
+  });
+
+  await expect(
+    getNotificationsPage(
+      {
+        is_read: false,
+        notification_type: "order",
+      },
+      2,
+      6,
+    ),
+  ).resolves.toEqual(page);
+
+  expect(mockedGet).toHaveBeenCalledWith(
+    API_ENDPOINTS.notifications.notifications,
+    {
+      params: {
+        is_read: "false",
+        notification_type: "order",
+        page: 2,
+        page_size: 6,
+      },
+    },
+  );
+});
+
+it("normalizes plain arrays into notification pages", async () => {
+  const notifications = [
+    makeNotification({ id: 1 }),
+    makeNotification({ id: 2 }),
+  ];
+
+  mockedGet.mockResolvedValue({
+    data: notifications,
+  });
+
+  await expect(
+    getNotificationsPage({}, 1, 20),
+  ).resolves.toEqual({
+    count: 2,
+    next: null,
+    previous: null,
+    results: notifications,
+  });
+
+  expect(mockedGet).toHaveBeenCalledWith(
+    API_ENDPOINTS.notifications.notifications,
+    {
+      params: {
+        is_read: undefined,
+        page: 1,
+        page_size: 20,
+      },
+    },
+  );
+  });
   it("gets unread count", async () => {
     mockedGet.mockResolvedValue({
       data: {

@@ -51,7 +51,12 @@ export type NotificationFilters = {
   priority?: NotificationPriority;
   is_read?: boolean;
 };
-
+export type NotificationPage = {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: Notification[];
+};
 export type NotificationUnreadCount = {
   unread_count: number;
 };

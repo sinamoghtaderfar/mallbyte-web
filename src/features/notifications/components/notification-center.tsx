@@ -13,7 +13,7 @@ import {
   clearAllNotifications,
   clearReadNotifications,
   deleteSelectedNotifications,
-  getNotifications,
+  getNotificationsPage,
   markAllNotificationsRead,
   markNotificationRead,
   markNotificationUnread,
@@ -60,6 +60,11 @@ export function NotificationCenter() {
   const [loadedFilter, setLoadedFilter] =
     useState<NotificationFilter | null>(null);
 
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] =
+    useState(false);
+
   const [selectedIds, setSelectedIds] =
     useState<Set<number>>(new Set());
 
@@ -78,19 +83,22 @@ export function NotificationCenter() {
 
     async function loadNotifications() {
       try {
-        const data = await getNotifications(
+        const data = await getNotificationsPage(
           filter === "all"
             ? {}
             : {
                 is_read: filter === "read",
               },
+          1,
         );
 
         if (!mounted) {
           return;
         }
 
-        setNotifications(data);
+        setNotifications(data.results);
+        setPage(1);
+        setHasMore(Boolean(data.next));
         setError("");
         setLoadedFilter(filter);
       } catch {
@@ -126,7 +134,45 @@ export function NotificationCenter() {
     nextFilter: NotificationFilter,
   ) {
     setSelectedIds(new Set());
+    setPage(1);
+    setHasMore(false);
     setFilter(nextFilter);
+  }
+
+  async function handleLoadMore() {
+    if (!hasMore || isLoadingMore) {
+      return;
+    }
+
+    try {
+      setIsLoadingMore(true);
+      setError("");
+
+      const nextPage = page + 1;
+
+      const data = await getNotificationsPage(
+        filter === "all"
+          ? {}
+          : {
+              is_read: filter === "read",
+            },
+        nextPage,
+      );
+
+      setNotifications((current) => [
+        ...current,
+        ...data.results,
+      ]);
+
+      setPage(nextPage);
+      setHasMore(Boolean(data.next));
+    } catch {
+      setError(
+        "Could not load more notifications.",
+      );
+    } finally {
+      setIsLoadingMore(false);
+    }
   }
 
   function handleSelectNotification(
@@ -810,6 +856,21 @@ export function NotificationCenter() {
               </div>
             ),
           )}
+        </div>
+      ) : null}
+
+      {hasMore ? (
+        <div className="mt-6 flex justify-center">
+          <button
+            type="button"
+            onClick={() => void handleLoadMore()}
+            disabled={isLoadingMore}
+            className="rounded-2xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+          >
+            {isLoadingMore
+              ? "Loading..."
+              : "Load more"}
+          </button>
         </div>
       ) : null}
     </section>

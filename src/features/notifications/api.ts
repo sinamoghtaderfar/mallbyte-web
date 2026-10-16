@@ -2,22 +2,47 @@ import { apiClient } from "@/lib/api/client";
 import { API_ENDPOINTS } from "@/lib/api/endpoints";
 
 import type {
-    Notification,
-    NotificationCountResponse,
-    NotificationFilters,
-    NotificationIdsPayload,
-    NotificationPreferences,
-    NotificationSummary,
-    NotificationUnreadCount,
-    UpdateNotificationPreferencesPayload,
+  Notification,
+  NotificationCountResponse,
+  NotificationFilters,
+  NotificationIdsPayload,
+  NotificationPage,
+  NotificationPreferences,
+  NotificationSummary,
+  NotificationUnreadCount,
+  UpdateNotificationPreferencesPayload,
 } from "./types";
 
-type PaginatedNotificationsResponse = {
-  count: number;
-  next: string | null;
-  previous: string | null;
-  results: Notification[];
-};
+export async function getNotificationsPage(
+  filters: NotificationFilters = {},
+  page = 1,
+  pageSize = 20,
+): Promise<NotificationPage> {
+  const response = await apiClient.get<
+    Notification[] | NotificationPage
+  >(API_ENDPOINTS.notifications.notifications, {
+    params: {
+      ...filters,
+      is_read:
+        typeof filters.is_read === "boolean"
+          ? String(filters.is_read)
+          : undefined,
+      page,
+      page_size: pageSize,
+    },
+  });
+
+  if (Array.isArray(response.data)) {
+    return {
+      count: response.data.length,
+      next: null,
+      previous: null,
+      results: response.data,
+    };
+  }
+
+  return response.data;
+}
 
 export async function getNotifications(
   filters: NotificationFilters = {},
@@ -25,19 +50,23 @@ export async function getNotifications(
   const all: Notification[] = [];
   const visited = new Set<string>();
 
-  let next: string | null = API_ENDPOINTS.notifications.notifications;
+  let next: string | null =
+    API_ENDPOINTS.notifications.notifications;
+
   let isFirstRequest = true;
 
   while (next) {
     if (visited.has(next)) {
-      throw new Error("Notifications pagination loop detected");
+      throw new Error(
+        "Notifications pagination loop detected",
+      );
     }
 
     visited.add(next);
 
-    const page: Notification[] | PaginatedNotificationsResponse = (
+    const page: Notification[] | NotificationPage = (
       await apiClient.get<
-        Notification[] | PaginatedNotificationsResponse
+        Notification[] | NotificationPage
       >(next, {
         params: isFirstRequest
           ? {
