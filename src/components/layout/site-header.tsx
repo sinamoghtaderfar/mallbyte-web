@@ -26,11 +26,14 @@ const navItems = [
     label: "Orders",
   },
   {
+    href: "/support",
+    label: "Support",
+  },
+  {
     href: "/profile",
     label: "Profile",
   },
 ];
-
 function getLinkClass(isActive: boolean) {
   return [
     "rounded-2xl px-4 py-2 text-sm font-medium transition",

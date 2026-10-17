@@ -189,6 +189,51 @@ export const API_ENDPOINTS = {
   clearRead: "/api/notifications/clear-read/",
   clearAll: "/api/notifications/clear-all/",
 },
+  support: {
+    tickets: "/api/support/tickets/",
+
+    ticketDetail: (ticketId: number | string) =>
+      `/api/support/tickets/${ticketId}/`,
+
+    summary: "/api/support/tickets/summary/",
+
+    agents: "/api/support/tickets/agents/",
+
+    attachments: (ticketId: number | string) =>
+      `/api/support/tickets/${ticketId}/attachments/`,
+
+    reply: (ticketId: number | string) =>
+      `/api/support/tickets/${ticketId}/reply/`,
+
+    assign: (ticketId: number | string) =>
+      `/api/support/tickets/${ticketId}/assign/`,
+
+    priority: (ticketId: number | string) =>
+      `/api/support/tickets/${ticketId}/priority/`,
+
+    addTag: (ticketId: number | string) =>
+      `/api/support/tickets/${ticketId}/add-tag/`,
+
+    removeTag: (ticketId: number | string) =>
+      `/api/support/tickets/${ticketId}/remove-tag/`,
+
+    auditLogs: (ticketId: number | string) =>
+      `/api/support/tickets/${ticketId}/audit-logs/`,
+
+    resolve: (ticketId: number | string) =>
+      `/api/support/tickets/${ticketId}/resolve/`,
+
+    close: (ticketId: number | string) =>
+      `/api/support/tickets/${ticketId}/close/`,
+
+    reopen: (ticketId: number | string) =>
+      `/api/support/tickets/${ticketId}/reopen/`,
+
+    tags: "/api/support/tags/",
+
+    tagDetail: (tagId: number | string) =>
+      `/api/support/tags/${tagId}/`,
+  },
   analytics: {
     dashboard: "/api/analytics/dashboard/",
     timeseries: "/api/analytics/timeseries/",
