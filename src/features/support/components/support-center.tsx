@@ -8,49 +8,49 @@ import { getMyPermissions } from "@/features/rbac/api";
 import { getApiErrorMessage } from "@/lib/api/errors";
 
 import {
-    addSupportTicketTag,
-    assignSupportTicket,
-    changeSupportTicketPriority,
-    closeSupportTicket,
-    createSupportTag,
-    createSupportTicket,
-    deleteSupportTag,
-    getSupportAgents,
-    getSupportAuditLogs,
-    getSupportSummary,
-    getSupportTags,
-    getSupportTicket,
-    getSupportTickets,
-    removeSupportTicketTag,
-    reopenSupportTicket,
-    replyToSupportTicket,
-    resolveSupportTicket,
-    updateSupportTag,
-    uploadSupportAttachment,
+  addSupportTicketTag,
+  assignSupportTicket,
+  changeSupportTicketPriority,
+  closeSupportTicket,
+  createSupportTag,
+  createSupportTicket,
+  deleteSupportTag,
+  getSupportAgents,
+  getSupportAuditLogs,
+  getSupportSummary,
+  getSupportTags,
+  getSupportTicket,
+  getSupportTickets,
+  removeSupportTicketTag,
+  reopenSupportTicket,
+  replyToSupportTicket,
+  resolveSupportTicket,
+  updateSupportTag,
+  uploadSupportAttachment,
 } from "../api";
 import {
-    SUPPORT_CATEGORY_OPTIONS,
-    SUPPORT_PRIORITY_OPTIONS,
-    SUPPORT_STATUS_OPTIONS,
-    getCategoryLabel,
-    getPriorityLabel,
-    getStatusLabel,
+  SUPPORT_CATEGORY_OPTIONS,
+  SUPPORT_PRIORITY_OPTIONS,
+  SUPPORT_STATUS_OPTIONS,
+  getCategoryLabel,
+  getPriorityLabel,
+  getStatusLabel,
 } from "../constants";
 import {
-    getSupportCapabilities,
-    type SupportCapabilities,
+  getSupportCapabilities,
+  type SupportCapabilities,
 } from "../permissions";
 import type {
-    CreateSupportTicketPayload,
-    SupportAgent,
-    SupportSummary,
-    SupportTag,
-    SupportTicket,
-    SupportTicketCategory,
-    SupportTicketFilters,
-    SupportTicketPriority,
-    SupportTicketStatus,
-    TicketAuditLog,
+  CreateSupportTicketPayload,
+  SupportAgent,
+  SupportSummary,
+  SupportTag,
+  SupportTicket,
+  SupportTicketCategory,
+  SupportTicketFilters,
+  SupportTicketPriority,
+  SupportTicketStatus,
+  TicketAuditLog,
 } from "../types";
 
 const EMPTY_SUMMARY: SupportSummary = {
@@ -442,7 +442,13 @@ function TicketDetail({
   const isCustomer = ticket.customer === currentUserId;
   const canPublicReply = isCustomer || capabilities.canReplyAsStaff;
   const canUpload = isCustomer || capabilities.canReplyAsStaff;
-
+const canReopenTicket =
+  capabilities.canReopen ||
+  (
+    capabilities.isSupportStaff &&
+    capabilities.canReplyAsStaff &&
+    ticket.assigned_to === currentUserId
+  );
   const [reply, setReply] = useState("");
   const [internalNote, setInternalNote] = useState(false);
   const [assignee, setAssignee] = useState(
@@ -719,8 +725,8 @@ function TicketDetail({
                 </button>
               ) : null}
 
-              {capabilities.canReopen &&
-              (ticket.status === "closed" || ticket.status === "resolved") ? (
+              {canReopenTicket &&
+(ticket.status === "closed" || ticket.status === "resolved") ? (
                 <button
                   type="button"
                   disabled={busy === "reopen"}
