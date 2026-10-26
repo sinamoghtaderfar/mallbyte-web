@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { FinancialNav } from "@/features/insights/components/financial-nav";
 import { getApiErrorMessage } from "@/lib/api/errors";
 import {
   downloadFinancialCsv,
@@ -116,6 +117,7 @@ export function AdminFinanceDashboard() {
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-10">
+      <FinancialNav />
       <p className="text-sm font-semibold uppercase tracking-wider text-slate-500">Admin / Settlements</p>
       <h1 className="mt-2 text-3xl font-semibold text-slate-950">Financial control center</h1>
       <p className="mt-2 max-w-3xl text-sm text-slate-600">
@@ -218,7 +220,7 @@ export function AdminFinanceDashboard() {
           </>
         )}
       </section>
-      <Link href="/admin" className="mt-8 inline-block text-sm font-medium text-slate-700 underline">Back to admin dashboard</Link>
+      <Link href="/admin/financial" className="mt-8 inline-block text-sm font-medium text-slate-700 underline">Back to financial workspace</Link>
     </main>
   );
 }

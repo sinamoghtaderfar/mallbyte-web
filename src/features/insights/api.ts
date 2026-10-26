@@ -1,7 +1,7 @@
 import { apiClient } from "@/lib/api/client";
 import type {
   AdminDashboardResponse,
-  AuditQueuedResponse,
+  AuditStartResponse,
   AdminTimeSeriesResponse,
   AuditAlert,
   AuditRun,
@@ -42,13 +42,13 @@ export async function getSellerInsights(period: Period) {
   return { dashboard: dashboard.data, timeseries: timeseries.data, products: products.data };
 }
 
-export async function getAuditHistory(page = 1, pageSize = 10) {
+export async function getAuditHistory(page = 1, pageSize = 10, alertPage = 1) {
   const [runs, alerts] = await Promise.all([
     apiClient.get<PageResult<AuditRun>>(INSIGHT_ENDPOINTS.auditRuns, {
       params: { page, page_size: pageSize },
     }),
     apiClient.get<PageResult<AuditAlert>>(INSIGHT_ENDPOINTS.auditAlerts, {
-      params: { page: 1, page_size: 50 },
+      params: { page: alertPage, page_size: pageSize },
     }),
   ]);
   return { runs: runs.data, alerts: alerts.data };
@@ -61,7 +61,7 @@ export async function getAuditRunDetail(id: number) {
 
 /** Permission: manage_analytics_reports. Never used automatically on page load. */
 export async function startManualAudit() {
-  const { data } = await apiClient.post<AuditQueuedResponse>(INSIGHT_ENDPOINTS.auditRunNow, {
+  const { data } = await apiClient.post<AuditStartResponse>(INSIGHT_ENDPOINTS.auditRunNow, {
     sample_limit: 20,
   });
   return data;
@@ -73,5 +73,6 @@ export async function findAuditRunByKey(runKey: string) {
     INSIGHT_ENDPOINTS.auditRuns,
     { params: { run_key: runKey, page: 1, page_size: 1 } },
   );
-  return data.results[0] ?? null;
+  // An older API ignores run_key. Never report an unrelated audit as completed.
+  return data.results.find((run) => run.run_key === runKey) ?? null;
 }

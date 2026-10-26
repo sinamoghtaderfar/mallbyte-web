@@ -17,6 +17,7 @@ export type FinancialSeries = {
 
 export type FinancialReport = {
   metric_contract_version: number;
+  data_quality?: { has_warnings: boolean; scope?: string };
   currencies: CashflowBucket[];
   series?: FinancialSeries[];
   accounting_notes: {
@@ -121,3 +122,6 @@ export type AuditQueuedResponse = {
   task_id: string;
   status: "queued";
 };
+
+/** Older deployments respond with a completed AuditRun (201); new ones enqueue (202). */
+export type AuditStartResponse = AuditQueuedResponse | AuditRun;

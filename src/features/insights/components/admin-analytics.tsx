@@ -5,7 +5,9 @@ import Link from "next/link";
 import { ArrowUpRight, CreditCard, Landmark, Package, RotateCcw } from "lucide-react";
 
 import { getApiErrorMessage } from "@/lib/api/errors";
+import { downloadChartCsv } from "../finance-utils";
 import { getAdminInsights } from "../api";
+import { FinancialNav } from "./financial-nav";
 import type { Period } from "../types";
 import {
   FinancialAreaChart, InsightHeader, Metric, money, Notice, Panel,
@@ -47,6 +49,7 @@ export function AdminAnalytics() {
 
   function changePeriod(next: Period) {
     setPeriod(next);
+    setData(null); // Never label stale numbers with a new reporting period.
     setLoading(true);
     setError("");
   }
@@ -60,9 +63,10 @@ export function AdminAnalytics() {
   return (
     <main className="min-h-screen bg-slate-50/80 px-4 py-8 sm:py-10">
       <div className="mx-auto max-w-7xl space-y-6">
+        <FinancialNav />
         <InsightHeader eyebrow="Platform performance" title="Analytics overview"
           description="Explore captured cash flow, refunds and order activity with currency-separated financial reporting."
-          backHref="/admin" actions={<PeriodPicker value={period} onChange={changePeriod} disabled={loading} />} />
+          backHref="/admin/financial" actions={<PeriodPicker value={period} onChange={changePeriod} disabled={loading} />} />
 
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -98,6 +102,8 @@ export function AdminAnalytics() {
                   <span><i className="mr-2 inline-block h-2.5 w-2.5 rounded-full bg-amber-500" />Refunded</span>
                 </div>
                 <FinancialAreaChart points={points} currency={currency} primaryName="Captured" secondaryName="Refunded" />
+                {points.length > 0 && <button type="button" onClick={() => downloadChartCsv(points, currency, "Captured", "Refunded", "admin-cashflow")}
+                  className="mt-4 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">Download displayed chart CSV</button>}
               </Panel>
               <Panel title="Cash-flow composition" subtitle="Selected currency only; amounts are not combined across currencies.">
                 {bucket ? (
@@ -126,6 +132,8 @@ export function AdminAnalytics() {
                 ) : <p className="text-sm text-slate-500">No cash-flow events in this period.</p>}
               </Panel>
             </div>
+            {data.dashboard.financial.data_quality?.has_warnings &&
+              <Notice variant="warning">Financial data quality checks found possible missing event dates, duplicate captures or order mismatches. Review the internal reconciliation report before using these figures.</Notice>}
             <Notice variant="info">This view uses the Backend&apos;s financial cash-flow contract. Values are grouped by currency and are not platform profit, seller payout, or independent bank reconciliation.</Notice>
             <div className="flex flex-wrap gap-3">
               <Link href="/admin/monitoring" className="rounded-xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800">Financial monitoring</Link>

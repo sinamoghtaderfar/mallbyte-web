@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 
 const sections = [
+  { title: "Financial workspace", description: "All analytics, ledger and audit tools in one place.", href: "/admin/financial", icon: CircleDollarSign, accent: "text-cyan-700 bg-cyan-50" },
   {
     title: "Financial analytics", description: "Cash flow, refunds and multi-currency trends.",
     href: "/admin/analytics", icon: BarChart3, accent: "text-cyan-700 bg-cyan-50",

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { useId, type ReactNode } from "react";
 import { Activity, ArrowLeft, CircleAlert, RefreshCw } from "lucide-react";
 import {
   Area,
@@ -16,9 +16,17 @@ import {
 import type { Period } from "../types";
 
 export function money(value: string | number, currency: string) {
-  const number = Number(value);
-  if (!Number.isFinite(number)) return `${value} ${currency}`;
-  return `${new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 }).format(number)} ${currency}`;
+  // Backend sends decimal strings. Never round them through IEEE-754 Number.
+  if (typeof value === "string") {
+    const match = /^(-?)(\d+)(\.\d+)?$/.exec(value.trim());
+    if (match) {
+      const grouped = match[2].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+      return `${match[1]}${grouped}${match[3] ?? ""} ${currency}`;
+    }
+    return `${value} ${currency}`;
+  }
+  if (!Number.isFinite(value)) return `— ${currency}`;
+  return `${new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 }).format(value)} ${currency}`;
 }
 
 export function readableDate(value: string | null) {
@@ -127,15 +135,18 @@ export type ChartPoint = { date: string; primary: number; secondary: number };
 export function FinancialAreaChart({ points, currency, primaryName, secondaryName }: {
   points: ChartPoint[]; currency: string; primaryName: string; secondaryName: string;
 }) {
-  if (!points.length) {
-    return <div className="flex h-72 items-center justify-center rounded-2xl bg-slate-50 text-sm text-slate-500">No transactions in this period.</div>;
+  const gradientId = useId().replaceAll(":", "");
+  if (!points.length || points.every((p) => p.primary === 0 && p.secondary === 0)) {
+    return <div role="status" className="flex h-72 items-center justify-center rounded-2xl bg-slate-50 px-5 text-center text-sm text-slate-500">No recorded activity for this currency and period.</div>;
   }
   return (
-    <div className="h-80 w-full" role="img" aria-label={`Trend chart: ${primaryName} and ${secondaryName}, ${currency}`}>
+    <div>
+      <div className="h-80 w-full" role="img" aria-label={`Trend chart: ${primaryName} and ${secondaryName}, ${currency}`}>
+
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={points} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
           <defs>
-            <linearGradient id="insightPrimaryGradient" x1="0" y1="0" x2="0" y2="1">
+            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="#0891b2" stopOpacity={0.22} />
               <stop offset="100%" stopColor="#0891b2" stopOpacity={0} />
             </linearGradient>
@@ -144,10 +155,21 @@ export function FinancialAreaChart({ points, currency, primaryName, secondaryNam
           <XAxis dataKey="date" tickFormatter={(value: string) => value.slice(5)} tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: "#64748b" }} minTickGap={20} />
           <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: "#64748b" }} width={65} tickFormatter={(value: number) => new Intl.NumberFormat("en", { notation: "compact" }).format(value)} />
           <Tooltip formatter={(value, name) => [money(Number(value ?? 0), currency), name === "primary" ? primaryName : secondaryName]} contentStyle={{ borderRadius: 16, borderColor: "#e2e8f0", fontSize: 12 }} />
-          <Area type="monotone" name="primary" dataKey="primary" stroke="#0891b2" fill="url(#insightPrimaryGradient)" strokeWidth={2.5} dot={false} isAnimationActive={false} />
+          <Area type="monotone" name="primary" dataKey="primary" stroke="#0891b2" fill={`url(#${gradientId})`} strokeWidth={2.5} dot={false} isAnimationActive={false} />
           <Area type="monotone" name="secondary" dataKey="secondary" stroke="#f59e0b" fill="transparent" strokeWidth={2} dot={false} isAnimationActive={false} />
         </AreaChart>
       </ResponsiveContainer>
+      </div>
+      <details className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
+        <summary className="cursor-pointer font-semibold text-slate-700">Accessible data table ({points.length} days)</summary>
+        <div className="mt-3 max-h-80 overflow-auto">
+          <table className="w-full min-w-[400px] text-left text-xs">
+            <caption className="sr-only">Daily trend data in {currency}</caption>
+            <thead className="sticky top-0 bg-slate-100 text-slate-600"><tr><th scope="col" className="px-2 py-2">Date</th><th scope="col" className="px-2 py-2">{primaryName}</th><th scope="col" className="px-2 py-2">{secondaryName}</th></tr></thead>
+            <tbody>{points.map((row) => <tr key={row.date} className="border-b border-slate-200"><th scope="row" className="px-2 py-2 font-medium">{row.date}</th><td className="px-2 py-2">{money(row.primary, currency)}</td><td className="px-2 py-2">{money(row.secondary, currency)}</td></tr>)}</tbody>
+          </table>
+        </div>
+      </details>
     </div>
   );
 }

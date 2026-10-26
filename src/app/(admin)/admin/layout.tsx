@@ -10,7 +10,7 @@ import { PlatformAnalyticsRoute } from "@/features/auth/components/platform-anal
 /** Admin operations remain staff-only; analytics pages use Django RBAC roles. */
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const analyticsSection = ["/admin/finance", "/admin/analytics", "/admin/monitoring"]
+  const analyticsSection = ["/admin/financial", "/admin/finance", "/admin/analytics", "/admin/monitoring"]
     .some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 
   return (

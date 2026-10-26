@@ -37,7 +37,7 @@ describe("insights API contracts", () => {
     get.mockResolvedValue({ data: { count: 0, results: [] } } as never);
     await getAuditHistory(2, 10);
     expect(get).toHaveBeenCalledWith(INSIGHT_ENDPOINTS.auditRuns, { params: { page: 2, page_size: 10 } });
-    expect(get).toHaveBeenCalledWith(INSIGHT_ENDPOINTS.auditAlerts, { params: { page: 1, page_size: 50 } });
+    expect(get).toHaveBeenCalledWith(INSIGHT_ENDPOINTS.auditAlerts, { params: { page: 1, page_size: 10 } });
   });
 
   it("opens an exact audit detail URL", async () => {
@@ -47,11 +47,24 @@ describe("insights API contracts", () => {
   });
 
   it("polls the saved audit run by its exact key", async () => {
-    get.mockResolvedValue({ data: { results: [{ id: 77, status: "clean" }] } } as never);
+    get.mockResolvedValue({ data: { results: [{ id: 77, status: "clean", run_key: "manual:abc" }] } } as never);
     const run = await findAuditRunByKey("manual:abc");
     expect(run?.id).toBe(77);
     expect(get).toHaveBeenCalledWith(INSIGHT_ENDPOINTS.auditRuns, {
       params: { run_key: "manual:abc", page: 1, page_size: 1 },
+    });
+  });
+
+  it("never mistakes a different run for the queued audit when server ignores filter", async () => {
+    get.mockResolvedValue({ data: { results: [{ id: 5, run_key: "manual:other", status: "clean" }] } } as never);
+    expect(await findAuditRunByKey("manual:mine")).toBeNull();
+  });
+
+  it("supports independent audit-alert pages", async () => {
+    get.mockResolvedValue({ data: { count: 0, results: [] } } as never);
+    await getAuditHistory(3, 10, 2);
+    expect(get).toHaveBeenCalledWith(INSIGHT_ENDPOINTS.auditAlerts, {
+      params: { page: 2, page_size: 10 },
     });
   });
 

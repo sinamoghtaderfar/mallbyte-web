@@ -108,7 +108,8 @@ export function SellerFinanceDashboard() {
           <h1 className="mt-2 text-3xl font-semibold text-slate-950">Financial statement</h1>
           <p className="mt-2 text-sm text-slate-600">Confirmed seller ledger entries and payout eligibility.</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Link href="/seller/analytics" className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium">Sales analytics</Link>
           <button type="button" onClick={refresh} disabled={loading}
             className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium disabled:opacity-50">Refresh</button>
           <button type="button" onClick={() => void exportCsv()} disabled={exporting || !statement}

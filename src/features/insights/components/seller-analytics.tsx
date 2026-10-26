@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Boxes, Coins, ShoppingBag, Undo2 } from "lucide-react";
 
 import { getApiErrorMessage } from "@/lib/api/errors";
+import { downloadChartCsv } from "../finance-utils";
 import { getSellerInsights } from "../api";
 import type { Period } from "../types";
 import {
@@ -48,6 +49,7 @@ export function SellerAnalytics() {
 
   function changePeriod(next: Period) {
     setPeriod(next);
+    setData(null); // Never label stale numbers with a new reporting period.
     setLoading(true);
     setError("");
   }
@@ -62,7 +64,7 @@ export function SellerAnalytics() {
     <main className="min-h-screen bg-slate-50 px-4 py-8 sm:py-10">
       <div className="mx-auto max-w-7xl space-y-6">
         <InsightHeader eyebrow="Store performance" title="Your sales analytics"
-          description="Track merchandise value and product performance for your own store. Amounts are grouped by currency."
+          description="Review your store’s merchandise activity, including discounts and refunds. Totals are separated by currency."
           backHref="/seller/dashboard" actions={<PeriodPicker value={period} onChange={changePeriod} disabled={loading} />} />
         <div className="flex flex-wrap items-center justify-between gap-3">
           <label className="flex items-center gap-3 text-sm font-medium text-slate-600">Currency
@@ -92,6 +94,8 @@ export function SellerAnalytics() {
             <div className="grid gap-5 xl:grid-cols-[minmax(0,1.6fr)_minmax(300px,1fr)]">
               <Panel title="Merchandise trend" subtitle="Daily gross and refunded merchandise for the selected currency.">
                 <FinancialAreaChart points={points} currency={currency} primaryName="Gross merchandise" secondaryName="Verified refunds" />
+                {points.length > 0 && <button type="button" onClick={() => downloadChartCsv(points, currency, "Gross merchandise", "Verified refunds", "seller-merchandise")}
+                  className="mt-4 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">Download displayed chart CSV</button>}
               </Panel>
               <Panel title="Top-selling products" subtitle="Ranked by gross merchandise value.">
                 {bestProducts.length ? (
@@ -112,6 +116,8 @@ export function SellerAnalytics() {
                 ) : <p className="text-sm text-slate-500">No sales in this period.</p>}
               </Panel>
             </div>
+            {!data.dashboard.accounting_notes.partial_refunds_supported &&
+              <Notice variant="warning">This backend does not report verified partial refunds in seller merchandise analytics. The figures may be incomplete until the financial API hardening is merged and deployed.</Notice>}
             <Notice variant="warning">
               Seller metrics use checkout ownership snapshots where available, with legacy fallback for older orders. Net merchandise accounts for checkout discounts and verified merchandise refunds, but is NOT profit or seller payout. For confirmed ledger balances and eligibility, use the finance page.
             </Notice>
