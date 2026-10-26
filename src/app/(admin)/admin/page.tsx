@@ -1,107 +1,68 @@
 import Link from "next/link";
+import {
+  BarChart3, Boxes, CircleDollarSign, ClipboardList, HeartHandshake,
+  LineChart, PackageCheck, ShieldAlert, Truck,
+} from "lucide-react";
 
-const adminSections = [
+const sections = [
   {
-    title: "Seller management",
-    description: "Review seller applications and approve or reject stores.",
-    href: "/admin/sellers",
-    status: "Ready",
+    title: "Financial analytics", description: "Cash flow, refunds and multi-currency trends.",
+    href: "/admin/analytics", icon: BarChart3, accent: "text-cyan-700 bg-cyan-50",
   },
   {
-    title: "Return management",
-    description:
-      "Review return requests, receive returned items, and complete refunds.",
-    href: "/admin/returns",
-    status: "Ready",
+    title: "Financial monitoring", description: "Audit history, open alerts and controlled checks.",
+    href: "/admin/monitoring", icon: ShieldAlert, accent: "text-amber-700 bg-amber-50",
   },
   {
-    title: "Shipping management",
-    description:
-      "Create shipments for paid orders and manage delivery progress.",
-    href: "/admin/shipments",
-    status: "Ready",
+    title: "Reconciliation & balances", description: "Seller ledger, discrepancy reports and CSV exports.",
+    href: "/admin/finance", icon: CircleDollarSign, accent: "text-emerald-700 bg-emerald-50",
   },
   {
-    title: "Inventory management",
-    description:
-      "Monitor warehouse stock, reserved inventory, available quantities, and low-stock products.",
-    href: "/admin/inventory",
-    status: "Ready",
+    title: "Seller management", description: "Review applications and verify stores.",
+    href: "/admin/sellers", icon: HeartHandshake, accent: "text-violet-700 bg-violet-50",
   },
   {
-    title: "Order management",
-    description: "Review orders, payment status, and fulfillment progress.",
-    href: "/admin/orders",
-    status: "Ready",
+    title: "Orders", description: "Manage customer orders and fulfillment states.",
+    href: "/admin/orders", icon: ClipboardList, accent: "text-sky-700 bg-sky-50",
+  },
+  {
+    title: "Returns", description: "Process returns and verified refund workflows.",
+    href: "/admin/returns", icon: PackageCheck, accent: "text-rose-700 bg-rose-50",
+  },
+  {
+    title: "Shipments", description: "Track parcels and delivery operations.",
+    href: "/admin/shipments", icon: Truck, accent: "text-indigo-700 bg-indigo-50",
+  },
+  {
+    title: "Inventory", description: "Check stock, reservations and warehouse activity.",
+    href: "/admin/inventory", icon: Boxes, accent: "text-teal-700 bg-teal-50",
   },
 ];
 
-const upcomingSections = ["Support tickets", "Analytics", "Observability"];
-
 export default function AdminDashboardPage() {
   return (
-    <main className="mx-auto max-w-6xl px-4 py-10">
-      <div>
-        <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-          Admin
-        </p>
-
-        <h1 className="mt-2 text-3xl font-semibold text-slate-950">
-          Admin dashboard
-        </h1>
-
-        <p className="mt-2 max-w-2xl text-sm text-slate-600">
-          Manage platform-level workflows for sellers, returns, shipping,
-          inventory, refunds, and future operations.
-        </p>
-      </div>
-
-      <section className="mt-8 grid gap-4 md:grid-cols-2">
-        {adminSections.map((section) => (
-          <Link
-            key={section.href}
-            href={section.href}
-            className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h2 className="text-xl font-semibold text-slate-950">
-                  {section.title}
-                </h2>
-
-                <p className="mt-2 text-sm text-slate-600">
-                  {section.description}
-                </p>
+    <main className="min-h-screen bg-slate-50 px-4 py-10">
+      <div className="mx-auto max-w-7xl">
+        <div className="rounded-[2rem] bg-slate-950 px-7 py-10 text-white shadow-xl shadow-slate-200 sm:px-10">
+          <p className="text-xs font-bold uppercase tracking-[0.24em] text-cyan-300">MallByte / Workspace</p>
+          <h1 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">Admin control center</h1>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">One workspace for marketplace operations, financial transparency and seller management.</p>
+          <div className="mt-7 flex items-center gap-2 text-xs text-slate-400"><LineChart size={15} /> Live data is loaded inside each section.</div>
+        </div>
+        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {sections.map(({ title, description, href, icon: Icon, accent }) => (
+            <Link key={href} href={href}
+              className="group flex min-h-48 flex-col justify-between rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition duration-200 hover:-translate-y-1 hover:border-slate-300 hover:shadow-lg">
+              <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${accent}`}><Icon size={23} /></div>
+              <div className="mt-5">
+                <h2 className="text-base font-semibold text-slate-950">{title}</h2>
+                <p className="mt-2 text-sm leading-6 text-slate-500">{description}</p>
+                <p className="mt-4 text-xs font-semibold text-cyan-700 group-hover:underline">Open workspace →</p>
               </div>
-
-              <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-700">
-                {section.status}
-              </span>
-            </div>
-
-            <p className="mt-6 text-sm font-medium text-slate-900">
-              Open section →
-            </p>
-          </Link>
-        ))}
-      </section>
-
-      <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-6">
-        <h2 className="text-lg font-semibold text-slate-950">Coming next</h2>
-
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {upcomingSections.map((section) => (
-            <div
-              key={section}
-              className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4"
-            >
-              <p className="text-sm font-medium text-slate-700">{section}</p>
-
-              <p className="mt-1 text-xs text-slate-500">Not built yet</p>
-            </div>
+            </Link>
           ))}
         </div>
-      </section>
+      </div>
     </main>
   );
 }
