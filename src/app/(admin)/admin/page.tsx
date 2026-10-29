@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 
 const sections = [
+  { title: "Observability", description: "System health, API logs, alerts, incidents and approved operations. Requires an Observability role.", href: "/admin/observability", icon: ShieldAlert, accent: "text-cyan-700 bg-cyan-50" },
   { title: "Content & CMS", description: "Editorial pages, banners, announcements, FAQs and navigation. Requires a content role.", href: "/admin/content", icon: BookOpen, accent: "text-cyan-700 bg-cyan-50" },
   { title: "Financial workspace", description: "All analytics, ledger and audit tools in one place.", href: "/admin/financial", icon: CircleDollarSign, accent: "text-cyan-700 bg-cyan-50" },
   { title: "Financial analytics", description: "Cash flow, refunds and multi-currency trends.", href: "/admin/analytics", icon: BarChart3, accent: "text-cyan-700 bg-cyan-50" },

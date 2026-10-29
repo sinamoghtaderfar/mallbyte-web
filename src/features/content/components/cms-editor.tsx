@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { X, Save } from "lucide-react";
 import { createCms, listCmsAll, updateCms } from "../api";
-import { CMS_RESOURCES, recordLabel } from "../definitions";
+import { recordLabel } from "../definitions";
 import type { Field, ResourceDefinition } from "../definitions";
 import { safeContentUrl, toDateTimeLocal, toIsoDateTime } from "../safety";
 import type { CmsRecord, CmsResource } from "../types";
