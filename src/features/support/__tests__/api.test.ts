@@ -235,8 +235,10 @@ describe("support api", () => {
   it("downloads support attachments through authenticated API", async () => {
     const blob = new Blob(["private"], { type: "text/plain" });
     mockedGet.mockResolvedValue({ data: blob });
-    const makeUrl = vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:private");
-    const revokeUrl = vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
+    const originalCreate = URL.createObjectURL;
+    const originalRevoke = URL.revokeObjectURL;
+    URL.createObjectURL = vi.fn().mockReturnValue("blob:private");
+    URL.revokeObjectURL = vi.fn();
     const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
     try {
       await downloadSupportAttachment(7, 12, "invoice.txt");
@@ -245,10 +247,10 @@ describe("support api", () => {
         { responseType: "blob" },
       );
       expect(click).toHaveBeenCalledOnce();
-      expect(revokeUrl).toHaveBeenCalledWith("blob:private");
+      expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:private");
     } finally {
-      makeUrl.mockRestore();
-      revokeUrl.mockRestore();
+      URL.createObjectURL = originalCreate;
+      URL.revokeObjectURL = originalRevoke;
       click.mockRestore();
     }
   });
