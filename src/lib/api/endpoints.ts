@@ -202,6 +202,8 @@ export const API_ENDPOINTS = {
 
     attachments: (ticketId: number | string) =>
       `/api/support/tickets/${ticketId}/attachments/`,
+    attachmentDownload: (ticketId: number | string, attachmentId: number | string) =>
+      `/api/support/tickets/${ticketId}/attachments/${attachmentId}/download/`,
 
     reply: (ticketId: number | string) =>
       `/api/support/tickets/${ticketId}/reply/`,
