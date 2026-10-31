@@ -12,6 +12,7 @@ describe("API endpoints", () => {
 
   it("defines core marketplace endpoints", () => {
     expect(API_ENDPOINTS.products.products).toBe("/api/products/products/");
+    expect(API_ENDPOINTS.products.myProducts).toBe("/api/products/products/my_products/");
     expect(API_ENDPOINTS.orders.cart).toBe("/api/orders/cart/");
     expect(API_ENDPOINTS.rbac.myPermissions).toBe("/api/rbac/my-permissions/");
   });
