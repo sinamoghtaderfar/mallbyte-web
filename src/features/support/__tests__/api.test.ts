@@ -14,6 +14,7 @@ import {
     replyToSupportTicket,
     resolveSupportTicket,
     uploadSupportAttachment,
+    downloadSupportAttachment,
 } from "../api";
 
 vi.mock("@/lib/api/client", () => ({
@@ -229,6 +230,29 @@ describe("support api", () => {
         "Content-Type": "multipart/form-data",
       },
     });
+  });
+
+  it("downloads support attachments through authenticated API", async () => {
+    const blob = new Blob(["private"], { type: "text/plain" });
+    mockedGet.mockResolvedValue({ data: blob });
+    const originalCreate = URL.createObjectURL;
+    const originalRevoke = URL.revokeObjectURL;
+    URL.createObjectURL = vi.fn().mockReturnValue("blob:private");
+    URL.revokeObjectURL = vi.fn();
+    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+    try {
+      await downloadSupportAttachment(7, 12, "invoice.txt");
+      expect(mockedGet).toHaveBeenCalledWith(
+        API_ENDPOINTS.support.attachmentDownload(7, 12),
+        { responseType: "blob" },
+      );
+      expect(click).toHaveBeenCalledOnce();
+      expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:private");
+    } finally {
+      URL.createObjectURL = originalCreate;
+      URL.revokeObjectURL = originalRevoke;
+      click.mockRestore();
+    }
   });
 
   it("resolves tickets with an empty action payload", async () => {

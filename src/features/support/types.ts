@@ -38,7 +38,7 @@ export type TicketAttachment = {
   message: number | null;
   uploaded_by: number;
   uploaded_by_display: string;
-  file: string;
+  download_url: string;
   original_filename: string;
   content_type: string;
   size: number;

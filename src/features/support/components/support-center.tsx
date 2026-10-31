@@ -27,6 +27,7 @@ import {
   resolveSupportTicket,
   updateSupportTag,
   uploadSupportAttachment,
+  downloadSupportAttachment,
 } from "../api";
 import {
   SUPPORT_CATEGORY_OPTIONS,
@@ -1233,16 +1234,15 @@ function TicketDetail({
               <div className="mt-3 flex flex-wrap gap-2">
                 {ticket.attachments.map(
                   (attachment) => (
-                    <a
+                    <button
+                      type="button"
                       key={attachment.id}
-                      href={attachment.file}
-                      target="_blank"
-                      rel="noreferrer"
+                      onClick={() => void run("download", () => downloadSupportAttachment(ticket.id, attachment.id, attachment.original_filename), false)}
                       className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 hover:text-slate-950"
                     >
                       {attachment.original_filename ||
                         `Attachment #${attachment.id}`}
-                    </a>
+                    </button>
                   ),
                 )}
               </div>
