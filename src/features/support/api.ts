@@ -154,6 +154,24 @@ export async function replyToSupportTicket(
   return response.data;
 }
 
+export async function downloadSupportAttachment(ticketId: number | string, attachmentId: number | string, filename: string) {
+  const response = await apiClient.get<Blob>(
+    API_ENDPOINTS.support.attachmentDownload(ticketId, attachmentId),
+    { responseType: "blob" },
+  );
+  const url = URL.createObjectURL(response.data);
+  try {
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename || "attachment";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
 export async function uploadSupportAttachment(
   ticketId: number | string,
   file: File,
