@@ -27,7 +27,7 @@ function normalizeList<T>(data: ListResponse<T>) {
 
 export async function getSellerProducts() {
   const response = await apiClient.get<ListResponse<ProductListItem>>(
-    API_ENDPOINTS.products.products,
+    API_ENDPOINTS.products.myProducts,
   );
 
   return normalizeList(response.data);
