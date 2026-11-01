@@ -1,10 +1,11 @@
 import Link from "next/link";
 import {
-  BarChart3, BookOpen, Boxes, CircleDollarSign, ClipboardList, HeartHandshake,
+  BarChart3, BookOpen, Boxes, Crown, CircleDollarSign, ClipboardList, HeartHandshake,
   LineChart, PackageCheck, ShieldAlert, Truck,
 } from "lucide-react";
 
 const sections = [
+  { title: "Super Admin Console", description: "Platform overview, users, role management, product moderation, audit history and privileged operations. Superusers only.", href: "/admin/super", icon: Crown, accent: "text-violet-700 bg-violet-50" },
   { title: "Observability", description: "System health, API logs, alerts, incidents and approved operations. Requires an Observability role.", href: "/admin/observability", icon: ShieldAlert, accent: "text-cyan-700 bg-cyan-50" },
   { title: "Content & CMS", description: "Editorial pages, banners, announcements, FAQs and navigation. Requires a content role.", href: "/admin/content", icon: BookOpen, accent: "text-cyan-700 bg-cyan-50" },
   { title: "Financial workspace", description: "All analytics, ledger and audit tools in one place.", href: "/admin/financial", icon: CircleDollarSign, accent: "text-cyan-700 bg-cyan-50" },
