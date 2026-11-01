@@ -70,7 +70,6 @@ export function SuperAdminConsole(){
   useEffect(()=>{
     if(!bootstrapped||!allowed)return;
     let active=true;
-    setBusy(true);setError("");
     const calls:Record<Tab,()=>Promise<void>>={
       overview:async()=>{const r=await apiClient.get<Overview>(`${base}/console/overview/`);if(active)setOverview(r.data)},
       users:async()=>{const r=await apiClient.get<Paginated<User>>(`${base}/console/users/`,{params:{page:userPage,search:userQuery}});if(active){setUsers(unwrap(r.data));setUserCount(r.data.count)}},
