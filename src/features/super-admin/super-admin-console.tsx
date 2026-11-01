@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { AlertTriangle, ArrowRight, BarChart3, BookOpen, Boxes, ClipboardList, CreditCard, History, LayoutDashboard, Loader2, Package, RefreshCcw, Settings, Shield, Store, Users } from "lucide-react";
+import { AlertTriangle, ArrowRight, BarChart3, BookOpen, Boxes, ClipboardList, CreditCard, HeartHandshake, History, LayoutDashboard, Loader2, Package, RefreshCcw, Settings, Shield, Store, Users } from "lucide-react";
 import { apiClient } from "@/lib/api/client";
 import { useAuthStore } from "@/features/auth/auth-store";
 import { AccessDenied } from "@/features/auth/components/access-denied";
@@ -26,6 +26,7 @@ const sections: {id:Tab; label:string; Icon:typeof Users}[] = [
 ];
 const integrations = [
   {href:"/admin/sellers",title:"Sellers",desc:"Applications and seller verification",Icon:Store},
+  {href:"/support",title:"Support",desc:"Tickets and agent workflows",Icon:HeartHandshake},
   {href:"/admin/orders",title:"Orders",desc:"Customer orders and fulfillment",Icon:ClipboardList},
   {href:"/admin/returns",title:"Returns",desc:"Returns and refunds",Icon:RefreshCcw},
   {href:"/admin/shipments",title:"Shipments",desc:"Delivery tracking",Icon:Boxes},
