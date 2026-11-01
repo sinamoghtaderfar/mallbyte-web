@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { AlertTriangle, ArrowRight, BarChart3, BookOpen, Boxes, ClipboardList, CreditCard, HeartHandshake, History, LayoutDashboard, Loader2, Package, RefreshCcw, Settings, Shield, Store, Users } from "lucide-react";
+import { AlertTriangle, ArrowRight, BarChart3, BookOpen, Boxes, ClipboardList, CreditCard, History, LayoutDashboard, Loader2, Package, RefreshCcw, Settings, Shield, Store, Users } from "lucide-react";
 import { apiClient } from "@/lib/api/client";
 import { useAuthStore } from "@/features/auth/auth-store";
 import { AccessDenied } from "@/features/auth/components/access-denied";
