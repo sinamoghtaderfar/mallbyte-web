@@ -121,6 +121,8 @@ export type ProductBrand = {
 };
 
 export type ProductQueryParams = {
+  page?: string;
+  page_size?: string;
   search?: string;
   category?: string;
   brand?: string;

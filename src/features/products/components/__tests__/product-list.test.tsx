@@ -217,6 +217,37 @@ describe("ProductList", () => {
     ).toBeInTheDocument();
   });
 
+  it("navigates paginated results and resets on a new filter", async () => {
+    const user = userEvent.setup();
+    mockedGetProducts.mockImplementation(async (params = {}) => ({
+      count: 25,
+      next: params.page === "2" ? null : "/api/products/products/?page=2",
+      previous: params.page === "2" ? "/api/products/products/?page=1" : null,
+      results: [makeProduct({ name: params.page === "2" ? "Second Page" : "First Page" })],
+    }));
+    render(<ProductList />);
+    expect(await screen.findByText("First Page")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Next" }));
+    expect(await screen.findByText("Second Page")).toBeInTheDocument();
+    expect(mockedGetProducts).toHaveBeenCalledWith({ page: "2" });
+    await user.type(screen.getByLabelText(/search products/i), "keyboard");
+    await user.click(screen.getByRole("button", { name: /apply filters/i }));
+    await waitFor(() => expect(mockedGetProducts).toHaveBeenLastCalledWith({ search: "keyboard" }));
+    expect(screen.getByText(/Page 1 of/)).toBeInTheDocument();
+  });
+
+  it("rejects an inverted price range without making a catalog request", async () => {
+    const user = userEvent.setup();
+    mockedGetProducts.mockResolvedValue(makeResponse([makeProduct()]));
+    render(<ProductList />);
+    await screen.findByText("Mechanical Keyboard");
+    await user.type(screen.getByLabelText(/min price/i), "2000");
+    await user.type(screen.getByLabelText(/max price/i), "1000");
+    await user.click(screen.getByRole("button", { name: /apply filters/i }));
+    expect(screen.getByText(/Minimum price cannot exceed maximum price/)).toBeInTheDocument();
+    expect(mockedGetProducts).toHaveBeenCalledTimes(1);
+  });
+
   it("shows product loading error", async () => {
     mockedGetProducts.mockRejectedValue(
       new Error("Products are not available."),
