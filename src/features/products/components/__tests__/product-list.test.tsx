@@ -219,7 +219,7 @@ describe("ProductList", () => {
 
   it("navigates paginated results and resets on a new filter", async () => {
     const user = userEvent.setup();
-    mockedGetProducts.mockImplementation(async (params) => ({
+    mockedGetProducts.mockImplementation(async (params = {}) => ({
       count: 25,
       next: params.page === "2" ? null : "/api/products/products/?page=2",
       previous: params.page === "2" ? "/api/products/products/?page=1" : null,
