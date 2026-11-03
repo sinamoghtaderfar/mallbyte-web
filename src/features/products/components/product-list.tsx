@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useEffect, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 
 import { getApiErrorMessage } from "@/lib/api/errors";
 
@@ -12,6 +12,7 @@ import type {
   ProductQueryParams,
 } from "../types";
 import { ProductCard } from "./product-card";
+import { getCatalogUrlSnapshot, getServerCatalogUrlSnapshot, navigateCatalog, parseCatalogUrlState, subscribeCatalogUrl } from "../url-state";
 
 type FilterFormState = {
   search: string;
@@ -25,17 +26,6 @@ type FilterFormState = {
   ordering: string;
 };
 
-const emptyFilters: FilterFormState = {
-  search: "",
-  category: "",
-  brand: "",
-  min_price: "",
-  max_price: "",
-  in_stock: false,
-  has_discount: false,
-  label: "",
-  ordering: "",
-};
 
 const productLabels = [
   { value: "new", label: "New" },
@@ -95,16 +85,25 @@ function buildProductQueryParams(filters: FilterFormState): ProductQueryParams {
   return params;
 }
 
+function toFilterForm(params: ProductQueryParams): FilterFormState {
+  return {
+    search: params.search ?? "", category: params.category ?? "", brand: params.brand ?? "",
+    min_price: params.min_price ?? "", max_price: params.max_price ?? "",
+    in_stock: params.in_stock === "true", has_discount: params.has_discount === "true",
+    label: params.label ?? "", ordering: params.ordering ?? "",
+  };
+}
+
 export function ProductList() {
   const [products, setProducts] = useState<ProductListItem[]>([]);
   const [categories, setCategories] = useState<ProductCategory[]>([]);
   const [brands, setBrands] = useState<ProductBrand[]>([]);
-  const [draftFilters, setDraftFilters] =
-    useState<FilterFormState>(emptyFilters);
-  const [appliedFilters, setAppliedFilters] = useState<ProductQueryParams>({});
+  const urlSearch = useSyncExternalStore(subscribeCatalogUrl, getCatalogUrlSnapshot, getServerCatalogUrlSnapshot);
+  const urlState = useMemo(() => parseCatalogUrlState(urlSearch), [urlSearch]);
+  const { filters: appliedFilters, page, pageSize } = urlState;
+  const [editedFilters, setEditedFilters] = useState<FilterFormState | null>(null);
+  const draftFilters = editedFilters ?? toFilterForm(appliedFilters);
   const [resultCount, setResultCount] = useState<number | null>(null);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(20);
   const [hasNextPage, setHasNextPage] = useState(false);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   const [isLoadingFilters, setIsLoadingFilters] = useState(true);
@@ -174,7 +173,7 @@ export function ProductList() {
     return () => {
       isMounted = false;
     };
-  }, [appliedFilters, page, pageSize]);
+  }, [urlSearch]);
 
   function handleFilterChange(
     event: ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -183,8 +182,8 @@ export function ProductList() {
     const nextValue =
       type === "checkbox" ? (event.target as HTMLInputElement).checked : value;
 
-    setDraftFilters((current) => ({
-      ...current,
+    setEditedFilters((current) => ({
+      ...(current ?? toFilterForm(appliedFilters)),
       [name]: nextValue,
     }));
   }
@@ -195,14 +194,13 @@ export function ProductList() {
       setError("Minimum price cannot exceed maximum price.");
       return;
     }
-    setPage(1);
-    setAppliedFilters(buildProductQueryParams(draftFilters));
+    navigateCatalog({ filters: buildProductQueryParams(draftFilters), page: 1, pageSize });
+    setEditedFilters(null);
   }
 
   function handleClearFilters() {
-    setDraftFilters(emptyFilters);
-    setPage(1);
-    setAppliedFilters({});
+    navigateCatalog({ filters: {}, page: 1, pageSize });
+    setEditedFilters(null);
   }
 
   const hasAppliedFilters = Object.keys(appliedFilters).length > 0;
@@ -457,11 +455,11 @@ export function ProductList() {
             <span className="text-sm text-slate-600">Page {page} of {Math.max(1, Math.ceil(resultCount / pageSize))} · {resultCount} products</span>
             <div className="flex items-center gap-2">
               <label htmlFor="catalog-page-size" className="text-sm">Per page</label>
-              <select id="catalog-page-size" value={pageSize} onChange={(event) => { setPageSize(Number(event.target.value)); setPage(1); }} className="rounded-xl border p-2 text-sm">
+              <select id="catalog-page-size" value={pageSize} onChange={(event) => navigateCatalog({ filters: appliedFilters, page: 1, pageSize: Number(event.target.value) as 12 | 20 | 40 })} className="rounded-xl border p-2 text-sm">
                 <option value={12}>12</option><option value={20}>20</option><option value={40}>40</option>
               </select>
-              <button type="button" disabled={isLoadingProducts || page <= 1} onClick={() => setPage((current) => Math.max(1, current - 1))} className="rounded-xl border px-3 py-2 text-sm disabled:opacity-40">Previous</button>
-              <button type="button" disabled={isLoadingProducts || !hasNextPage} onClick={() => setPage((current) => current + 1)} className="rounded-xl bg-slate-900 px-3 py-2 text-sm text-white disabled:opacity-40">Next</button>
+              <button type="button" disabled={isLoadingProducts || page <= 1} onClick={() => navigateCatalog({ filters: appliedFilters, page: Math.max(1, page - 1), pageSize })} className="rounded-xl border px-3 py-2 text-sm disabled:opacity-40">Previous</button>
+              <button type="button" disabled={isLoadingProducts || !hasNextPage} onClick={() => navigateCatalog({ filters: appliedFilters, page: page + 1, pageSize })} className="rounded-xl bg-slate-900 px-3 py-2 text-sm text-white disabled:opacity-40">Next</button>
             </div>
           </nav>
         ) : null}
