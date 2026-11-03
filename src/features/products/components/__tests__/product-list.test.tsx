@@ -276,7 +276,7 @@ describe("ProductList", () => {
     await user.click(screen.getByRole("button", { name: /apply filters/i }));
     expect(await screen.findByText("Filtered Result")).toBeInTheDocument();
     expect(window.location.search).toContain("search=mouse");
-    window.history.back();
+    window.history.replaceState(null, "", "/products");
     window.dispatchEvent(new PopStateEvent("popstate"));
     expect(await screen.findByText("Unfiltered Result")).toBeInTheDocument();
   });
