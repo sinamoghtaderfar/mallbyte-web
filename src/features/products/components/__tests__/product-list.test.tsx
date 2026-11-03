@@ -97,6 +97,7 @@ function makeResponse(products: ProductListItem[]) {
 
 describe("ProductList", () => {
   beforeEach(() => {
+    window.history.replaceState(null, "", "/products");
     vi.clearAllMocks();
     mockedGetProductFilters.mockResolvedValue(filterOptions);
   });
@@ -246,6 +247,38 @@ describe("ProductList", () => {
     await user.click(screen.getByRole("button", { name: /apply filters/i }));
     expect(screen.getByText(/Minimum price cannot exceed maximum price/)).toBeInTheDocument();
     expect(mockedGetProducts).toHaveBeenCalledTimes(1);
+  });
+
+  it("restores filters and page from a shared URL", async () => {
+    window.history.replaceState(null, "", "/products?search=keyboard&page=2&page_size=12");
+    mockedGetProducts.mockResolvedValue({
+      count: 24,
+      next: null,
+      previous: "/products?page=1",
+      results: [makeProduct({ name: "Shared Result" })],
+    });
+    render(<ProductList />);
+    expect(await screen.findByText("Shared Result")).toBeInTheDocument();
+    expect(screen.getByLabelText(/search products/i)).toHaveValue("keyboard");
+    expect(screen.getByText(/Page 2 of/)).toBeInTheDocument();
+    expect(mockedGetProducts).toHaveBeenCalledWith({ search: "keyboard", page: "2", page_size: "12" });
+  });
+
+  it("restores results on browser Back navigation", async () => {
+    const user = userEvent.setup();
+    mockedGetProducts.mockImplementation(async (params = {}) => ({
+      count: 1, next: null, previous: null,
+      results: [makeProduct({ name: params.search ? "Filtered Result" : "Unfiltered Result" })],
+    }));
+    render(<ProductList />);
+    expect(await screen.findByText("Unfiltered Result")).toBeInTheDocument();
+    await user.type(screen.getByLabelText(/search products/i), "mouse");
+    await user.click(screen.getByRole("button", { name: /apply filters/i }));
+    expect(await screen.findByText("Filtered Result")).toBeInTheDocument();
+    expect(window.location.search).toContain("search=mouse");
+    window.history.replaceState(null, "", "/products");
+    window.dispatchEvent(new PopStateEvent("popstate"));
+    expect(await screen.findByText("Unfiltered Result")).toBeInTheDocument();
   });
 
   it("shows product loading error", async () => {
