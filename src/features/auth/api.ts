@@ -3,6 +3,8 @@ import { API_ENDPOINTS } from "@/lib/api/endpoints";
 import { clearSession, setAccessToken } from "@/lib/auth/session-storage";
 
 import type {
+  AuthSuccessResponse,
+  MFASetupResponse,
   LogoutResponse,
   OtpRequestPayload,
   OtpRequestResponse,
@@ -27,8 +29,25 @@ export async function verifyOtp(payload: OtpVerifyPayload) {
     payload,
   );
 
-  setAccessToken(response.data.access);
+  if ("access" in response.data) {
+    setAccessToken(response.data.access);
+  }
 
+  return response.data;
+}
+
+export async function setupAdminMfa(payload: { challenge: string; password: string }) {
+  const response = await apiClient.post<MFASetupResponse>(API_ENDPOINTS.auth.mfaSetup, payload);
+  return response.data;
+}
+
+export async function finishAdminMfa(
+  payload: { challenge: string; code: string },
+  enrollment: boolean,
+) {
+  const endpoint = enrollment ? API_ENDPOINTS.auth.mfaComplete : API_ENDPOINTS.auth.mfaVerify;
+  const response = await apiClient.post<AuthSuccessResponse>(endpoint, payload);
+  setAccessToken(response.data.access);
   return response.data;
 }
 
