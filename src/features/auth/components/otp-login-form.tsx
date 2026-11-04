@@ -1,32 +1,15 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Mail, ShieldCheck } from "lucide-react";
+import { FormEvent, useState } from "react";
+import { Mail, ShieldCheck, KeyRound } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
 
 import { getApiErrorMessage } from "@/lib/api/errors";
-
-import { requestOtp, verifyOtp } from "../api";
+import { requestOtp, verifyOtp, setupAdminMfa, finishAdminMfa } from "../api";
 import { useAuthStore } from "../auth-store";
+import type { AuthSuccessResponse } from "../types";
 
-const emailSchema = z.object({
-  email: z.string().trim().email("Enter a valid email address."),
-});
-
-const codeSchema = z.object({
-  code: z
-    .string()
-    .trim()
-    .regex(/^\d{6}$/, "Code must be 6 digits."),
-});
-
-type EmailFormValues = z.infer<typeof emailSchema>;
-type CodeFormValues = z.infer<typeof codeSchema>;
-
-type Step = "email" | "code";
+type Step = "email" | "email-code" | "setup-password" | "setup-code" | "mfa-code" | "recovery" | "save-codes";
 
 export function OtpLoginForm() {
   const router = useRouter();
@@ -34,177 +17,200 @@ export function OtpLoginForm() {
 
   const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
+  const [emailCode, setEmailCode] = useState("");
+  const [challenge, setChallenge] = useState("");
+  const [password, setPassword] = useState("");
+  const [secret, setSecret] = useState("");
+  const [authUri, setAuthUri] = useState("");
+  const [factorCode, setFactorCode] = useState("");
+  const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
+  const [savedUser, setSavedUser] = useState<AuthSuccessResponse["user"] | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [serverMessage, setServerMessage] = useState("");
   const [serverError, setServerError] = useState("");
 
-  const emailForm = useForm<EmailFormValues>({
-    resolver: zodResolver(emailSchema),
-    defaultValues: {
-      email: "",
-    },
-  });
-
-  const codeForm = useForm<CodeFormValues>({
-    resolver: zodResolver(codeSchema),
-    defaultValues: {
-      code: "",
-    },
-  });
-
-  async function handleEmailSubmit(values: EmailFormValues) {
+  async function perform(fn: () => Promise<void>) {
+    setIsSubmitting(true);
     setServerError("");
     setServerMessage("");
-
     try {
-      const response = await requestOtp({
-        email: values.email,
-      });
+      await fn();
+    } catch (error) {
+      setServerError(getApiErrorMessage(error));
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 
-      setEmail(values.email);
-      setStep("code");
+  function completeLogin(response: AuthSuccessResponse) {
+    setUser(response.user);
+    setChallenge("");
+    setPassword("");
+    setSecret("");
+    setAuthUri("");
+    setFactorCode("");
+    if (response.recovery_codes?.length) {
+      setRecoveryCodes(response.recovery_codes);
+      setSavedUser(response.user);
+      setStep("save-codes");
+    } else {
+      router.push(response.user.is_superuser ? "/admin/super" : "/");
+    }
+  }
+
+  function handleEmail(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    void perform(async () => {
+      const response = await requestOtp({ email: email.trim() });
       setServerMessage(response.message);
-    } catch (error) {
-      setServerError(getApiErrorMessage(error));
-    }
+      setStep("email-code");
+    });
   }
 
-  async function handleCodeSubmit(values: CodeFormValues) {
-    setServerError("");
-    setServerMessage("");
-
-    try {
-      const response = await verifyOtp({
-        email,
-        code: values.code,
-      });
-
-      setUser(response.user);
-      router.push("/");
-    } catch (error) {
-      setServerError(getApiErrorMessage(error));
+  function handleEmailCode(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!/^\d{6}$/.test(emailCode.trim())) {
+      setServerError("Email verification code must be six digits.");
+      return;
     }
+    void perform(async () => {
+      const response = await verifyOtp({ email: email.trim(), code: emailCode.trim() });
+      setEmailCode("");
+      if ("mfa_required" in response && response.mfa_required) {
+        setChallenge(response.challenge);
+        setStep(response.mfa_enrolled ? "mfa-code" : "setup-password");
+        setServerMessage("Email verified. An additional factor is required for privileged accounts.");
+      } else if ("access" in response) {
+        completeLogin(response);
+      }
+    });
   }
 
-  function handleChangeEmail() {
+  function handleSetup(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    void perform(async () => {
+      const response = await setupAdminMfa({ challenge, password });
+      setPassword("");
+      setSecret(response.secret);
+      setAuthUri(response.otpauth_uri);
+      setFactorCode("");
+      setStep("setup-code");
+      setServerMessage("Add the secret to an authenticator app, then confirm the generated code.");
+    });
+  }
+
+  function handleFactor(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const code = factorCode.trim().toUpperCase().replace(/-/g, "");
+    const enrollment = step === "setup-code";
+    if (!(/^\d{6}$/.test(code) || (!enrollment && /^[0-9A-F]{12}$/.test(code)))) {
+      setServerError("Enter a six-digit authenticator code or a valid recovery code.");
+      return;
+    }
+    void perform(async () => {
+      const response = await finishAdminMfa({ challenge, code }, enrollment);
+      completeLogin(response);
+    });
+  }
+
+  function restart() {
     setStep("email");
+    setEmailCode("");
+    setChallenge("");
+    setPassword("");
+    setSecret("");
+    setAuthUri("");
+    setFactorCode("");
     setServerError("");
     setServerMessage("");
-    codeForm.reset();
   }
+
+  const isEmailStep = step === "email";
+  const isFactorStep = step === "setup-code" || step === "mfa-code" || step === "recovery";
 
   return (
     <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-      <div className="mb-8 text-center">
+      <div className="mb-7 text-center">
         <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-900 text-white">
-          {step === "email" ? <Mail size={24} /> : <ShieldCheck size={24} />}
+          {isEmailStep ? <Mail size={24} /> : isFactorStep ? <KeyRound size={24} /> : <ShieldCheck size={24} />}
         </div>
-
         <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
-          {step === "email" ? "Sign in to MallByte" : "Enter verification code"}
+          {step === "email" ? "Sign in to MallByte"
+            : step === "email-code" ? "Verify your email"
+              : step === "setup-password" ? "Secure your admin account"
+                : step === "setup-code" ? "Set up your authenticator"
+                  : step === "mfa-code" ? "Authenticator verification"
+                    : step === "recovery" ? "Use a recovery code"
+                      : "Save your recovery codes"}
         </h1>
-
         <p className="mt-2 text-sm text-slate-500">
-          {step === "email"
-            ? "Use your email to receive a one-time login code."
-            : `We sent a 6-digit code to ${email}.`}
+          {step === "email" ? "Receive a one-time code to your email."
+            : step === "email-code" ? `Enter the six-digit code sent to ${email}.`
+              : step === "setup-password" ? "Confirm your existing admin password before enabling MFA."
+                : step === "setup-code" ? "Enter the account secret manually in Google Authenticator, Microsoft Authenticator or another TOTP app."
+                  : step === "mfa-code" ? "Enter the six-digit code from your authenticator app."
+                    : step === "recovery" ? "Enter one of your unused recovery codes."
+                      : "Store these one-time recovery codes securely. They will not be shown again."}
         </p>
       </div>
 
-      {serverMessage ? (
-        <div className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-          {serverMessage}
-        </div>
-      ) : null}
+      {serverMessage && <p role="status" className="mb-4 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800">{serverMessage}</p>}
+      {serverError && <p role="alert" className="mb-4 rounded-xl bg-red-50 p-3 text-sm text-red-800">{serverError}</p>}
 
-      {serverError ? (
-        <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {serverError}
-        </div>
-      ) : null}
-
-      {step === "email" ? (
-        <form
-          className="space-y-4"
-          onSubmit={emailForm.handleSubmit(handleEmailSubmit)}
-        >
-          <div>
-            <label
-              className="mb-2 block text-sm font-medium text-slate-700"
-              htmlFor="email"
-            >
-              Email address
-            </label>
-
-            <input
-              id="email"
-              type="email"
-              autoComplete="email"
-              placeholder="you@example.com"
-              className="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-slate-900"
-              {...emailForm.register("email")}
-            />
-
-            {emailForm.formState.errors.email ? (
-              <p className="mt-2 text-sm text-red-600">
-                {emailForm.formState.errors.email.message}
-              </p>
-            ) : null}
-          </div>
-
-          <button
-            type="submit"
-            disabled={emailForm.formState.isSubmitting}
-            className="h-12 w-full rounded-2xl bg-slate-900 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {emailForm.formState.isSubmitting ? "Sending code..." : "Send code"}
-          </button>
+      {step === "email" && (
+        <form onSubmit={handleEmail} className="space-y-4">
+          <label className="block text-sm font-medium text-slate-700" htmlFor="login-email">Email address</label>
+          <input id="login-email" type="email" autoComplete="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" className="h-12 w-full rounded-xl border px-4" />
+          <button disabled={isSubmitting} type="submit" className="h-12 w-full rounded-xl bg-slate-900 text-white disabled:opacity-50">{isSubmitting ? "Sending..." : "Send code"}</button>
         </form>
-      ) : (
-        <form
-          className="space-y-4"
-          onSubmit={codeForm.handleSubmit(handleCodeSubmit)}
-        >
-          <div>
-            <label
-              className="mb-2 block text-sm font-medium text-slate-700"
-              htmlFor="code"
-            >
-              Verification code
-            </label>
+      )}
 
-            <input
-              id="code"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              placeholder="123456"
-              className="h-12 w-full rounded-2xl border border-slate-200 px-4 text-center text-lg tracking-[0.4em] outline-none transition focus:border-slate-900"
-              maxLength={6}
-              {...codeForm.register("code")}
-            />
-
-            {codeForm.formState.errors.code ? (
-              <p className="mt-2 text-sm text-red-600">
-                {codeForm.formState.errors.code.message}
-              </p>
-            ) : null}
-          </div>
-
-          <button
-            type="submit"
-            disabled={codeForm.formState.isSubmitting}
-            className="h-12 w-full rounded-2xl bg-slate-900 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {codeForm.formState.isSubmitting ? "Signing in..." : "Sign in"}
-          </button>
-
-          <button
-            type="button"
-            onClick={handleChangeEmail}
-            className="h-11 w-full rounded-2xl border border-slate-200 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-          >
-            Use another email
-          </button>
+      {step === "email-code" && (
+        <form onSubmit={handleEmailCode} className="space-y-4">
+          <label htmlFor="email-code" className="block text-sm font-medium">Email verification code</label>
+          <input id="email-code" inputMode="numeric" autoComplete="one-time-code" required maxLength={6} value={emailCode} onChange={e => setEmailCode(e.target.value)} className="h-12 w-full rounded-xl border px-4 text-center tracking-widest" />
+          <button disabled={isSubmitting} type="submit" className="h-12 w-full rounded-xl bg-slate-900 text-white disabled:opacity-50">{isSubmitting ? "Checking..." : "Verify email"}</button>
         </form>
+      )}
+
+      {step === "setup-password" && (
+        <form onSubmit={handleSetup} className="space-y-4">
+          <label htmlFor="admin-password" className="block text-sm font-medium">Existing admin password</label>
+          <input id="admin-password" type="password" autoComplete="current-password" required value={password} onChange={e => setPassword(e.target.value)} className="h-12 w-full rounded-xl border px-4" />
+          <button disabled={isSubmitting} type="submit" className="h-12 w-full rounded-xl bg-slate-900 text-white disabled:opacity-50">{isSubmitting ? "Verifying..." : "Set up authenticator"}</button>
+        </form>
+      )}
+
+      {step === "setup-code" && (
+        <div className="mb-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm">
+          <p className="font-medium">Authenticator setup key</p>
+          <code className="mt-2 block break-all select-all font-mono text-base">{secret}</code>
+          <p className="mt-2 text-xs text-slate-600">Keep this key private. The setup URI is available for apps that support manual URI entry.</p>
+          <details className="mt-2"><summary className="cursor-pointer">Show provisioning URI</summary><code className="mt-2 block break-all">{authUri}</code></details>
+        </div>
+      )}
+
+      {isFactorStep && (
+        <form onSubmit={handleFactor} className="space-y-4">
+          <label htmlFor="factor-code" className="block text-sm font-medium">{step === "recovery" ? "Recovery code" : "Authenticator code"}</label>
+          <input id="factor-code" autoComplete="one-time-code" inputMode={step === "recovery" ? "text" : "numeric"} required maxLength={step === "recovery" ? 14 : 6} value={factorCode} onChange={e => setFactorCode(e.target.value)} className="h-12 w-full rounded-xl border px-4 text-center font-mono tracking-widest" />
+          <button disabled={isSubmitting} type="submit" className="h-12 w-full rounded-xl bg-slate-900 text-white disabled:opacity-50">{isSubmitting ? "Verifying..." : step === "setup-code" ? "Enable MFA and sign in" : "Verify and sign in"}</button>
+          {step === "mfa-code" && <button type="button" onClick={() => { setFactorCode(""); setStep("recovery"); }} className="w-full text-sm text-slate-600 underline">Use a recovery code</button>}
+          {step === "recovery" && <button type="button" onClick={() => { setFactorCode(""); setStep("mfa-code"); }} className="w-full text-sm text-slate-600 underline">Use authenticator instead</button>}
+        </form>
+      )}
+
+      {step === "save-codes" && (
+        <div className="space-y-4">
+          <p className="text-sm font-medium text-red-700">These codes are shown only once. Store them in a password manager.</p>
+          <div className="grid grid-cols-2 gap-2 rounded-xl bg-slate-100 p-4 font-mono text-sm">{recoveryCodes.map(code => <code key={code}>{code}</code>)}</div>
+          <button type="button" onClick={() => { void navigator.clipboard?.writeText(recoveryCodes.join("\n")); }} className="h-11 w-full rounded-xl border text-sm">Copy recovery codes</button>
+          <button type="button" onClick={() => { setRecoveryCodes([]); router.push(savedUser?.is_superuser ? "/admin/super" : "/"); }} className="h-12 w-full rounded-xl bg-slate-900 text-white">I saved my recovery codes</button>
+        </div>
+      )}
+
+      {step !== "email" && step !== "save-codes" && (
+        <button type="button" onClick={restart} className="mt-4 h-10 w-full rounded-xl border text-sm text-slate-600">Start over with another email</button>
       )}
     </div>
   );
