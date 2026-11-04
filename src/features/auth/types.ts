@@ -25,10 +25,25 @@ export type OtpVerifyPayload = {
   code: string;
 };
 
-export type OtpVerifyResponse = {
+export type AuthSuccessResponse = {
   user: AuthUser;
   access: string;
   is_new: boolean;
+  recovery_codes?: string[];
+};
+
+export type OtpMfaChallengeResponse = {
+  mfa_required: true;
+  challenge: string;
+  mfa_enrolled: boolean;
+};
+
+export type OtpVerifyResponse = AuthSuccessResponse | OtpMfaChallengeResponse;
+
+export type MFASetupResponse = {
+  secret: string;
+  otpauth_uri: string;
+  message: string;
 };
 
 export type ProfileResponse = {
