@@ -28,13 +28,17 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      # Pin browser tooling without altering the application lockfile.
-      - name: Install test runner
-        run: npm install --no-save --package-lock=false @playwright/test@1.58.2
+      # npm 10 can fail to add an ephemeral dependency into an existing
+      # Next.js dependency tree. Install the browser runner separately.
+      - name: Install isolated Playwright test runner
+        run: |
+          mkdir -p .playwright-runner
+          npm install --prefix .playwright-runner --no-save @playwright/test@1.58.2
+          ln -s ../.playwright-runner/node_modules/@playwright node_modules/@playwright
       - name: Install Chromium and browser libraries
-        run: npx playwright install --with-deps chromium
+        run: .playwright-runner/node_modules/.bin/playwright install --with-deps chromium
       - name: Run browser tests with mocked APIs
-        run: npx playwright test
+        run: .playwright-runner/node_modules/.bin/playwright test
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
