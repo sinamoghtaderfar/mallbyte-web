@@ -43,7 +43,8 @@ export function OtpLoginForm() {
   }
 
   function completeLogin(response: AuthSuccessResponse) {
-    setUser(response.user);
+    // Do not activate the authenticated route while recovery codes are visible.
+    // GuestOnlyRoute redirects authenticated users away from /auth.
     setChallenge("");
     setPassword("");
     setSecret("");
@@ -54,6 +55,7 @@ export function OtpLoginForm() {
       setSavedUser(response.user);
       setStep("save-codes");
     } else {
+      setUser(response.user);
       router.push(response.user.is_superuser ? "/admin/super" : response.user.is_staff ? "/admin" : "/");
     }
   }
@@ -205,7 +207,13 @@ export function OtpLoginForm() {
           <p className="text-sm font-medium text-red-700">These codes are shown only once. Store them in a password manager.</p>
           <div className="grid grid-cols-2 gap-2 rounded-xl bg-slate-100 p-4 font-mono text-sm">{recoveryCodes.map(code => <code key={code}>{code}</code>)}</div>
           <button type="button" onClick={() => { void navigator.clipboard?.writeText(recoveryCodes.join("\n")); }} className="h-11 w-full rounded-xl border text-sm">Copy recovery codes</button>
-          <button type="button" onClick={() => { setRecoveryCodes([]); router.push(savedUser?.is_superuser ? "/admin/super" : savedUser?.is_staff ? "/admin" : "/"); }} className="h-12 w-full rounded-xl bg-slate-900 text-white">I saved my recovery codes</button>
+          <button type="button" onClick={() => {
+            if (!savedUser) return;
+            setRecoveryCodes([]);
+            setSavedUser(null);
+            setUser(savedUser);
+            router.push(savedUser.is_superuser ? "/admin/super" : savedUser.is_staff ? "/admin" : "/");
+          }} className="h-12 w-full rounded-xl bg-slate-900 text-white">I saved my recovery codes</button>
         </div>
       )}
 
