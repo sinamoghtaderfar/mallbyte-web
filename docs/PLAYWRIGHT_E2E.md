@@ -14,9 +14,11 @@ Run locally:
 
 ```sh
 npm ci
-npm install --no-save --package-lock=false @playwright/test@1.58.2
-npx playwright install chromium
-npx playwright test
+mkdir -p .playwright-runner
+npm install --prefix .playwright-runner --no-save @playwright/test@1.58.2
+ln -s ../.playwright-runner/node_modules/@playwright node_modules/@playwright
+.playwright-runner/node_modules/.bin/playwright install chromium
+.playwright-runner/node_modules/.bin/playwright test
 ```
 
 The tests fail closed for unrecognized `/api/**` requests, so they never use or mutate live API data.
