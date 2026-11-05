@@ -1,0 +1,35 @@
+name: Frontend production image smoke
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  standalone-image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build non-root production image
+        run: |
+          docker build -f Dockerfile.production \
+            --build-arg NEXT_PUBLIC_API_BASE_URL=https://staging-api.example.com \
+            -t mallbyte-web:ci .
+      - name: Check container starts as non-root user
+        run: |
+          test "$(docker image inspect mallbyte-web:ci --format '{{.Config.User}}')" = "nextjs"
+          docker run -d --name mallbyte-web-smoke -p 127.0.0.1:3000:3000 mallbyte-web:ci
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:3000/ >/dev/null; then exit 0; fi
+            sleep 2
+          done
+          docker logs mallbyte-web-smoke
+          exit 1
+      - name: Container logs
+        if: failure()
+        run: docker logs mallbyte-web-smoke || true
