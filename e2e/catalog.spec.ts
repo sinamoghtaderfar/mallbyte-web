@@ -53,7 +53,7 @@ test("inverted price range is rejected before calling the catalog API again", as
     },
   });
   await page.goto("/products");
-  await expect(page.getByRole("heading", { name: "Products", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Products", exact: true }).first()).toBeVisible();
   // Wait for the initial catalog response before measuring no-extra-request behavior.
   await expect.poll(() => catalogCalls).toBe(1);
   await page.getByLabel(/min price/i).fill("200");
