@@ -13,6 +13,7 @@ export function GuestOnlyRoute({ children }: GuestOnlyRouteProps) {
   const router = useRouter();
 
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const user = useAuthStore((state) => state.user);
   const isLoading = useAuthStore((state) => state.isLoading);
   const isBootstrapped = useAuthStore((state) => state.isBootstrapped);
 
@@ -21,9 +22,9 @@ export function GuestOnlyRoute({ children }: GuestOnlyRouteProps) {
 
   useEffect(() => {
     if (shouldRedirect) {
-      router.replace("/profile");
+      router.replace(user?.is_superuser ? "/admin/super" : user?.is_staff ? "/admin" : "/profile");
     }
-  }, [router, shouldRedirect]);
+  }, [router, shouldRedirect, user]);
 
   if (shouldWait) {
     return (
