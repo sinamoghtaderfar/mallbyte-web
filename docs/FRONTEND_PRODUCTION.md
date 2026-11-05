@@ -27,7 +27,7 @@ docker compose -f compose.staging.yaml config
 docker compose -f compose.staging.yaml up -d --build
 ```
 
-The image runs as a non-root account and uses a read-only filesystem.
+The image runs as a non-root account with dropped container capabilities. The filesystem remains writable for Next.js image/data caching; use an isolated runtime and explicit storage policy.
 It only contains the standalone server, static assets and public files.
 
 ## Gates before production
