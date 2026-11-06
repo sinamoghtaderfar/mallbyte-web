@@ -58,6 +58,10 @@ export const useNotificationStore = create<NotificationStore>(
             unreadCount,
           ),
         });
+      } catch {
+        // Background notification polling is best-effort. Keep the last
+        // known count and allow subsequent polls when the API recovers.
+        // Do not leave an unhandled rejection in the browser.
       } finally {
         set({ isRefreshing: false });
       }

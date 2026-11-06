@@ -80,6 +80,23 @@ describe("notification store", () => {
     ).toBe(4);
   });
 
+  it("preserves the last known count when background polling fails and can retry", async () => {
+    useNotificationStore.getState().setUnreadCount(5);
+    mockedGetUnreadCount.mockRejectedValueOnce(new Error("Temporary API outage"));
+    // Bell callers do not await this promise; a failure must not reject.
+    await expect(
+      useNotificationStore.getState().refreshUnreadCount(),
+    ).resolves.toBeUndefined();
+    expect(useNotificationStore.getState().unreadCount).toBe(5);
+    expect(useNotificationStore.getState().isRefreshing).toBe(false);
+
+    mockedGetUnreadCount.mockResolvedValueOnce(2);
+    await useNotificationStore.getState().refreshUnreadCount();
+    expect(mockedGetUnreadCount).toHaveBeenCalledTimes(2);
+    expect(useNotificationStore.getState().unreadCount).toBe(2);
+    expect(useNotificationStore.getState().isRefreshing).toBe(false);
+  });
+
   it("never lets unread count go below zero", () => {
     useNotificationStore
       .getState()
