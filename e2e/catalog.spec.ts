@@ -54,11 +54,15 @@ test("inverted price range is rejected before calling the catalog API again", as
   });
   await page.goto("/products");
   await expect(page.getByRole("heading", { name: "Products", exact: true }).first()).toBeVisible();
-  // Wait for the initial catalog response before measuring no-extra-request behavior.
-  await expect.poll(() => catalogCalls).toBe(1);
+  // Next.js development Strict Mode can issue the initial catalog request twice.
+  // Wait for the loaded empty state, then compare with the observed baseline.
+  await expect(page.getByRole("heading", { name: "No products yet" })).toBeVisible();
+  expect(catalogCalls).toBeGreaterThan(0);
+  const baselineCalls = catalogCalls;
   await page.getByLabel(/min price/i).fill("200");
   await page.getByLabel(/max price/i).fill("100");
   await page.getByRole("button", { name: /apply filters/i }).click();
   await expect(page.getByText(/minimum price cannot exceed maximum price/i)).toBeVisible();
-  expect(catalogCalls).toBe(1);
+  expect(page.url()).not.toContain("min_price=");
+  expect(catalogCalls).toBe(baselineCalls);
 });
