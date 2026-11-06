@@ -42,3 +42,8 @@ next-env.d.ts
 
 # Keep safe env template tracked
 !.env.example
+
+# Isolated Playwright browser tests
+.playwright-runner/
+playwright-report/
+test-results/
