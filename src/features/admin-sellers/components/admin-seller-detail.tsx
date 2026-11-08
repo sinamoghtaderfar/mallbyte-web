@@ -129,7 +129,7 @@ export function AdminSellerDetail() {
       setActionMessage("");
 
       const updatedSeller = await rejectAdminSeller(seller.id, {
-        rejection_reason: rejectionReason.trim(),
+        reason: rejectionReason.trim(),
       });
 
       setSeller(updatedSeller);
@@ -228,7 +228,7 @@ export function AdminSellerDetail() {
             <div>
               <dt className="text-slate-500">Phone</dt>
               <dd className="mt-1 font-medium text-slate-950">
-                {seller.phone || "—"}
+                {seller.business_phone || seller.phone || "—"}
               </dd>
             </div>
             <div>
@@ -303,6 +303,7 @@ export function AdminSellerDetail() {
                 <textarea
                   value={rejectionReason}
                   onChange={(event) => setRejectionReason(event.target.value)}
+                  disabled={isWorking}
                   rows={4}
                   placeholder="Explain why this seller application is rejected."
                   className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-slate-400"

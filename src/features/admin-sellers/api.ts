@@ -23,7 +23,8 @@ export type AdminSeller = {
   business_name?: string;
   store_name?: string;
   business_email: string;
-  phone: string;
+  business_phone?: string;
+  phone?: string;
   status: AdminSellerStatus;
   commission_rate: string;
   total_sales: string;
@@ -33,7 +34,7 @@ export type AdminSeller = {
   rejected_at?: string | null;
   rejection_reason?: string;
   created_at: string;
-  updated_at: string;
+  updated_at?: string;
 };
 
 type PaginatedAdminSellersResponse = {
@@ -41,6 +42,11 @@ type PaginatedAdminSellersResponse = {
   next: string | null;
   previous: string | null;
   results: AdminSeller[];
+};
+
+type SellerModerationResponse = {
+  message: string;
+  seller: AdminSeller;
 };
 
 function normalizeSellersResponse(
@@ -78,21 +84,27 @@ export async function getAdminSeller(sellerId: number | string) {
 }
 
 export async function verifyAdminSeller(sellerId: number | string) {
-  const response = await apiClient.post<AdminSeller>(
+  const response = await apiClient.post<SellerModerationResponse>(
     API_ENDPOINTS.auth.adminSellerVerify(sellerId),
   );
 
-  return response.data;
+  return response.data.seller;
 }
 
 export async function rejectAdminSeller(
   sellerId: number | string,
-  payload: { rejection_reason: string },
+  payload: { reason: string },
 ) {
-  const response = await apiClient.post<AdminSeller>(
+  const reason = payload.reason.trim();
+  const response = await apiClient.post<SellerModerationResponse>(
     API_ENDPOINTS.auth.adminSellerReject(sellerId),
-    payload,
+    { reason },
   );
 
-  return response.data;
+  // SellerSerializer currently omits the saved reason. Preserve the submitted
+  // explanation for the completed review without overriding a server value.
+  return {
+    ...response.data.seller,
+    rejection_reason: response.data.seller.rejection_reason ?? reason,
+  };
 }
