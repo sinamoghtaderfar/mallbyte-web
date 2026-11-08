@@ -1,6 +1,7 @@
 import { create } from "zustand";
 
 import { getUnreadNotificationCount } from "./api";
+import { getSessionGeneration, isCurrentSession } from "@/lib/auth/session-storage";
 
 type NotificationStore = {
   unreadCount: number;
@@ -10,12 +11,14 @@ type NotificationStore = {
   incrementUnreadCount: (amount?: number) => void;
   decrementUnreadCount: (amount?: number) => void;
   refreshUnreadCount: () => Promise<void>;
+  reset: () => void;
 };
 
 export const useNotificationStore = create<NotificationStore>(
   (set, get) => ({
     unreadCount: 0,
     isRefreshing: false,
+    reset: () => set({ unreadCount: 0, isRefreshing: false }),
 
     setUnreadCount: (count) => {
       set({
@@ -42,6 +45,7 @@ export const useNotificationStore = create<NotificationStore>(
     },
 
     refreshUnreadCount: async () => {
+      const generation = getSessionGeneration();
       if (get().isRefreshing) {
         return;
       }
@@ -52,7 +56,7 @@ export const useNotificationStore = create<NotificationStore>(
         const unreadCount =
           await getUnreadNotificationCount();
 
-        set({
+        if (isCurrentSession(generation)) set({
           unreadCount: Math.max(
             0,
             unreadCount,
@@ -63,7 +67,7 @@ export const useNotificationStore = create<NotificationStore>(
         // known count and allow subsequent polls when the API recovers.
         // Do not leave an unhandled rejection in the browser.
       } finally {
-        set({ isRefreshing: false });
+        if (isCurrentSession(generation)) set({ isRefreshing: false });
       }
     },
   }),

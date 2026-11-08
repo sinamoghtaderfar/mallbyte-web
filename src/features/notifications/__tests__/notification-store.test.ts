@@ -8,6 +8,7 @@ import {
 
 import { getUnreadNotificationCount } from "../api";
 import { useNotificationStore } from "../notification-store";
+import { invalidateSession } from "@/lib/auth/session-storage";
 
 vi.mock("../api", () => ({
   getUnreadNotificationCount: vi.fn(),
@@ -129,5 +130,17 @@ describe("notification store", () => {
     expect(
       useNotificationStore.getState().unreadCount,
     ).toBe(0);
+  });
+
+  it("does not restore the previous user's count from a request pending during logout", async () => {
+    let resolveCount!: (value: number) => void;
+    mockedGetUnreadCount.mockReturnValue(new Promise<number>((resolve) => { resolveCount = resolve; }));
+    const request = useNotificationStore.getState().refreshUnreadCount();
+    invalidateSession("logout");
+    useNotificationStore.getState().reset();
+    resolveCount(8);
+    await request;
+    expect(useNotificationStore.getState().unreadCount).toBe(0);
+    expect(useNotificationStore.getState().isRefreshing).toBe(false);
   });
 });
