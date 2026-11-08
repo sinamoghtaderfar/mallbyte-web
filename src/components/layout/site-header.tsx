@@ -7,7 +7,6 @@ import { Menu, X } from "lucide-react";
 import { logout } from "@/features/auth/api";
 import { useAuthStore } from "@/features/auth/auth-store";
 import { isAdminUser, isSellerUser } from "@/features/auth/roles";
-import { useCartStore } from "@/features/cart/cart-store";
 import { CartLink } from "@/features/cart/components/cart-link";
 import { NotificationBell } from "@/features/notifications/components/notification-bell";
 import { CmsNavLinks } from "@/features/content/components/cms-nav-links";
@@ -33,8 +32,6 @@ export function SiteHeader() {
   const userId = user?.id ?? null;
   const authenticated = useAuthStore((s) => s.isAuthenticated);
   const bootstrapped = useAuthStore((s) => s.isBootstrapped);
-  const clearAuth = useAuthStore((s) => s.clearAuth);
-  const clearCartState = useCartStore((s) => s.clearCartState);
   const [loggingOut, setLoggingOut] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [error, setError] = useState("");
@@ -77,7 +74,7 @@ export function SiteHeader() {
     try { await logout(); }
     catch (reason) { setError(getApiErrorMessage(reason)); }
     finally {
-      setAccess(null); clearAuth(); clearCartState(); setMobileOpen(false);
+      setAccess(null); setMobileOpen(false);
       setLoggingOut(false); router.push("/auth");
     }
   }

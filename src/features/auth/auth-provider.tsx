@@ -1,51 +1,88 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-
-import { clearSession } from "@/lib/auth/session-storage";
-
+import { Fragment, useEffect, useRef, useState } from "react";
+import {
+  getLogoutStatus,
+  getSessionGeneration,
+  invalidateSession,
+  isCurrentSession,
+  isSessionRestorationBlocked,
+  listenForSessionChanges,
+  subscribeToSessionInvalidation,
+} from "@/lib/auth/session-storage";
+import { useCartStore } from "@/features/cart/cart-store";
+import { useNotificationStore } from "@/features/notifications/notification-store";
 import { getProfile, refreshSession } from "./api";
 import { useAuthStore } from "./auth-store";
+import { SessionRecoveryNotice } from "./components/session-recovery-notice";
 
-type AuthProviderProps = {
-  children: React.ReactNode;
-};
-
-export function AuthProvider({ children }: AuthProviderProps) {
+export function AuthProvider({ children }: { children: React.ReactNode }) {
   const hasBootstrapped = useRef(false);
-
-  const setUser = useAuthStore((state) => state.setUser);
-  const setLoading = useAuthStore((state) => state.setLoading);
-  const setBootstrapped = useAuthStore((state) => state.setBootstrapped);
-  const clearAuth = useAuthStore((state) => state.clearAuth);
+  const mounted = useRef(false);
+  const [sessionKey, setSessionKey] = useState(0);
 
   useEffect(() => {
-    if (hasBootstrapped.current) {
-      return;
+    mounted.current = true;
+    function clearPrivateState(reason: "logout" | "expired" | "external") {
+      const hadIdentity = useAuthStore.getState().isAuthenticated;
+      useAuthStore.getState().clearAuth();
+      useCartStore.getState().clearCartState();
+      useNotificationStore.getState().reset();
+      useAuthStore
+        .getState()
+        .setSessionIssue(
+          reason === "expired" && hadIdentity
+            ? "expired"
+            : getLogoutStatus() === "pending"
+              ? "logout-unconfirmed"
+              : null,
+        );
+      setSessionKey((key) => key + 1);
     }
-
-    hasBootstrapped.current = true;
+    const unsubscribe = subscribeToSessionInvalidation(clearPrivateState);
+    const stopListening = listenForSessionChanges();
 
     async function bootstrapSession() {
-      setLoading(true);
-      setBootstrapped(false);
-
+      const state = useAuthStore.getState();
+      state.setLoading(true);
+      state.setBootstrapped(false);
+      const generation = getSessionGeneration();
       try {
+        if (isSessionRestorationBlocked()) {
+          clearPrivateState("logout");
+          return;
+        }
         await refreshSession();
-
+        if (!mounted.current || !isCurrentSession(generation)) return;
         const profile = await getProfile();
-        setUser(profile.user);
+        if (mounted.current && isCurrentSession(generation))
+          state.setUser(profile.user);
       } catch {
-        clearSession();
-        clearAuth();
+        if (mounted.current && isCurrentSession(generation))
+          invalidateSession("external");
       } finally {
-        setLoading(false);
-        setBootstrapped(true);
+        if (mounted.current) {
+          state.setLoading(false);
+          state.setBootstrapped(true);
+        }
       }
     }
 
-    bootstrapSession();
-  }, [clearAuth, setBootstrapped, setLoading, setUser]);
+    if (!hasBootstrapped.current) {
+      hasBootstrapped.current = true;
+      void bootstrapSession();
+    }
+    return () => {
+      mounted.current = false;
+      unsubscribe();
+      stopListening();
+    };
+  }, []);
 
-  return children;
+  return (
+    <>
+      <SessionRecoveryNotice />
+      <Fragment key={sessionKey}>{children}</Fragment>
+    </>
+  );
 }

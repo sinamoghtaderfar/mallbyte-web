@@ -15,7 +15,6 @@ export function AuthStatusCard() {
   const user = useAuthStore((state) => state.user);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const isLoading = useAuthStore((state) => state.isLoading);
-  const clearAuth = useAuthStore((state) => state.clearAuth);
 
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [error, setError] = useState("");
@@ -29,7 +28,6 @@ export function AuthStatusCard() {
     } catch (logoutError) {
       setError(getApiErrorMessage(logoutError));
     } finally {
-      clearAuth();
       setIsLoggingOut(false);
       router.push("/auth");
     }

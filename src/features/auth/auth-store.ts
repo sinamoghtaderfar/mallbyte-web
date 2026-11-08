@@ -7,6 +7,10 @@ type AuthState = {
   isAuthenticated: boolean;
   isLoading: boolean;
   isBootstrapped: boolean;
+  sessionIssue: "expired" | "logout-unconfirmed" | null;
+  isSigningOut: boolean;
+  setSessionIssue: (issue: AuthState["sessionIssue"]) => void;
+  setSigningOut: (value: boolean) => void;
   setUser: (user: AuthUser | null) => void;
   setLoading: (isLoading: boolean) => void;
   setBootstrapped: (isBootstrapped: boolean) => void;
@@ -18,6 +22,10 @@ export const useAuthStore = create<AuthState>((set) => ({
   isAuthenticated: false,
   isLoading: false,
   isBootstrapped: false,
+  sessionIssue: null,
+  isSigningOut: false,
+  setSessionIssue: (sessionIssue) => set({ sessionIssue }),
+  setSigningOut: (isSigningOut) => set({ isSigningOut }),
 
   setUser: (user) =>
     set({

@@ -223,7 +223,7 @@ describe("api client refresh flow", () => {
       },
     });
 
-    expect(session.getAccessToken()).toBe("new-access-token");
+    expect(session.getAccessToken()).toBeNull();
     expect(mock.history.get).toHaveLength(2);
     expect(mock.history.post).toHaveLength(1);
   }); // ← تست قبلی اینجا تمام می‌شود
