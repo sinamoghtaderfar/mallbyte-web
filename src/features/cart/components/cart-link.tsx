@@ -5,7 +5,6 @@ import { useEffect } from "react";
 
 import { useAuthStore } from "@/features/auth/auth-store";
 
-import { getCart } from "../api";
 import { useCartStore } from "../cart-store";
 
 export function CartLink() {
@@ -13,13 +12,11 @@ export function CartLink() {
   const isBootstrapped = useAuthStore((state) => state.isBootstrapped);
 
   const totalItems = useCartStore((state) => state.totalItems);
-  const setCart = useCartStore((state) => state.setCart);
+  const loadCart = useCartStore((state) => state.loadCart);
   const clearCartState = useCartStore((state) => state.clearCartState);
 
   useEffect(() => {
-    let isMounted = true;
-
-    async function loadCart() {
+    async function load() {
       if (!isBootstrapped) {
         return;
       }
@@ -30,24 +27,14 @@ export function CartLink() {
       }
 
       try {
-        const cart = await getCart();
-
-        if (isMounted) {
-          setCart(cart);
-        }
+        await loadCart();
       } catch {
-        if (isMounted) {
-          clearCartState();
-        }
+        /* Preserve the last known badge; the cart page exposes retries. */
       }
     }
 
-    loadCart();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [clearCartState, isAuthenticated, isBootstrapped, setCart]);
+    void load();
+  }, [clearCartState, isAuthenticated, isBootstrapped, loadCart]);
 
   return (
     <Link

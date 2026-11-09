@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 
 import { getApiErrorMessage } from "@/lib/api/errors";
 
-import { clearCart, getCart, removeCartItem, updateCartItem } from "../api";
 import { useCartStore } from "../cart-store";
 import type { CartItem } from "../types";
 
@@ -27,26 +26,27 @@ function formatPrice(value: string | null | undefined) {
 
 export function CartPanel() {
   const cart = useCartStore((state) => state.cart);
-  const setCart = useCartStore((state) => state.setCart);
-  const clearCartState = useCartStore((state) => state.clearCartState);
+  const loadCart = useCartStore((state) => state.loadCart);
+  const updateItem = useCartStore((state) => state.updateItem);
+  const removeItem = useCartStore((state) => state.removeItem);
+  const emptyCart = useCartStore((state) => state.emptyCart);
+  const pendingMutations = useCartStore((state) => state.pendingMutations);
+  const needsReload = useCartStore((state) => state.needsReload);
 
   const [isLoading, setIsLoading] = useState(true);
   const [activeItemId, setActiveItemId] = useState<number | null>(null);
+  const [isClearing, setIsClearing] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
     let isMounted = true;
 
-    async function loadCart() {
+    async function load() {
       setIsLoading(true);
       setError("");
 
       try {
-        const data = await getCart();
-
-        if (isMounted) {
-          setCart(data);
-        }
+        await loadCart();
       } catch (loadError) {
         if (isMounted) {
           setError(getApiErrorMessage(loadError));
@@ -58,12 +58,12 @@ export function CartPanel() {
       }
     }
 
-    loadCart();
+    void load();
 
     return () => {
       isMounted = false;
     };
-  }, [setCart]);
+  }, [loadCart]);
 
   async function handleQuantityChange(item: CartItem, quantity: number) {
     if (quantity < 1) {
@@ -74,11 +74,9 @@ export function CartPanel() {
     setError("");
 
     try {
-      const updatedCart = await updateCartItem(item.id, {
+      await updateItem(item.id, {
         quantity,
       });
-
-      setCart(updatedCart);
     } catch (updateError) {
       setError(getApiErrorMessage(updateError));
     } finally {
@@ -91,9 +89,7 @@ export function CartPanel() {
     setError("");
 
     try {
-      const updatedCart = await removeCartItem(itemId);
-
-      setCart(updatedCart);
+      await removeItem(itemId);
     } catch (removeError) {
       setError(getApiErrorMessage(removeError));
     } finally {
@@ -102,13 +98,29 @@ export function CartPanel() {
   }
 
   async function handleClearCart() {
+    if (isClearing) return;
+    setIsClearing(true);
     setError("");
 
     try {
-      await clearCart();
-      clearCartState();
+      await emptyCart();
+      setError("");
     } catch (clearError) {
       setError(getApiErrorMessage(clearError));
+    } finally {
+      setIsClearing(false);
+    }
+  }
+
+  async function handleReload() {
+    setIsLoading(true);
+    setError("");
+    try {
+      await loadCart();
+    } catch (reason) {
+      setError(getApiErrorMessage(reason));
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -127,6 +139,13 @@ export function CartPanel() {
           Could not load cart
         </h1>
         <p className="mt-2 text-sm text-red-700">{error}</p>
+        <button
+          type="button"
+          onClick={() => void handleReload()}
+          className="mt-4 font-medium underline"
+        >
+          Reload cart
+        </button>
       </div>
     );
   }
@@ -168,15 +187,29 @@ export function CartPanel() {
           <button
             type="button"
             onClick={handleClearCart}
+            disabled={isClearing}
             className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
           >
-            Clear cart
+            {isClearing ? "Clearing…" : "Clear cart"}
           </button>
         </div>
 
         {error ? (
           <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {error}
+          </div>
+        ) : null}
+        {needsReload ? (
+          <div role="alert" className="mb-4 text-sm text-amber-900">
+            Cart changes could not be synchronized. Reload before checkout.
+            <button
+              type="button"
+              onClick={() => void handleReload()}
+              disabled={pendingMutations > 0}
+              className="ml-2 font-medium underline"
+            >
+              Reload cart
+            </button>
           </div>
         ) : null}
 
@@ -204,7 +237,11 @@ export function CartPanel() {
                 <div className="flex h-11 items-center rounded-2xl border border-slate-200">
                   <button
                     type="button"
-                    disabled={activeItemId === item.id || item.quantity <= 1}
+                    disabled={
+                      pendingMutations > 0 ||
+                      activeItemId === item.id ||
+                      item.quantity <= 1
+                    }
                     onClick={() =>
                       handleQuantityChange(item, item.quantity - 1)
                     }
@@ -221,6 +258,7 @@ export function CartPanel() {
                     type="button"
                     disabled={
                       activeItemId === item.id ||
+                      pendingMutations > 0 ||
                       item.quantity >= item.available_stock
                     }
                     onClick={() =>
@@ -238,7 +276,7 @@ export function CartPanel() {
 
                 <button
                   type="button"
-                  disabled={activeItemId === item.id}
+                  disabled={pendingMutations > 0 || activeItemId === item.id}
                   onClick={() => handleRemoveItem(item.id)}
                   className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
@@ -262,6 +300,10 @@ export function CartPanel() {
 
         <Link
           href="/checkout"
+          aria-disabled={pendingMutations > 0 || needsReload}
+          onClick={(event) => {
+            if (pendingMutations > 0 || needsReload) event.preventDefault();
+          }}
           className="mt-6 inline-flex h-12 w-full items-center justify-center rounded-2xl bg-slate-900 text-sm font-medium text-white transition hover:bg-slate-800"
         >
           Continue to checkout
