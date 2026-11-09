@@ -1344,6 +1344,13 @@ export function SupportCenter({
       undefined,
     );
 
+  const workspaceRequestRef = useRef(0);
+  const detailRequestRef = useRef(0);
+  const tagsRequestRef = useRef(0);
+  const selectedTicketIdRef = useRef<number | null>(null);
+  const selectionRevisionRef = useRef(0);
+  const mountedRef = useRef(true);
+
   const [permissions, setPermissions] =
     useState<string[]>([]);
 
@@ -1390,6 +1397,10 @@ export function SupportCenter({
   ] = useState<SupportTicket | null>(
     null,
   );
+
+  const [selection, setSelection] = useState<{ id: number | null; revision: number }>({ id: null, revision: 0 });
+  const selectedTicketId = selection.id;
+  const [detailLoading, setDetailLoading] = useState(false);
 
   const [showCreate, setShowCreate] =
     useState(false);
@@ -1475,161 +1486,155 @@ export function SupportCenter({
     userId,
   ]);
 
-  const refreshTags =
-    useCallback(async () => {
-      const tagData =
-        await getSupportTags();
-
-      setTags(tagData);
-    }, []);
-
-  const refreshWorkspace =
-    useCallback(
-      async (
-        selectedId?: number,
-      ) => {
-        setLoading(true);
-        setError("");
-
-        try {
-          const [
-            tickets,
-            summaryData,
-            tagData,
-          ] = await Promise.all([
-            getSupportTickets(
-              filters,
-              page,
-              20,
-            ),
-            getSupportSummary(
-              filters,
-            ),
-            getSupportTags(),
-          ]);
-
-          setTicketPage(tickets);
-          setSummary(summaryData);
-          setTags(tagData);
-
-          if (
-            capabilities.canAssign
-          ) {
-            const agentData =
-              await getSupportAgents();
-
-            setAgents(agentData);
-          } else {
-            setAgents([]);
-          }
-
-          if (selectedId) {
-            setSelectedTicket(
-              await getSupportTicket(
-                selectedId,
-              ),
-            );
-          }
-        } catch (caughtError) {
-          setError(
-            getApiErrorMessage(
-              caughtError,
-            ),
-          );
-        } finally {
-          setLoading(false);
-        }
-      },
-      [
-        capabilities.canAssign,
-        filters,
-        page,
-      ],
-    );
-
   useEffect(() => {
-    if (
-      !permissionReady ||
-      !authenticated ||
-      userId === null ||
-      !bootstrapped ||
-      authLoading
-    ) {
-      return;
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      workspaceRequestRef.current += 1;
+      detailRequestRef.current += 1;
+      tagsRequestRef.current += 1;
+      handledInitialTicketIdRef.current = undefined;
+    };
+  }, []);
+
+  const refreshTags = useCallback(async () => {
+    if (!mountedRef.current) return;
+    const request = ++tagsRequestRef.current;
+    const tagData = await getSupportTags();
+    if (request === tagsRequestRef.current &&
+        useAuthStore.getState().user?.id === userId) {
+      setTags(tagData);
     }
+  }, [userId]);
 
-    const hasNewInitialTicket =
-      initialTicketId != null &&
-      handledInitialTicketIdRef.current !==
-        initialTicketId;
+  const refreshWorkspace = useCallback(async () => {
+    if (!mountedRef.current) return;
+    const request = ++workspaceRequestRef.current;
+    const tagRequest = ++tagsRequestRef.current;
+    const isCurrent = () => request === workspaceRequestRef.current &&
+      useAuthStore.getState().isAuthenticated &&
+      useAuthStore.getState().user?.id === userId;
 
-    const ticketIdToOpen =
-      hasNewInitialTicket
-        ? initialTicketId
-        : selectedTicket?.id;
-
-    if (hasNewInitialTicket) {
-      handledInitialTicketIdRef.current =
-        initialTicketId;
-    }
-
-    void refreshWorkspace(
-      ticketIdToOpen,
-    );
-  }, [
-    authenticated,
-    authLoading,
-    bootstrapped,
-    initialTicketId,
-    permissionReady,
-    refreshWorkspace,
-    selectedTicket?.id,
-    userId,
-  ]);
-
-  function updateFilter<
-    Key extends keyof SupportTicketFilters,
-  >(
-    key: Key,
-    value: SupportTicketFilters[Key],
-  ) {
-    setPage(1);
-
-    setFilters((current) => ({
-      ...current,
-      [key]: value,
-    }));
-  }
-
-  async function openTicket(
-    ticketId: number,
-  ) {
+    setLoading(true);
     setError("");
 
     try {
-      setSelectedTicket(
-        await getSupportTicket(
-          ticketId,
-        ),
-      );
+      const [tickets, summaryData, tagData] = await Promise.all([
+        getSupportTickets(filters, page, 20),
+        getSupportSummary(filters),
+        getSupportTags(),
+      ]);
+      if (!isCurrent()) return;
+      setTicketPage(tickets);
+      setSummary(summaryData);
+      if (tagRequest === tagsRequestRef.current) setTags(tagData);
+      if (capabilities.canAssign) {
+        const agentData = await getSupportAgents();
+        if (isCurrent()) setAgents(agentData);
+      } else {
+        setAgents([]);
+      }
     } catch (caughtError) {
-      setError(
-        getApiErrorMessage(
-          caughtError,
-        ),
-      );
+      if (isCurrent()) setError(getApiErrorMessage(caughtError));
+    } finally {
+      if (isCurrent()) setLoading(false);
     }
+  }, [capabilities.canAssign, filters, page, userId]);
+
+  // Mutation callbacks can outlive their detail panel. Always refresh the
+  // current query, and never reopen a ticket after the user has moved on.
+  const refreshWorkspaceRef = useRef(refreshWorkspace);
+  useEffect(() => {
+    refreshWorkspaceRef.current = refreshWorkspace;
+  }, [refreshWorkspace]);
+
+  const loadTicket = useCallback(async (ticketId: number, select: boolean) => {
+    if (!mountedRef.current) return;
+    if (select) {
+      selectedTicketIdRef.current = ticketId;
+      setSelection({ id: ticketId, revision: ++selectionRevisionRef.current });
+      setSelectedTicket(null);
+    } else if (selectedTicketIdRef.current !== ticketId) {
+      return;
+    }
+    const request = ++detailRequestRef.current;
+    const isCurrent = () => request === detailRequestRef.current &&
+      selectedTicketIdRef.current === ticketId &&
+      useAuthStore.getState().isAuthenticated &&
+      useAuthStore.getState().user?.id === userId;
+
+    setDetailLoading(true);
+    setError("");
+    try {
+      const ticket = await getSupportTicket(ticketId);
+      if (isCurrent()) setSelectedTicket(ticket);
+    } catch (caughtError) {
+      if (isCurrent()) setError(getApiErrorMessage(caughtError));
+    } finally {
+      if (isCurrent()) setDetailLoading(false);
+    }
+  }, [userId]);
+
+  const closeTicket = useCallback(() => {
+    detailRequestRef.current += 1;
+    selectedTicketIdRef.current = null;
+    setSelection({ id: null, revision: ++selectionRevisionRef.current });
+    setSelectedTicket(null);
+    setDetailLoading(false);
+  }, []);
+
+  useEffect(() => {
+    if (!permissionReady || !authenticated || userId === null ||
+        !bootstrapped || authLoading) return;
+    const generation = workspaceRequestRef.current;
+    // Cleanup can retire a queued query before it starts (including StrictMode).
+    void Promise.resolve().then(() => {
+      if (generation === workspaceRequestRef.current) return refreshWorkspace();
+    });
+    return () => { workspaceRequestRef.current += 1; };
+  }, [authenticated, authLoading, bootstrapped, permissionReady, refreshWorkspace, userId]);
+
+  useEffect(() => {
+    if (!permissionReady || !authenticated || userId === null ||
+        !bootstrapped || authLoading || initialTicketId == null ||
+        handledInitialTicketIdRef.current === initialTicketId) return;
+    handledInitialTicketIdRef.current = initialTicketId;
+    void loadTicket(initialTicketId, true);
+  }, [authenticated, authLoading, bootstrapped, initialTicketId, loadTicket, permissionReady, userId]);
+
+  function updateFilter<Key extends keyof SupportTicketFilters>(
+    key: Key,
+    value: SupportTicketFilters[Key],
+  ) {
+    // Retire the old query immediately, before the next effect starts.
+    workspaceRequestRef.current += 1;
+    setPage(1);
+    setFilters((current) => ({ ...current, [key]: value }));
   }
 
-  async function handleCreated(
-    ticket: SupportTicket,
-  ) {
-    setShowCreate(false);
-    setSelectedTicket(ticket);
+  function changePage(nextPage: number) {
+    workspaceRequestRef.current += 1;
+    setPage(nextPage);
+  }
 
-    await refreshWorkspace(
-      ticket.id,
-    );
+  async function handleChanged(ticketId: number) {
+    await Promise.all([
+      refreshWorkspaceRef.current(),
+      loadTicket(ticketId, false),
+    ]);
+  }
+
+  async function handleCreated(ticket: SupportTicket, previousSelection: number) {
+    if (!mountedRef.current) return;
+    setShowCreate(false);
+    if (selectionRevisionRef.current === previousSelection) {
+      detailRequestRef.current += 1;
+      selectedTicketIdRef.current = ticket.id;
+      setSelection({ id: ticket.id, revision: ++selectionRevisionRef.current });
+      setSelectedTicket(ticket);
+      setDetailLoading(false);
+    }
+    await refreshWorkspaceRef.current();
   }
 
   if (
@@ -1715,6 +1720,7 @@ export function SupportCenter({
             onCreated={(ticket) =>
               void handleCreated(
                 ticket,
+                selection.revision,
               )
             }
             onCancel={() =>
@@ -1965,13 +1971,14 @@ export function SupportCenter({
                   key={ticket.id}
                   type="button"
                   onClick={() =>
-                    void openTicket(
+                    void loadTicket(
                       ticket.id,
+                      true,
                     )
                   }
                   className={[
                     "w-full px-5 py-4 text-left transition hover:bg-slate-50",
-                    selectedTicket?.id ===
+                    selectedTicketId ===
                     ticket.id
                       ? "bg-slate-50"
                       : "",
@@ -2053,13 +2060,7 @@ export function SupportCenter({
                 page <= 1
               }
               onClick={() =>
-                setPage(
-                  (current) =>
-                    Math.max(
-                      1,
-                      current - 1,
-                    ),
-                )
+                changePage(Math.max(1, page - 1))
               }
               className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 disabled:opacity-40"
             >
@@ -2076,10 +2077,7 @@ export function SupportCenter({
                 !ticketPage.next
               }
               onClick={() =>
-                setPage(
-                  (current) =>
-                    current + 1,
-                )
+                changePage(page + 1)
               }
               className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 disabled:opacity-40"
             >
@@ -2098,24 +2096,14 @@ export function SupportCenter({
             }
             tags={tags}
             agents={agents}
-            onChanged={async (
-              ticketId,
-            ) => {
-              await refreshWorkspace(
-                ticketId,
-              );
-            }}
-            onClose={() =>
-              setSelectedTicket(
-                null,
-              )
-            }
+            onChanged={handleChanged}
+            onClose={closeTicket}
           />
         ) : (
           <section className="flex min-h-80 items-center justify-center rounded-3xl border border-dashed border-slate-300 bg-white p-8 text-center">
             <div>
-              <p className="font-semibold text-slate-800">
-                Select a ticket
+              <p role={detailLoading ? "status" : undefined} className="font-semibold text-slate-800">
+                {detailLoading ? "Loading conversation..." : "Select a ticket"}
               </p>
 
               <p className="mt-1 text-sm text-slate-500">
