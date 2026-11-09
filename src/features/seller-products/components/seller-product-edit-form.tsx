@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { ChangeEvent, FormEvent, useEffect, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
 
 import type { ProductDetail } from "@/features/products/types";
 import { getApiErrorMessage } from "@/lib/api/errors";
@@ -87,8 +87,8 @@ function mapProductToForm(product: ProductDetail): FormState {
   };
 }
 
-function mapFormToPayload(form: FormState): SellerProductPayload {
-  return {
+function mapFormToPayload(form: FormState, original: FormState): Partial<SellerProductPayload> {
+  const values: Omit<SellerProductPayload, "labels"> = {
     name: form.name.trim(),
     description: form.description.trim(),
     short_description: form.short_description.trim(),
@@ -104,8 +104,13 @@ function mapFormToPayload(form: FormState): SellerProductPayload {
     width: emptyToNull(form.width),
     height: emptyToNull(form.height),
     barcode: emptyToNull(form.barcode),
-    labels: [],
   };
+  // PATCH only changed fields; untouched metadata belongs to the server.
+  return Object.fromEntries(
+    (Object.keys(values) as (keyof FormState)[])
+      .filter((key) => form[key] !== original[key])
+      .map((key) => [key, values[key]]),
+  );
 }
 
 export function SellerProductEditForm() {
@@ -114,6 +119,7 @@ export function SellerProductEditForm() {
   const router = useRouter();
 
   const [form, setForm] = useState<FormState>(initialForm);
+  const originalForm = useRef<FormState | null>(null);
   const [categories, setCategories] = useState<SellerProductCategory[]>([]);
   const [brands, setBrands] = useState<SellerProductBrand[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -137,7 +143,9 @@ export function SellerProductEditForm() {
           return;
         }
 
-        setForm(mapProductToForm(product));
+        const loadedForm = mapProductToForm(product);
+        originalForm.current = loadedForm;
+        setForm(loadedForm);
         setCategories(options.categories);
         setBrands(options.brands);
       } catch (editError) {
@@ -173,12 +181,14 @@ export function SellerProductEditForm() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!originalForm.current || isSubmitting) return;
 
     setError("");
     setIsSubmitting(true);
 
     try {
-      await updateSellerProduct(productId, mapFormToPayload(form));
+      const changes = mapFormToPayload(form, originalForm.current);
+      if (Object.keys(changes).length) await updateSellerProduct(productId, changes);
       router.push(`/seller/products/${productId}`);
     } catch (updateError) {
       setError(getApiErrorMessage(updateError));
