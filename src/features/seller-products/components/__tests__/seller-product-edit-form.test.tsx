@@ -184,20 +184,7 @@ describe("SellerProductEditForm", () => {
       expect(mockedUpdateSellerProduct).toHaveBeenCalledWith("10", {
         name: "Updated Seller Product",
         description: "Updated description",
-        short_description: "Seller demo",
         price: "1300000",
-        compare_price: "1500000",
-        cost_per_item: null,
-        category: 1,
-        brand: 2,
-        sku: "SELLER-DEMO-001",
-        low_stock_threshold: 5,
-        weight: null,
-        length: null,
-        width: null,
-        height: null,
-        barcode: null,
-        labels: [],
       });
     });
 
@@ -231,10 +218,57 @@ describe("SellerProductEditForm", () => {
 
     render(<SellerProductEditForm />);
 
+    await user.type(await screen.findByLabelText(/product name/i), " changed");
+
     await user.click(
       await screen.findByRole("button", { name: /save product/i }),
     );
 
     expect(await screen.findByText("SKU already exists.")).toBeInTheDocument();
+  });
+
+  it("preserves existing labels and every untouched field in a description-only PATCH", async () => {
+    const user = userEvent.setup();
+    const product = makeProduct({ labels: ["new", "limited"], barcode: "000123", cost_per_item: "500000", low_stock_threshold: 0 });
+    mockedGetSellerProduct.mockResolvedValue(product);
+    mockedGetSellerProductOptions.mockResolvedValue(options);
+    mockedUpdateSellerProduct.mockResolvedValue({ ...product, description: "Revised description" });
+    render(<SellerProductEditForm />);
+    const description = await screen.findByLabelText(/^description$/i);
+    await user.clear(description);
+    await user.type(description, "Revised description");
+    await user.click(screen.getByRole("button", { name: /save product/i }));
+    await waitFor(() => expect(mockedUpdateSellerProduct).toHaveBeenCalledWith("10", { description: "Revised description" }));
+    const patch = mockedUpdateSellerProduct.mock.calls[0][1];
+    expect(patch).not.toHaveProperty("labels");
+    expect(patch).not.toHaveProperty("barcode");
+    expect(patch).not.toHaveProperty("low_stock_threshold");
+    // The backend assigns only submitted keys; these original values survive.
+    expect({ ...product, ...patch }).toMatchObject({ labels: ["new", "limited"], barcode: "000123", cost_per_item: "500000", low_stock_threshold: 0 });
+  });
+
+  it("omits fields reverted to their loaded values and skips an unchanged PATCH", async () => {
+    const user = userEvent.setup();
+    mockedGetSellerProduct.mockResolvedValue(makeProduct({ labels: ["new"] }));
+    mockedGetSellerProductOptions.mockResolvedValue(options);
+    render(<SellerProductEditForm />);
+    const name = await screen.findByLabelText(/product name/i);
+    await user.type(name, " temporary");
+    await user.clear(name);
+    await user.type(name, "Seller Demo Product");
+    await user.click(screen.getByRole("button", { name: /save product/i }));
+    expect(mockedUpdateSellerProduct).not.toHaveBeenCalled();
+    expect(routerMock.push).toHaveBeenCalledWith("/seller/products/10");
+  });
+
+  it("can explicitly clear an edited nullable field without resending labels", async () => {
+    const user = userEvent.setup();
+    mockedGetSellerProduct.mockResolvedValue(makeProduct({ labels: ["limited"] }));
+    mockedGetSellerProductOptions.mockResolvedValue(options);
+    mockedUpdateSellerProduct.mockResolvedValue(makeProduct({ compare_price: null, labels: ["limited"] }));
+    render(<SellerProductEditForm />);
+    await user.clear(await screen.findByLabelText(/compare price/i));
+    await user.click(screen.getByRole("button", { name: /save product/i }));
+    await waitFor(() => expect(mockedUpdateSellerProduct).toHaveBeenCalledWith("10", { compare_price: null }));
   });
 });
