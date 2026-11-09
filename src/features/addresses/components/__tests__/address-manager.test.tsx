@@ -6,19 +6,19 @@ import { AddressManager } from "../address-manager";
 import {
   createAddress,
   deleteAddress,
-  getAddresses,
+  getAddressesPage,
   setDefaultAddress,
 } from "../../api";
 import type { Address } from "../../types";
 
 vi.mock("../../api", () => ({
-  getAddresses: vi.fn(),
+  getAddressesPage: vi.fn(),
   createAddress: vi.fn(),
   deleteAddress: vi.fn(),
   setDefaultAddress: vi.fn(),
 }));
 
-const mockedGetAddresses = vi.mocked(getAddresses);
+const mockedGetAddresses = vi.mocked(getAddressesPage);
 const mockedCreateAddress = vi.mocked(createAddress);
 const mockedDeleteAddress = vi.mocked(deleteAddress);
 const mockedSetDefaultAddress = vi.mocked(setDefaultAddress);
@@ -42,13 +42,20 @@ const address: Address = {
   updated_at: "2026-08-21T00:00:00Z",
 };
 
+const page = (results: Address[]) => ({
+  count: results.length,
+  next: null,
+  previous: null,
+  results,
+});
+
 describe("AddressManager", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it("marks backend-required address fields as required", async () => {
-    mockedGetAddresses.mockResolvedValue([]);
+    mockedGetAddresses.mockResolvedValue(page([]));
 
     render(<AddressManager />);
 
@@ -67,7 +74,7 @@ describe("AddressManager", () => {
   });
 
   it("keeps optional address fields optional", async () => {
-    mockedGetAddresses.mockResolvedValue([]);
+    mockedGetAddresses.mockResolvedValue(page([]));
 
     render(<AddressManager />);
 
@@ -82,7 +89,7 @@ describe("AddressManager", () => {
   });
 
   it("adds frontend validation hints for city, province, and postal code", async () => {
-    mockedGetAddresses.mockResolvedValue([]);
+    mockedGetAddresses.mockResolvedValue(page([]));
 
     render(<AddressManager />);
 
@@ -109,7 +116,7 @@ describe("AddressManager", () => {
   });
 
   it("renders saved addresses", async () => {
-    mockedGetAddresses.mockResolvedValue([address]);
+    mockedGetAddresses.mockResolvedValue(page([address]));
 
     render(<AddressManager />);
 
@@ -126,7 +133,7 @@ describe("AddressManager", () => {
   it("creates an address with required and optional fields", async () => {
     const user = userEvent.setup();
 
-    mockedGetAddresses.mockResolvedValue([]);
+    mockedGetAddresses.mockResolvedValue(page([]));
     mockedCreateAddress.mockResolvedValue(address);
 
     render(<AddressManager />);
@@ -172,12 +179,14 @@ describe("AddressManager", () => {
   it("sets default address and deletes address", async () => {
     const user = userEvent.setup();
 
-    mockedGetAddresses.mockResolvedValue([
-      {
-        ...address,
-        is_default: false,
-      },
-    ]);
+    mockedGetAddresses.mockResolvedValue(
+      page([
+        {
+          ...address,
+          is_default: false,
+        },
+      ]),
+    );
     mockedSetDefaultAddress.mockResolvedValue(undefined);
     mockedDeleteAddress.mockResolvedValue(undefined);
 
@@ -201,7 +210,7 @@ describe("AddressManager", () => {
   it("shows API errors from address actions", async () => {
     const user = userEvent.setup();
 
-    mockedGetAddresses.mockResolvedValue([]);
+    mockedGetAddresses.mockResolvedValue(page([]));
     mockedCreateAddress.mockRejectedValue(new Error("Postal code is invalid."));
 
     render(<AddressManager />);

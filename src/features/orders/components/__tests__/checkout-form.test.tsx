@@ -3,7 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { getAddresses } from "@/features/addresses/api";
+import { getAddressesPage } from "@/features/addresses/api";
 import type { Address } from "@/features/addresses/types";
 import { getCart } from "@/features/cart/api";
 import { useCartStore } from "@/features/cart/cart-store";
@@ -43,7 +43,7 @@ vi.mock("@/features/cart/api", () => ({
 }));
 
 vi.mock("@/features/addresses/api", () => ({
-  getAddresses: vi.fn(),
+  getAddressesPage: vi.fn(),
 }));
 
 vi.mock("@/features/discounts/api", () => ({
@@ -55,7 +55,13 @@ vi.mock("../../api", () => ({
 }));
 
 const mockedGetCart = vi.mocked(getCart);
-const mockedGetAddresses = vi.mocked(getAddresses);
+const mockedGetAddresses = vi.mocked(getAddressesPage);
+const addressPage = (
+  results: Address[],
+  count = results.length,
+  next: string | null = null,
+  previous: string | null = null,
+) => ({ count, next, previous, results });
 const mockedValidateDiscountCode = vi.mocked(validateDiscountCode);
 const mockedCheckout = vi.mocked(checkout);
 
@@ -143,7 +149,7 @@ function makeOrder(overrides: Partial<OrderDetail> = {}): OrderDetail {
 
 async function renderLoadedCheckout() {
   mockedGetCart.mockResolvedValue(makeCart());
-  mockedGetAddresses.mockResolvedValue([makeAddress()]);
+  mockedGetAddresses.mockResolvedValue(addressPage([makeAddress()]));
 
   render(<CheckoutForm />);
 
@@ -165,6 +171,91 @@ describe("CheckoutForm", () => {
     expect(screen.getByDisplayValue("Sina Moghtader Far")).toBeInTheDocument();
     expect(screen.getByDisplayValue("Bavaria")).toBeInTheDocument();
     expect(screen.getAllByText("1,200,000").length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("selects an address beyond20 and preserves that selection when browsing back", async () => {
+    const user = userEvent.setup();
+    const dataset = Array.from({ length: 21 }, (_, index) =>
+      makeAddress({
+        id: index + 1,
+        title: `Address ${index + 1}`,
+        receiver_name: `Receiver ${index + 1}`,
+        is_default: index === 0,
+      }),
+    );
+    mockedGetCart.mockResolvedValue(makeCart());
+    mockedGetAddresses.mockImplementation(async (page = 1) =>
+      addressPage(
+        dataset.slice((page - 1) * 20, page * 20),
+        dataset.length,
+        page === 1 ? "?page=2" : null,
+        page === 2 ? "?page=1" : null,
+      ),
+    );
+    mockedCheckout.mockResolvedValue(makeOrder());
+    render(<CheckoutForm />);
+    await screen.findByRole("heading", { name: /shipping information/i });
+    expect(screen.getByDisplayValue("Receiver 1")).toBeInTheDocument();
+    expect(mockedGetAddresses).toHaveBeenCalledTimes(1);
+    await user.click(
+      screen.getByRole("button", { name: "Next saved addresses" }),
+    );
+    await screen.findByRole("option", { name: "Address 21 - Bamberg" });
+    await user.selectOptions(screen.getByLabelText("Saved address"), "21");
+    expect(screen.getByDisplayValue("Receiver 21")).toBeInTheDocument();
+    await user.click(
+      screen.getByRole("button", { name: "Previous saved addresses" }),
+    );
+    await screen.findByRole("option", {
+      name: "Address 1 (Default) - Bamberg",
+    });
+    expect(
+      screen.getByRole("option", { name: "Address 21 (Selected) - Bamberg" }),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Saved address")).toHaveValue("21");
+    await user.click(screen.getByRole("button", { name: /place order/i }));
+    await waitFor(() =>
+      expect(mockedCheckout).toHaveBeenCalledWith(
+        expect.objectContaining({ receiver_name: "Receiver 21" }),
+      ),
+    );
+    expect(mockedGetAddresses.mock.calls.map((call) => call[0] ?? 1)).toEqual([
+      1, 2, 1,
+    ]);
+  });
+
+  it("retains the selected shipping address and retries a failed later address page", async () => {
+    const user = userEvent.setup();
+    mockedGetCart.mockResolvedValue(makeCart());
+    mockedGetAddresses
+      .mockResolvedValueOnce(addressPage([makeAddress()], 21, "?page=2"))
+      .mockRejectedValueOnce(new Error("Saved addresses unavailable"))
+      .mockResolvedValueOnce(
+        addressPage(
+          [makeAddress({ id: 21, title: "Office", is_default: false })],
+          21,
+          null,
+          "?page=1",
+        ),
+      );
+    render(<CheckoutForm />);
+    await screen.findByRole("heading", { name: /shipping information/i });
+    await user.click(
+      screen.getByRole("button", { name: "Next saved addresses" }),
+    );
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Saved addresses unavailable",
+    );
+    expect(screen.getByDisplayValue("Sina Moghtader Far")).toBeInTheDocument();
+    await user.click(
+      screen.getByRole("button", { name: "Retry saved addresses" }),
+    );
+    await screen.findByRole("option", { name: "Office - Bamberg" });
+    expect(screen.getByLabelText("Saved address")).toHaveValue("1");
+    expect(screen.getByDisplayValue("Sina Moghtader Far")).toBeInTheDocument();
+    expect(mockedGetAddresses.mock.calls.map((call) => call[0] ?? 1)).toEqual([
+      1, 2, 2,
+    ]);
   });
 
   it("validates a discount code and shows discount preview", async () => {
@@ -299,7 +390,7 @@ describe("CheckoutForm", () => {
 
   it("shows empty cart state", async () => {
     mockedGetCart.mockResolvedValue(makeCart({ items: [], total_items: 0 }));
-    mockedGetAddresses.mockResolvedValue([]);
+    mockedGetAddresses.mockResolvedValue(addressPage([]));
 
     render(<CheckoutForm />);
 
@@ -311,7 +402,7 @@ describe("CheckoutForm", () => {
 
   it("shows checkout loading error", async () => {
     mockedGetCart.mockRejectedValue(new Error("Checkout is not available."));
-    mockedGetAddresses.mockResolvedValue([]);
+    mockedGetAddresses.mockResolvedValue(addressPage([]));
 
     render(<CheckoutForm />);
 
