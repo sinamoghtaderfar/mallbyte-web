@@ -2,7 +2,15 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
+import {
+  ChangeEvent,
+  FormEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import { getAddresses } from "@/features/addresses/api";
 import type { Address } from "@/features/addresses/types";
@@ -88,6 +96,54 @@ export function CheckoutForm() {
   const [isValidatingDiscount, setIsValidatingDiscount] = useState(false);
   const [error, setError] = useState("");
   const [discountError, setDiscountError] = useState("");
+  const [addressesLoading, setAddressesLoading] = useState(true);
+  const [addressesError, setAddressesError] = useState("");
+  const addressRequest = useRef(0);
+  const discountRequest = useRef(0);
+  const shippingEdited = useRef(false);
+
+  const loadAddresses = useCallback(async () => {
+    const request = ++addressRequest.current;
+    try {
+      const data = await getAddresses();
+      if (request !== addressRequest.current) return;
+      setAddresses(data);
+      const defaultAddress = data.find((address) => address.is_default);
+      if (defaultAddress && !shippingEdited.current) {
+        setSelectedAddressId(String(defaultAddress.id));
+        setForm((current) => mapAddressToCheckoutForm(defaultAddress, current));
+      }
+    } catch (reason) {
+      if (request === addressRequest.current)
+        setAddressesError(getApiErrorMessage(reason));
+    } finally {
+      if (request === addressRequest.current) setAddressesLoading(false);
+    }
+  }, []);
+
+  function handleAddressRetry() {
+    setAddressesLoading(true);
+    setAddressesError("");
+    void loadAddresses();
+  }
+
+  useEffect(() => {
+    let current = true;
+    void Promise.resolve().then(() => {
+      if (current) return loadAddresses();
+    });
+    return () => {
+      current = false;
+      addressRequest.current += 1;
+    };
+  }, [loadAddresses]);
+
+  useEffect(
+    () => () => {
+      discountRequest.current += 1;
+    },
+    [],
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -97,10 +153,7 @@ export function CheckoutForm() {
       setError("");
 
       try {
-        const [cartData, addressData] = await Promise.all([
-          getCart(),
-          getAddresses(),
-        ]);
+        const cartData = await getCart();
 
         if (!isMounted) {
           return;
@@ -108,18 +161,6 @@ export function CheckoutForm() {
 
         setLocalCart(cartData);
         setCart(cartData);
-        setAddresses(addressData);
-
-        const defaultAddress = addressData.find(
-          (address) => address.is_default,
-        );
-
-        if (defaultAddress) {
-          setSelectedAddressId(String(defaultAddress.id));
-          setForm((current) =>
-            mapAddressToCheckoutForm(defaultAddress, current),
-          );
-        }
       } catch (loadError) {
         if (isMounted) {
           setError(getApiErrorMessage(loadError));
@@ -157,12 +198,26 @@ export function CheckoutForm() {
     }));
 
     if (name === "discount_code") {
+      discountRequest.current += 1;
+      setIsValidatingDiscount(false);
       setDiscountResult(null);
       setDiscountError("");
+    } else if (
+      [
+        "receiver_name",
+        "receiver_phone",
+        "province",
+        "city",
+        "address",
+        "postal_code",
+      ].includes(name)
+    ) {
+      shippingEdited.current = true;
     }
   }
 
   function handleAddressSelect(event: ChangeEvent<HTMLSelectElement>) {
+    shippingEdited.current = true;
     const addressId = event.target.value;
 
     setSelectedAddressId(addressId);
@@ -183,6 +238,7 @@ export function CheckoutForm() {
   }
 
   async function handleValidateDiscount() {
+    const request = ++discountRequest.current;
     const code = form.discount_code?.trim();
 
     setDiscountError("");
@@ -197,6 +253,7 @@ export function CheckoutForm() {
 
     try {
       const result = await validateDiscountCode({ code });
+      if (request !== discountRequest.current) return;
 
       setDiscountResult(result);
       setForm((current) => ({
@@ -204,13 +261,16 @@ export function CheckoutForm() {
         discount_code: result.code,
       }));
     } catch (validateError) {
-      setDiscountError(getApiErrorMessage(validateError));
+      if (request === discountRequest.current)
+        setDiscountError(getApiErrorMessage(validateError));
     } finally {
-      setIsValidatingDiscount(false);
+      if (request === discountRequest.current) setIsValidatingDiscount(false);
     }
   }
 
   function handleRemoveDiscount() {
+    discountRequest.current += 1;
+    setIsValidatingDiscount(false);
     setDiscountResult(null);
     setDiscountError("");
     setForm((current) => ({
@@ -221,6 +281,9 @@ export function CheckoutForm() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (isSubmitting) return;
+    discountRequest.current += 1;
+    setIsValidatingDiscount(false);
 
     setError("");
     setIsSubmitting(true);
@@ -315,6 +378,7 @@ export function CheckoutForm() {
             <select
               value={selectedAddressId}
               onChange={handleAddressSelect}
+              disabled={addressesLoading || isSubmitting}
               className="mt-2 h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm outline-none transition focus:border-slate-400"
             >
               <option value="">Enter address manually</option>
@@ -328,7 +392,31 @@ export function CheckoutForm() {
             </select>
           </label>
 
-          {!addresses.length ? (
+          {addressesLoading ? (
+            <p className="mt-3 text-sm text-slate-600">
+              Loading saved addresses… You can enter an address manually.
+            </p>
+          ) : null}
+
+          {addressesError ? (
+            <div role="alert" className="mt-3 text-sm text-amber-900">
+              <p>
+                Saved addresses could not be loaded. Enter an address manually
+                or retry.
+              </p>
+              <p>{addressesError}</p>
+              <button
+                type="button"
+                onClick={handleAddressRetry}
+                disabled={addressesLoading || isSubmitting}
+                className="mt-2 font-medium underline"
+              >
+                Retry saved addresses
+              </button>
+            </div>
+          ) : null}
+
+          {!addressesLoading && !addressesError && !addresses.length ? (
             <p className="mt-3 text-sm text-slate-500">
               No saved addresses yet. You can create one from the addresses page
               or continue manually.
@@ -423,6 +511,7 @@ export function CheckoutForm() {
               </span>
               <input
                 name="discount_code"
+                disabled={isSubmitting}
                 value={form.discount_code}
                 onChange={handleChange}
                 placeholder="SAVE10"
@@ -434,7 +523,7 @@ export function CheckoutForm() {
               <button
                 type="button"
                 onClick={() => void handleValidateDiscount()}
-                disabled={isValidatingDiscount}
+                disabled={isValidatingDiscount || isSubmitting}
                 className="h-10 rounded-2xl bg-slate-900 px-4 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isValidatingDiscount ? "Checking..." : "Apply code"}
@@ -444,6 +533,7 @@ export function CheckoutForm() {
                 <button
                   type="button"
                   onClick={handleRemoveDiscount}
+                  disabled={isSubmitting}
                   className="h-10 rounded-2xl border border-slate-200 px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
                 >
                   Remove
