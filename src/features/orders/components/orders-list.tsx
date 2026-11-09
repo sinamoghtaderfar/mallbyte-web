@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ChangeEvent, useEffect, useMemo, useState } from "react";
 
 import { getApiErrorMessage } from "@/lib/api/errors";
+import type { PaginatedResponse } from "@/types/api";
 
 import { getOrders } from "../api";
 import type { OrderListItem } from "../types";
@@ -59,22 +60,20 @@ function getBadgeClass(status: string) {
   return "bg-yellow-100 text-yellow-700";
 }
 
-function getUniqueOptions(
-  orders: OrderListItem[],
-  valueKey: "status" | "payment_status",
-  labelKey: "status_display" | "payment_status_display",
-) {
-  const options = new Map<string, string>();
-
-  orders.forEach((order) => {
-    options.set(order[valueKey], order[labelKey]);
-  });
-
-  return Array.from(options.entries()).map(([value, label]) => ({
-    value,
-    label,
-  }));
-}
+// OrderViewSet currently supports pagination, but no server-side filtering or
+// ordering. Keep these controls explicitly scoped to the loaded page.
+const statusOptions = [
+  "pending_payment",
+  "paid",
+  "processing",
+  "shipped",
+  "delivered",
+  "cancelled",
+  "refunded",
+].map((value) => ({ value, label: value.replaceAll("_", " ") }));
+const paymentStatusOptions = ["unpaid", "paid", "failed", "refunded"].map(
+  (value) => ({ value, label: value }),
+);
 
 function filterOrders(orders: OrderListItem[], filters: OrderFilters) {
   const searchTerm = filters.search.trim().toLowerCase();
@@ -118,7 +117,15 @@ function sortOrders(orders: OrderListItem[], sort: string) {
 }
 
 export function OrdersList() {
-  const [orders, setOrders] = useState<OrderListItem[]>([]);
+  const [data, setData] = useState<PaginatedResponse<OrderListItem>>({
+    count: 0,
+    next: null,
+    previous: null,
+    results: [],
+  });
+  const orders = data.results;
+  const [page, setPage] = useState(1);
+  const [retry, setRetry] = useState(0);
   const [filters, setFilters] = useState<OrderFilters>(emptyFilters);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -131,10 +138,10 @@ export function OrdersList() {
       setError("");
 
       try {
-        const data = await getOrders();
+        const data = await getOrders(page);
 
         if (isMounted) {
-          setOrders(data.results);
+          setData(data);
         }
       } catch (loadError) {
         if (isMounted) {
@@ -152,21 +159,11 @@ export function OrdersList() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [page, retry]);
 
   const filteredOrders = useMemo(() => {
     return sortOrders(filterOrders(orders, filters), filters.sort);
   }, [orders, filters]);
-
-  const statusOptions = useMemo(
-    () => getUniqueOptions(orders, "status", "status_display"),
-    [orders],
-  );
-
-  const paymentStatusOptions = useMemo(
-    () => getUniqueOptions(orders, "payment_status", "payment_status_display"),
-    [orders],
-  );
 
   const totalSpent = orders.reduce(
     (total, order) => total + Number(order.total_amount || 0),
@@ -213,11 +210,27 @@ export function OrdersList() {
           Could not load orders
         </h1>
         <p className="mt-2 text-sm text-red-700">{error}</p>
+        <button
+          type="button"
+          onClick={() => setRetry((value) => value + 1)}
+          className="mt-4 rounded-xl border px-4 py-2 text-red-800"
+        >
+          Retry
+        </button>
+        {page > 1 && (
+          <button
+            type="button"
+            onClick={() => setPage((value) => value - 1)}
+            className="ml-3 rounded-xl border px-4 py-2 text-red-800"
+          >
+            Previous page
+          </button>
+        )}
       </div>
     );
   }
 
-  if (!orders.length) {
+  if (!data.count) {
     return (
       <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
         <h1 className="text-2xl font-semibold text-slate-950">No orders yet</h1>
@@ -240,7 +253,7 @@ export function OrdersList() {
     <div className="grid gap-8 lg:grid-cols-[320px_1fr]">
       <aside className="h-fit rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
         <p className="text-sm font-medium uppercase tracking-[0.2em] text-slate-500">
-          Order filters
+          Filter this page
         </p>
 
         <h2 className="mt-3 text-2xl font-semibold tracking-tight text-slate-950">
@@ -248,8 +261,8 @@ export function OrdersList() {
         </h2>
 
         <p className="mt-2 text-sm leading-6 text-slate-500">
-          Search your order history by order number, status, payment status, and
-          total amount.
+          Search and sort the orders on this page. Use page navigation to browse
+          your full history. Filters do not search other pages.
         </p>
 
         <div className="mt-6 space-y-4">
@@ -307,7 +320,9 @@ export function OrdersList() {
           </label>
 
           <label className="block">
-            <span className="text-sm font-medium text-slate-700">Sort by</span>
+            <span className="text-sm font-medium text-slate-700">
+              Sort this page
+            </span>
             <select
               name="sort"
               value={filters.sort}
@@ -335,16 +350,16 @@ export function OrdersList() {
         <div className="mb-6 grid gap-4 sm:grid-cols-3">
           <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
             <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">
-              Orders
+              Orders (all pages)
             </p>
             <p className="mt-3 text-2xl font-semibold text-slate-950">
-              {orders.length}
+              {data.count}
             </p>
           </div>
 
           <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
             <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">
-              Pending
+              Pending (this page)
             </p>
             <p className="mt-3 text-2xl font-semibold text-slate-950">
               {pendingOrders}
@@ -353,7 +368,7 @@ export function OrdersList() {
 
           <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
             <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">
-              Total spent
+              Total amount (this page)
             </p>
             <p className="mt-3 text-2xl font-semibold text-slate-950">
               {formatPrice(totalSpent)}
@@ -366,7 +381,8 @@ export function OrdersList() {
             <div>
               <h1 className="text-2xl font-semibold text-slate-950">Orders</h1>
               <p className="mt-1 text-sm text-slate-500">
-                {filteredOrders.length} of {orders.length} orders shown.
+                {filteredOrders.length} of {orders.length} orders on this page ·{" "}
+                {data.count} orders in your history.
               </p>
             </div>
 
@@ -380,10 +396,11 @@ export function OrdersList() {
           {!filteredOrders.length ? (
             <div className="rounded-3xl border border-dashed border-slate-300 p-8">
               <h2 className="text-xl font-semibold text-slate-950">
-                No orders match your filters
+                No orders on this page match your filters
               </h2>
               <p className="mt-2 text-sm text-slate-500">
-                Try changing the search term or clearing the filters.
+                Try changing the filters, clearing them, or browsing another
+                page.
               </p>
             </div>
           ) : (
@@ -449,6 +466,30 @@ export function OrdersList() {
               ))}
             </div>
           )}
+          <nav
+            aria-label="Order pages"
+            className="mt-6 flex items-center justify-between gap-3 border-t border-slate-200 pt-5"
+          >
+            <button
+              type="button"
+              disabled={!data.previous}
+              onClick={() => setPage((value) => Math.max(1, value - 1))}
+              className="rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-700 disabled:opacity-40"
+            >
+              Previous
+            </button>
+            <p className="text-sm text-slate-600">
+              Page {page} of {Math.max(1, Math.ceil(data.count / 20))}
+            </p>
+            <button
+              type="button"
+              disabled={!data.next}
+              onClick={() => setPage((value) => value + 1)}
+              className="rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-700 disabled:opacity-40"
+            >
+              Next
+            </button>
+          </nav>
         </div>
       </section>
     </div>

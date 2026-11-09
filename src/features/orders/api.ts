@@ -13,9 +13,10 @@ export async function checkout(payload: CheckoutPayload) {
   return response.data;
 }
 
-export async function getOrders() {
+export async function getOrders(page = 1) {
   const response = await apiClient.get<PaginatedResponse<OrderListItem>>(
     API_ENDPOINTS.orders.orders,
+    { params: { page, page_size: 20 } },
   );
 
   return response.data;
