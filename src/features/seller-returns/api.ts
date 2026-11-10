@@ -88,16 +88,19 @@ function normalizeSellerReturnsResponse(
   data: SellerReturnListItem[] | PaginatedSellerReturnsResponse,
 ) {
   if (Array.isArray(data)) {
-    return data;
+    return { count: data.length, next: null, previous: null, results: data };
   }
 
-  return data.results;
+  return data;
 }
 
-export async function getSellerReturns() {
+export async function getSellerReturns(page = 1, signal?: AbortSignal) {
   const response = await apiClient.get<
     SellerReturnListItem[] | PaginatedSellerReturnsResponse
-  >(API_ENDPOINTS.returns.sellerRequests);
+  >(API_ENDPOINTS.returns.sellerRequests, {
+    params: { page, page_size: 20 },
+    signal,
+  });
 
   return normalizeSellerReturnsResponse(response.data);
 }
