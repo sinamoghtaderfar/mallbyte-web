@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   ChangeEvent,
   FormEvent,
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -17,10 +18,10 @@ import { useCartStore } from "@/features/cart/cart-store";
 import { validateDiscountCode } from "@/features/discounts/api";
 import type { DiscountValidationResult } from "@/features/discounts/types";
 import { getApiErrorMessage } from "@/lib/api/errors";
+import type { PaginatedResponse } from "@/types/api";
 
 import { checkout } from "../api";
 import type { CheckoutPayload } from "../types";
-import type { PaginatedResponse } from "@/types/api";
 
 const initialForm: CheckoutPayload = {
   receiver_name: "",
@@ -92,18 +93,11 @@ export function CheckoutForm() {
   const [addressPage, setAddressPage] = useState(1);
   const [addressPagination, setAddressPagination] = useState<
     PaginatedResponse<Address>
-  >({
-    count: 0,
-    next: null,
-    previous: null,
-    results: [],
-  });
-  const [isLoadingAddresses, setIsLoadingAddresses] = useState(false);
-  const [addressPageError, setAddressPageError] = useState("");
+  >({ count: 0, next: null, previous: null, results: [] });
   const [failedAddressPage, setFailedAddressPage] = useState<number | null>(
     null,
   );
-  const addressRequestVersion = useRef(0);
+  const initialAddressLoadCompleted = useRef(false);
   const [form, setForm] = useState<CheckoutPayload>(initialForm);
   const [discountResult, setDiscountResult] =
     useState<DiscountValidationResult | null>(null);
@@ -112,6 +106,67 @@ export function CheckoutForm() {
   const [isValidatingDiscount, setIsValidatingDiscount] = useState(false);
   const [error, setError] = useState("");
   const [discountError, setDiscountError] = useState("");
+  const [addressesLoading, setAddressesLoading] = useState(true);
+  const [addressesError, setAddressesError] = useState("");
+  const addressRequest = useRef(0);
+  const discountRequest = useRef(0);
+  const shippingEdited = useRef(false);
+
+  const loadAddresses = useCallback(async (page = 1) => {
+    const request = ++addressRequest.current;
+    try {
+      const data = await getAddressesPage(page);
+      if (request !== addressRequest.current) return;
+      setAddresses(data.results);
+      setAddressPagination(data);
+      setAddressPage(page);
+      if (!initialAddressLoadCompleted.current && !shippingEdited.current) {
+        const defaultAddress = data.results.find(
+          (address) => address.is_default,
+        );
+        if (defaultAddress) {
+          setSelectedAddressId(String(defaultAddress.id));
+          setSelectedAddress(defaultAddress);
+          setForm((current) =>
+            mapAddressToCheckoutForm(defaultAddress, current),
+          );
+        }
+      }
+      initialAddressLoadCompleted.current = true;
+    } catch (reason) {
+      if (request === addressRequest.current) {
+        setAddressesError(getApiErrorMessage(reason));
+        setFailedAddressPage(page);
+      }
+    } finally {
+      if (request === addressRequest.current) setAddressesLoading(false);
+    }
+  }, []);
+
+  function handleAddressPage(page: number) {
+    setAddressesLoading(true);
+    setAddressesError("");
+    setFailedAddressPage(null);
+    void loadAddresses(page);
+  }
+
+  useEffect(() => {
+    let current = true;
+    void Promise.resolve().then(() => {
+      if (current) return loadAddresses();
+    });
+    return () => {
+      current = false;
+      addressRequest.current += 1;
+    };
+  }, [loadAddresses]);
+
+  useEffect(
+    () => () => {
+      discountRequest.current += 1;
+    },
+    [],
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -121,28 +176,10 @@ export function CheckoutForm() {
       setError("");
 
       try {
-        const [, addressData] = await Promise.all([
-          loadCart(),
-          getAddressesPage(),
-        ]);
+        await loadCart();
 
         if (!isMounted) {
           return;
-        }
-
-        setAddresses(addressData.results);
-        setAddressPagination(addressData);
-
-        const defaultAddress = addressData.results.find(
-          (address) => address.is_default,
-        );
-
-        if (defaultAddress) {
-          setSelectedAddressId(String(defaultAddress.id));
-          setSelectedAddress(defaultAddress);
-          setForm((current) =>
-            mapAddressToCheckoutForm(defaultAddress, current),
-          );
         }
       } catch (loadError) {
         if (isMounted) {
@@ -159,7 +196,6 @@ export function CheckoutForm() {
 
     return () => {
       isMounted = false;
-      addressRequestVersion.current += 1;
     };
   }, [loadCart]);
 
@@ -182,12 +218,26 @@ export function CheckoutForm() {
     }));
 
     if (name === "discount_code") {
+      discountRequest.current += 1;
+      setIsValidatingDiscount(false);
       setDiscountResult(null);
       setDiscountError("");
+    } else if (
+      [
+        "receiver_name",
+        "receiver_phone",
+        "province",
+        "city",
+        "address",
+        "postal_code",
+      ].includes(name)
+    ) {
+      shippingEdited.current = true;
     }
   }
 
   function handleAddressSelect(event: ChangeEvent<HTMLSelectElement>) {
+    shippingEdited.current = true;
     const addressId = event.target.value;
 
     setSelectedAddressId(addressId);
@@ -209,28 +259,8 @@ export function CheckoutForm() {
     setSelectedAddress(selectedAddress);
   }
 
-  async function loadAddressPage(page: number) {
-    const request = ++addressRequestVersion.current;
-    setIsLoadingAddresses(true);
-    setAddressPageError("");
-    setFailedAddressPage(null);
-    try {
-      const data = await getAddressesPage(page);
-      if (request !== addressRequestVersion.current) return;
-      setAddresses(data.results);
-      setAddressPagination(data);
-      setAddressPage(page);
-    } catch (reason) {
-      if (request !== addressRequestVersion.current) return;
-      setAddressPageError(getApiErrorMessage(reason));
-      setFailedAddressPage(page);
-    } finally {
-      if (request === addressRequestVersion.current)
-        setIsLoadingAddresses(false);
-    }
-  }
-
   async function handleValidateDiscount() {
+    const request = ++discountRequest.current;
     const code = form.discount_code?.trim();
 
     setDiscountError("");
@@ -245,6 +275,7 @@ export function CheckoutForm() {
 
     try {
       const result = await validateDiscountCode({ code });
+      if (request !== discountRequest.current) return;
 
       setDiscountResult(result);
       setForm((current) => ({
@@ -252,13 +283,16 @@ export function CheckoutForm() {
         discount_code: result.code,
       }));
     } catch (validateError) {
-      setDiscountError(getApiErrorMessage(validateError));
+      if (request === discountRequest.current)
+        setDiscountError(getApiErrorMessage(validateError));
     } finally {
-      setIsValidatingDiscount(false);
+      if (request === discountRequest.current) setIsValidatingDiscount(false);
     }
   }
 
   function handleRemoveDiscount() {
+    discountRequest.current += 1;
+    setIsValidatingDiscount(false);
     setDiscountResult(null);
     setDiscountError("");
     setForm((current) => ({
@@ -269,16 +303,16 @@ export function CheckoutForm() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-
     const currentCart = useCartStore.getState();
     if (
       isSubmitting ||
       currentCart.pendingMutations > 0 ||
       currentCart.needsReload ||
       !currentCart.cart?.items.length
-    ) {
+    )
       return;
-    }
+    discountRequest.current += 1;
+    setIsValidatingDiscount(false);
 
     setError("");
     setIsSubmitting(true);
@@ -381,8 +415,8 @@ export function CheckoutForm() {
             <select
               value={selectedAddressId}
               onChange={handleAddressSelect}
+              disabled={addressesLoading || isSubmitting}
               className="mt-2 h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm outline-none transition focus:border-slate-400"
-              disabled={isLoadingAddresses}
             >
               <option value="">Enter address manually</option>
               {selectedAddress &&
@@ -409,8 +443,8 @@ export function CheckoutForm() {
           >
             <button
               type="button"
-              onClick={() => void loadAddressPage(addressPage - 1)}
-              disabled={addressPage === 1 || isLoadingAddresses}
+              onClick={() => handleAddressPage(addressPage - 1)}
+              disabled={addressPage === 1 || addressesLoading || isSubmitting}
               className="rounded-xl border px-3 py-2 disabled:opacity-50"
             >
               Previous saved addresses
@@ -422,34 +456,42 @@ export function CheckoutForm() {
             </span>
             <button
               type="button"
-              onClick={() => void loadAddressPage(addressPage + 1)}
-              disabled={!addressPagination.next || isLoadingAddresses}
+              onClick={() => handleAddressPage(addressPage + 1)}
+              disabled={
+                !addressPagination.next || addressesLoading || isSubmitting
+              }
               className="rounded-xl border px-3 py-2 disabled:opacity-50"
             >
               Next saved addresses
             </button>
           </nav>
-          {isLoadingAddresses ? (
-            <p role="status" className="mt-3 text-sm text-slate-600">
-              Loading saved addresses…
+          {addressesLoading ? (
+            <p className="mt-3 text-sm text-slate-600">
+              Loading saved addresses… You can enter an address manually.
             </p>
           ) : null}
-          {addressPageError ? (
-            <div role="alert" className="mt-3 text-sm text-red-700">
-              <p>{addressPageError}</p>
+
+          {addressesError ? (
+            <div role="alert" className="mt-3 text-sm text-amber-900">
+              <p>
+                Saved addresses could not be loaded. Enter an address manually
+                or retry.
+              </p>
+              <p>{addressesError}</p>
               <button
                 type="button"
                 onClick={() =>
-                  void loadAddressPage(failedAddressPage ?? addressPage)
+                  handleAddressPage(failedAddressPage ?? addressPage)
                 }
-                className="mt-2 underline"
+                disabled={addressesLoading || isSubmitting}
+                className="mt-2 font-medium underline"
               >
                 Retry saved addresses
               </button>
             </div>
           ) : null}
 
-          {!addresses.length ? (
+          {!addressesLoading && !addressesError && !addresses.length ? (
             <p className="mt-3 text-sm text-slate-500">
               No saved addresses yet. You can create one from the addresses page
               or continue manually.
@@ -544,6 +586,7 @@ export function CheckoutForm() {
               </span>
               <input
                 name="discount_code"
+                disabled={isSubmitting}
                 value={form.discount_code}
                 onChange={handleChange}
                 placeholder="SAVE10"
@@ -555,7 +598,7 @@ export function CheckoutForm() {
               <button
                 type="button"
                 onClick={() => void handleValidateDiscount()}
-                disabled={isValidatingDiscount}
+                disabled={isValidatingDiscount || isSubmitting}
                 className="h-10 rounded-2xl bg-slate-900 px-4 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isValidatingDiscount ? "Checking..." : "Apply code"}
@@ -565,6 +608,7 @@ export function CheckoutForm() {
                 <button
                   type="button"
                   onClick={handleRemoveDiscount}
+                  disabled={isSubmitting}
                   className="h-10 rounded-2xl border border-slate-200 px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
                 >
                   Remove

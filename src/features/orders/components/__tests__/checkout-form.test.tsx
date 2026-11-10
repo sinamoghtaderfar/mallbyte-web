@@ -20,6 +20,7 @@ import {
 import { useCartStore } from "@/features/cart/cart-store";
 import type { Cart } from "@/features/cart/types";
 import { validateDiscountCode } from "@/features/discounts/api";
+import type { DiscountValidationResult } from "@/features/discounts/types";
 
 import { checkout } from "../../api";
 import type { OrderDetail } from "../../types";
@@ -179,6 +180,17 @@ async function renderLoadedCheckout() {
 
   await screen.findByRole("heading", { name: /shipping information/i });
   return view;
+}
+
+function discount(code: string): DiscountValidationResult {
+  return {
+    code,
+    title: code,
+    discount_type: "percentage",
+    discount_amount: "120000",
+    cart_subtotal: "1200000",
+    total_after_discount: "1080000",
+  };
 }
 
 describe("CheckoutForm", () => {
@@ -435,6 +447,159 @@ describe("CheckoutForm", () => {
       await screen.findByText(/could not load checkout/i),
     ).toBeInTheDocument();
     expect(screen.getByText("Checkout is not available.")).toBeInTheDocument();
+  });
+
+  it("ignores an old coupon success after a newer code validates and submits the newer code", async () => {
+    const user = userEvent.setup();
+    const old = deferred<DiscountValidationResult>();
+    const current = deferred<DiscountValidationResult>();
+    mockedValidateDiscountCode
+      .mockReturnValueOnce(old.promise)
+      .mockReturnValueOnce(current.promise);
+    mockedCheckout.mockResolvedValue(makeOrder());
+    await renderLoadedCheckout();
+
+    const input = screen.getByLabelText(/discount code/i);
+    await user.type(input, "OLD");
+    await user.click(screen.getByRole("button", { name: /apply code/i }));
+    await user.clear(input);
+    await user.type(input, "NEW");
+    await user.click(screen.getByRole("button", { name: /apply code/i }));
+    await act(async () => current.resolve(discount("NEW")));
+    await act(async () => old.resolve(discount("OLD")));
+
+    expect(input).toHaveValue("NEW");
+    expect(screen.getByText("NEW applied")).toBeInTheDocument();
+    expect(screen.queryByText("OLD applied")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /place order/i }));
+    expect(mockedCheckout).toHaveBeenCalledWith(
+      expect.objectContaining({ discount_code: "NEW" }),
+    );
+  });
+
+  it("keeps a newer coupon request pending when an outdated validation fails", async () => {
+    const user = userEvent.setup();
+    const old = deferred<DiscountValidationResult>();
+    const current = deferred<DiscountValidationResult>();
+    mockedValidateDiscountCode
+      .mockReturnValueOnce(old.promise)
+      .mockReturnValueOnce(current.promise);
+    await renderLoadedCheckout();
+    const input = screen.getByLabelText(/discount code/i);
+    await user.type(input, "OLD");
+    await user.click(screen.getByRole("button", { name: /apply code/i }));
+    await user.clear(input);
+    await user.type(input, "NEW");
+    await user.click(screen.getByRole("button", { name: /apply code/i }));
+
+    await act(async () => old.reject(new Error("Old code expired")));
+    expect(screen.queryByText("Old code expired")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /checking/i })).toBeDisabled();
+    await act(async () => current.resolve(discount("NEW")));
+    expect(screen.getByText("NEW applied")).toBeInTheDocument();
+  });
+
+  it("submits the entered coupon while validation is pending and retires that response", async () => {
+    const user = userEvent.setup();
+    const validation = deferred<DiscountValidationResult>();
+    const order = deferred<OrderDetail>();
+    mockedValidateDiscountCode.mockReturnValueOnce(validation.promise);
+    mockedCheckout.mockReturnValueOnce(order.promise);
+    await renderLoadedCheckout();
+    await user.type(screen.getByLabelText(/discount code/i), "intended");
+    await user.click(screen.getByRole("button", { name: /apply code/i }));
+    await user.click(screen.getByRole("button", { name: /place order/i }));
+    expect(mockedCheckout).toHaveBeenCalledWith(
+      expect.objectContaining({ discount_code: "intended" }),
+    );
+
+    await act(async () => validation.resolve(discount("CANONICAL")));
+    expect(screen.getByLabelText(/discount code/i)).toHaveValue("intended");
+    expect(screen.queryByText("CANONICAL applied")).not.toBeInTheDocument();
+    await act(async () => order.resolve(makeOrder()));
+  });
+
+  it("allows manual checkout after optional saved-address loading fails", async () => {
+    const user = userEvent.setup();
+    mockedGetCart.mockResolvedValue(makeCart());
+    mockedGetAddresses.mockRejectedValueOnce(
+      new Error("Address service offline"),
+    );
+    mockedCheckout.mockResolvedValue(makeOrder());
+    render(<CheckoutForm />);
+    await screen.findByRole("heading", { name: /shipping information/i });
+    expect(
+      await screen.findByText(/saved addresses could not be loaded/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(/could not load checkout/i),
+    ).not.toBeInTheDocument();
+    for (const [label, value] of [
+      [/^receiver name$/i, "Manual Customer"],
+      [/^receiver phone$/i, "09123456789"],
+      [/^province$/i, "Bavaria"],
+      [/^city$/i, "Bamberg"],
+      [/^address$/i, "Manual street 12"],
+      [/^postal code$/i, "96047"],
+    ] as const)
+      await user.type(screen.getByLabelText(label), value);
+    await user.click(screen.getByRole("button", { name: /place order/i }));
+    expect(mockedCheckout).toHaveBeenCalledWith(
+      expect.objectContaining({
+        receiver_name: "Manual Customer",
+        address: "Manual street 12",
+      }),
+    );
+    expect(routerMock.push).toHaveBeenCalledWith("/orders/55");
+  });
+
+  it("renders checkout before saved addresses finish and preserves shipping edits on their late success", async () => {
+    const user = userEvent.setup();
+    const addresses = deferred<ReturnType<typeof addressPage>>();
+    mockedGetCart.mockResolvedValue(makeCart());
+    mockedGetAddresses.mockReturnValueOnce(addresses.promise);
+    render(<CheckoutForm />);
+    await screen.findByRole("heading", { name: /shipping information/i });
+    expect(screen.getByText(/loading saved addresses/i)).toBeInTheDocument();
+    await user.type(
+      screen.getByLabelText(/^receiver name$/i),
+      "My intended recipient",
+    );
+
+    await act(async () => addresses.resolve(addressPage([makeAddress()])));
+    expect(screen.getByLabelText(/^receiver name$/i)).toHaveValue(
+      "My intended recipient",
+    );
+    expect(screen.getByLabelText(/^province$/i)).toHaveValue("");
+    expect(screen.getByLabelText(/^saved address$/i)).toHaveValue("");
+    await user.selectOptions(screen.getByLabelText(/^saved address$/i), "1");
+    expect(screen.getByLabelText(/^receiver name$/i)).toHaveValue(
+      "Sina Moghtader Far",
+    );
+  });
+
+  it("retries optional saved-address loading without overwriting manual shipping", async () => {
+    const user = userEvent.setup();
+    mockedGetCart.mockResolvedValue(makeCart());
+    mockedGetAddresses
+      .mockRejectedValueOnce(new Error("Address service offline"))
+      .mockResolvedValueOnce(addressPage([makeAddress()]));
+    render(<CheckoutForm />);
+    await screen.findByText(/saved addresses could not be loaded/i);
+    await user.type(
+      screen.getByLabelText(/^receiver name$/i),
+      "Manual recipient",
+    );
+    await user.click(
+      screen.getByRole("button", { name: /retry saved addresses/i }),
+    );
+    await screen.findByText("Home (Default) - Bamberg");
+    expect(screen.getByLabelText(/^receiver name$/i)).toHaveValue(
+      "Manual recipient",
+    );
+    expect(
+      screen.queryByText(/saved addresses could not be loaded/i),
+    ).not.toBeInTheDocument();
   });
 
   it("does not restore a cleared cart when an older checkout read and saved addresses finish later", async () => {
