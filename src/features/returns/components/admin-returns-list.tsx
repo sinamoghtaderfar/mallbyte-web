@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   type AdminReturnListItem,
@@ -49,27 +49,45 @@ export function AdminReturnsList() {
   const [statusFilter, setStatusFilter] = useState<"all" | AdminReturnStatus>(
     "all",
   );
+  const [page, setPage] = useState(1);
+  const [retry, setRetry] = useState(0);
+  const [pagination, setPagination] = useState({
+    count: 0,
+    next: null as string | null,
+    previous: null as string | null,
+  });
+  const requestVersion = useRef(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
+  function changePage(nextPage: number) {
+    requestVersion.current += 1;
+    setIsLoading(true);
+    setError("");
+    setPage(nextPage);
+  }
+
   useEffect(() => {
-    let isMounted = true;
+    const request = ++requestVersion.current;
+    const controller = new AbortController();
+    const isCurrent = () => request === requestVersion.current;
 
     async function loadReturns() {
       try {
         setIsLoading(true);
         setError("");
-        const data = await getAdminReturns();
+        const data = await getAdminReturns(page, controller.signal);
 
-        if (isMounted) {
-          setReturns(data);
+        if (isCurrent()) {
+          setReturns(data.results);
+          setPagination(data);
         }
       } catch (caughtError) {
-        if (isMounted) {
+        if (isCurrent()) {
           setError(getApiErrorMessage(caughtError));
         }
       } finally {
-        if (isMounted) {
+        if (isCurrent()) {
           setIsLoading(false);
         }
       }
@@ -78,9 +96,10 @@ export function AdminReturnsList() {
     void loadReturns();
 
     return () => {
-      isMounted = false;
+      requestVersion.current += 1;
+      controller.abort();
     };
-  }, []);
+  }, [page, retry]);
 
   const filteredReturns = useMemo(() => {
     if (statusFilter === "all") {
@@ -127,19 +146,19 @@ export function AdminReturnsList() {
 
         <section className="mt-8 grid gap-4 md:grid-cols-3">
           <div className="rounded-3xl border border-slate-200 bg-white p-5">
-            <p className="text-sm text-slate-500">Total requests</p>
+            <p className="text-sm text-slate-500">Total requests (all pages)</p>
             <p className="mt-2 text-2xl font-semibold text-slate-950">
-              {returns.length}
+              {pagination.count}
             </p>
           </div>
           <div className="rounded-3xl border border-slate-200 bg-white p-5">
-            <p className="text-sm text-slate-500">Open requests</p>
+            <p className="text-sm text-slate-500">Open requests (this page)</p>
             <p className="mt-2 text-2xl font-semibold text-slate-950">
               {openCount}
             </p>
           </div>
           <div className="rounded-3xl border border-slate-200 bg-white p-5">
-            <p className="text-sm text-slate-500">Refunded</p>
+            <p className="text-sm text-slate-500">Refunded (this page)</p>
             <p className="mt-2 text-2xl font-semibold text-slate-950">
               {refundedCount}
             </p>
@@ -153,6 +172,7 @@ export function AdminReturnsList() {
             </h2>
 
             <select
+              aria-label="Status on this page"
               value={statusFilter}
               onChange={(event) =>
                 setStatusFilter(event.target.value as "all" | AdminReturnStatus)
@@ -168,15 +188,26 @@ export function AdminReturnsList() {
             </select>
           </div>
 
+          <p className="mt-4 text-sm text-slate-600">
+            Status filters and summaries apply to this page. Use navigation to
+            browse all requests.
+          </p>
           {isLoading ? (
             <p className="mt-6 text-sm text-slate-500">Loading returns...</p>
           ) : error ? (
             <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-              {error}
+              <p>{error}</p>
+              <button
+                type="button"
+                onClick={() => setRetry((value) => value + 1)}
+                className="mt-3 underline"
+              >
+                Retry returns
+              </button>
             </div>
           ) : filteredReturns.length === 0 ? (
             <p className="mt-6 text-sm text-slate-500">
-              No return requests found.
+              No return requests on this page match the selected status.
             </p>
           ) : (
             <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200">
@@ -234,6 +265,30 @@ export function AdminReturnsList() {
               </div>
             </div>
           )}
+          <nav
+            aria-label="Return pages"
+            className="mt-6 flex items-center justify-between gap-3 text-sm text-slate-700"
+          >
+            <button
+              type="button"
+              disabled={page === 1}
+              onClick={() => changePage(page - 1)}
+              className="rounded-xl border px-4 py-2 disabled:opacity-50"
+            >
+              Previous returns
+            </button>
+            <span>
+              Page {page} of {Math.max(1, Math.ceil(pagination.count / 20))}
+            </span>
+            <button
+              type="button"
+              disabled={!pagination.next || isLoading || Boolean(error)}
+              onClick={() => changePage(page + 1)}
+              className="rounded-xl border px-4 py-2 disabled:opacity-50"
+            >
+              Next returns
+            </button>
+          </nav>
         </section>
       </div>
     </main>
