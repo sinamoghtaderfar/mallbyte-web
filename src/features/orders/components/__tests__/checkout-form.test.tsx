@@ -1,11 +1,22 @@
 import type { ReactNode } from "react";
-import { render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getAddressesPage } from "@/features/addresses/api";
 import type { Address } from "@/features/addresses/types";
-import { getCart } from "@/features/cart/api";
+import {
+  addToCart,
+  clearCart,
+  getCart,
+  updateCartItem,
+} from "@/features/cart/api";
 import { useCartStore } from "@/features/cart/cart-store";
 import type { Cart } from "@/features/cart/types";
 import { validateDiscountCode } from "@/features/discounts/api";
@@ -40,6 +51,9 @@ vi.mock("next/link", () => ({
 
 vi.mock("@/features/cart/api", () => ({
   getCart: vi.fn(),
+  addToCart: vi.fn(),
+  clearCart: vi.fn(),
+  updateCartItem: vi.fn(),
 }));
 
 vi.mock("@/features/addresses/api", () => ({
@@ -64,6 +78,16 @@ const addressPage = (
 ) => ({ count, next, previous, results });
 const mockedValidateDiscountCode = vi.mocked(validateDiscountCode);
 const mockedCheckout = vi.mocked(checkout);
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason: unknown) => void;
+  const promise = new Promise<T>((onResolve, onReject) => {
+    resolve = onResolve;
+    reject = onReject;
+  });
+  return { promise, resolve, reject };
+}
 
 function makeCart(overrides: Partial<Cart> = {}): Cart {
   return {
@@ -151,9 +175,10 @@ async function renderLoadedCheckout() {
   mockedGetCart.mockResolvedValue(makeCart());
   mockedGetAddresses.mockResolvedValue(addressPage([makeAddress()]));
 
-  render(<CheckoutForm />);
+  const view = render(<CheckoutForm />);
 
   await screen.findByRole("heading", { name: /shipping information/i });
+  return view;
 }
 
 describe("CheckoutForm", () => {
@@ -410,5 +435,139 @@ describe("CheckoutForm", () => {
       await screen.findByText(/could not load checkout/i),
     ).toBeInTheDocument();
     expect(screen.getByText("Checkout is not available.")).toBeInTheDocument();
+  });
+
+  it("does not restore a cleared cart when an older checkout read and saved addresses finish later", async () => {
+    const oldCart = deferred<Cart>();
+    const addresses = deferred<ReturnType<typeof addressPage>>();
+    mockedGetCart.mockReturnValue(oldCart.promise);
+    mockedGetAddresses.mockReturnValue(addresses.promise);
+    vi.mocked(clearCart).mockResolvedValue(undefined);
+    useCartStore.getState().setCart(makeCart());
+    render(<CheckoutForm />);
+    await waitFor(() => expect(mockedGetCart).toHaveBeenCalledOnce());
+
+    await act(async () => {
+      await useCartStore.getState().emptyCart();
+    });
+    await act(async () => {
+      oldCart.resolve(makeCart());
+    });
+    expect(useCartStore.getState().cart).toBeNull();
+    await act(async () => {
+      addresses.resolve(addressPage([makeAddress()]));
+    });
+
+    expect(await screen.findByText(/your cart is empty/i)).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /place order/i }),
+    ).not.toBeInTheDocument();
+    expect(useCartStore.getState()).toMatchObject({
+      cart: null,
+      totalItems: 0,
+    });
+  });
+
+  it("waits for a pending clear when navigating directly to checkout", async () => {
+    const clear = deferred<void>();
+    vi.mocked(clearCart).mockReturnValue(clear.promise);
+    mockedGetCart.mockResolvedValue(makeCart({ items: [], total_items: 0 }));
+    mockedGetAddresses.mockResolvedValue(addressPage([makeAddress()]));
+    useCartStore.getState().setCart(makeCart());
+    const clearing = useCartStore.getState().emptyCart();
+    await waitFor(() => expect(clearCart).toHaveBeenCalledOnce());
+    render(<CheckoutForm />);
+    expect(screen.getByText(/loading checkout/i)).toBeInTheDocument();
+    expect(mockedGetCart).not.toHaveBeenCalled();
+    await act(async () => {
+      clear.resolve();
+      await clearing;
+    });
+    expect(await screen.findByText(/your cart is empty/i)).toBeInTheDocument();
+    expect(mockedGetCart).toHaveBeenCalledOnce();
+    expect(mockedCheckout).not.toHaveBeenCalled();
+  });
+
+  it("blocks checkout submission while an authoritative cart mutation is pending", async () => {
+    await renderLoadedCheckout();
+    const update = deferred<Cart>();
+    vi.mocked(updateCartItem).mockReturnValue(update.promise);
+    let updating!: Promise<void>;
+    act(() => {
+      updating = useCartStore.getState().updateItem(1, { quantity: 3 });
+    });
+    const submit = screen.getByRole("button", { name: /place order/i });
+    expect(submit).toBeDisabled();
+    fireEvent.submit(submit.closest("form")!);
+    expect(mockedCheckout).not.toHaveBeenCalled();
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      /waiting for cart changes/i,
+    );
+    await act(async () => {
+      update.resolve(makeCart({ total_items: 3 }));
+      await updating;
+    });
+    expect(submit).toBeEnabled();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("blocks checkout when a failed mutation cannot be reconciled", async () => {
+    await renderLoadedCheckout();
+    vi.mocked(updateCartItem).mockRejectedValue(
+      new Error("Update interrupted"),
+    );
+    mockedGetCart.mockRejectedValue(new Error("Offline"));
+    await act(async () => {
+      await expect(
+        useCartStore.getState().updateItem(1, { quantity: 3 }),
+      ).rejects.toThrow("Update interrupted");
+    });
+    const submit = screen.getByRole("button", { name: /place order/i });
+    expect(submit).toBeDisabled();
+    fireEvent.submit(submit.closest("form")!);
+    expect(mockedCheckout).not.toHaveBeenCalled();
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      /return to the cart and reload/i,
+    );
+  });
+
+  it("preserves newer cart writes when an older checkout succeeds after navigation", async () => {
+    const user = userEvent.setup();
+    const view = await renderLoadedCheckout();
+    const ordering = deferred<OrderDetail>();
+    const addition = deferred<Cart>();
+    mockedCheckout.mockReturnValueOnce(ordering.promise);
+    vi.mocked(addToCart).mockReturnValueOnce(addition.promise);
+    await user.click(screen.getByRole("button", { name: /place order/i }));
+    await waitFor(() => expect(mockedCheckout).toHaveBeenCalledOnce());
+
+    // Navigation unmounts checkout while its server response is still pending.
+    view.unmount();
+    let adding!: Promise<void>;
+    act(() => {
+      adding = useCartStore.getState().addProduct({ product: 99, quantity: 1 });
+    });
+    expect(addToCart).not.toHaveBeenCalled();
+    expect(useCartStore.getState().pendingMutations).toBe(2);
+    await act(async () => ordering.resolve(makeOrder()));
+    await waitFor(() => expect(addToCart).toHaveBeenCalledOnce());
+    expect(useCartStore.getState().pendingMutations).toBe(1);
+
+    const newer = makeCart({
+      total_items: 1,
+      items: [{ ...makeCart().items[0], id: 99, product: 99, quantity: 1 }],
+    });
+    await act(async () => {
+      addition.resolve(newer);
+      await adding;
+    });
+    expect(useCartStore.getState()).toMatchObject({
+      cart: newer,
+      totalItems: 1,
+      pendingMutations: 0,
+      needsReload: false,
+    });
+    expect(routerMock.push).toHaveBeenCalledWith("/orders/55");
+    expect(clearCart).not.toHaveBeenCalled();
   });
 });

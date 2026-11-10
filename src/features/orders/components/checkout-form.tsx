@@ -13,9 +13,7 @@ import {
 
 import { getAddressesPage } from "@/features/addresses/api";
 import type { Address } from "@/features/addresses/types";
-import { getCart } from "@/features/cart/api";
 import { useCartStore } from "@/features/cart/cart-store";
-import type { Cart } from "@/features/cart/types";
 import { validateDiscountCode } from "@/features/discounts/api";
 import type { DiscountValidationResult } from "@/features/discounts/types";
 import { getApiErrorMessage } from "@/lib/api/errors";
@@ -82,10 +80,12 @@ function mapAddressToCheckoutForm(
 export function CheckoutForm() {
   const router = useRouter();
 
-  const setCart = useCartStore((state) => state.setCart);
-  const clearCartState = useCartStore((state) => state.clearCartState);
+  const cart = useCartStore((state) => state.cart);
+  const loadCart = useCartStore((state) => state.loadCart);
+  const pendingMutations = useCartStore((state) => state.pendingMutations);
+  const needsReload = useCartStore((state) => state.needsReload);
+  const checkoutCart = useCartStore((state) => state.checkoutCart);
 
-  const [cart, setLocalCart] = useState<Cart | null>(null);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState("");
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
@@ -121,8 +121,8 @@ export function CheckoutForm() {
       setError("");
 
       try {
-        const [cartData, addressData] = await Promise.all([
-          getCart(),
+        const [, addressData] = await Promise.all([
+          loadCart(),
           getAddressesPage(),
         ]);
 
@@ -130,8 +130,6 @@ export function CheckoutForm() {
           return;
         }
 
-        setLocalCart(cartData);
-        setCart(cartData);
         setAddresses(addressData.results);
         setAddressPagination(addressData);
 
@@ -163,7 +161,7 @@ export function CheckoutForm() {
       isMounted = false;
       addressRequestVersion.current += 1;
     };
-  }, [setCart]);
+  }, [loadCart]);
 
   const finalTotal = useMemo(() => {
     if (discountResult) {
@@ -272,17 +270,27 @@ export function CheckoutForm() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
+    const currentCart = useCartStore.getState();
+    if (
+      isSubmitting ||
+      currentCart.pendingMutations > 0 ||
+      currentCart.needsReload ||
+      !currentCart.cart?.items.length
+    ) {
+      return;
+    }
+
     setError("");
     setIsSubmitting(true);
 
     try {
-      const order = await checkout({
-        ...form,
-        discount_code: form.discount_code?.trim() || "",
-        shipping_cost: 0,
-      });
-
-      clearCartState();
+      const order = await checkoutCart(() =>
+        checkout({
+          ...form,
+          discount_code: form.discount_code?.trim() || "",
+          shipping_cost: 0,
+        }),
+      );
       router.push(`/orders/${order.id}`);
     } catch (checkoutError) {
       setError(getApiErrorMessage(checkoutError));
@@ -354,6 +362,14 @@ export function CheckoutForm() {
           <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {error}
           </div>
+        ) : null}
+
+        {pendingMutations > 0 || needsReload ? (
+          <p role="alert" className="mt-6 text-sm text-amber-900">
+            {needsReload
+              ? "Cart changes could not be synchronized. Return to the cart and reload before placing an order."
+              : "Waiting for cart changes to finish before placing an order."}
+          </p>
         ) : null}
 
         <div className="mt-8 rounded-3xl border border-slate-200 bg-slate-50 p-5">
@@ -599,7 +615,7 @@ export function CheckoutForm() {
         <div className="mt-8 flex flex-wrap gap-3">
           <button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting || pendingMutations > 0 || needsReload}
             className="h-12 rounded-2xl bg-slate-900 px-6 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isSubmitting ? "Creating order..." : "Place order"}

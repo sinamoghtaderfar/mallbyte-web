@@ -1,5 +1,5 @@
-import type { ReactNode } from "react";
-import { render, screen, waitFor } from "@testing-library/react";
+import type { ComponentProps } from "react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -10,16 +10,8 @@ import { CartPanel } from "../cart-panel";
 import { clearCart, getCart, removeCartItem, updateCartItem } from "../../api";
 
 vi.mock("next/link", () => ({
-  default: ({
-    href,
-    children,
-    className,
-  }: {
-    href: string;
-    children: ReactNode;
-    className?: string;
-  }) => (
-    <a href={href} className={className}>
+  default: ({ href, children, ...props }: ComponentProps<"a">) => (
+    <a href={href} {...props}>
       {children}
     </a>
   ),
@@ -68,10 +60,7 @@ describe("CartPanel", () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    useCartStore.setState({
-      cart: null,
-      totalItems: 0,
-    });
+    useCartStore.getState().clearCartState();
   });
 
   it("renders empty cart state", async () => {
@@ -194,5 +183,87 @@ describe("CartPanel", () => {
     ).toBeInTheDocument();
 
     expect(screen.getByText("Could not load cart.")).toBeInTheDocument();
+  });
+
+  it("queues clear behind a pending quantity update and blocks checkout until completion", async () => {
+    const user = userEvent.setup();
+    let resolveUpdate!: (cart: Cart) => void;
+    let resolveClear!: () => void;
+    mockedGetCart.mockResolvedValue(makeCart());
+    mockedUpdateCartItem.mockReturnValue(
+      new Promise((resolve) => {
+        resolveUpdate = resolve;
+      }),
+    );
+    mockedClearCart.mockReturnValue(
+      new Promise((resolve) => {
+        resolveClear = resolve;
+      }),
+    );
+    render(<CartPanel />);
+    await screen.findByText("Keyboard");
+    await user.click(screen.getByRole("button", { name: "+" }));
+    expect(screen.getByRole("button", { name: /remove/i })).toBeDisabled();
+    expect(
+      screen.getByRole("link", { name: /continue to checkout/i }),
+    ).toHaveAttribute("aria-disabled", "true");
+    await user.click(screen.getByRole("button", { name: /clear cart/i }));
+    expect(screen.getByRole("button", { name: "Clearing…" })).toBeDisabled();
+    expect(mockedClearCart).not.toHaveBeenCalled();
+    await act(async () => {
+      resolveUpdate(makeCart({ total_items: 2 }));
+    });
+    await waitFor(() => expect(mockedClearCart).toHaveBeenCalledOnce());
+    expect(screen.getByText("1 item in cart")).toBeInTheDocument();
+    await act(async () => {
+      resolveClear();
+    });
+    expect(await screen.findByText(/your cart is empty/i)).toBeInTheDocument();
+    expect(useCartStore.getState().totalItems).toBe(0);
+  });
+
+  it("shows an empty cart after clear succeeds following a failed queued update", async () => {
+    const user = userEvent.setup();
+    let rejectUpdate!: (reason: unknown) => void;
+    mockedGetCart.mockResolvedValue(makeCart());
+    mockedUpdateCartItem.mockReturnValue(
+      new Promise((_, reject) => {
+        rejectUpdate = reject;
+      }),
+    );
+    mockedClearCart.mockResolvedValue(undefined);
+    render(<CartPanel />);
+    await screen.findByText("Keyboard");
+    await user.click(screen.getByRole("button", { name: "+" }));
+    await user.click(screen.getByRole("button", { name: /clear cart/i }));
+    await act(async () => {
+      rejectUpdate(new Error("Old update failed"));
+    });
+    expect(await screen.findByText(/your cart is empty/i)).toBeInTheDocument();
+    expect(screen.queryByText("Old update failed")).not.toBeInTheDocument();
+  });
+
+  it("prevents checkout after an unconfirmed mutation and supports an explicit reload", async () => {
+    const user = userEvent.setup();
+    mockedGetCart
+      .mockResolvedValueOnce(makeCart())
+      .mockRejectedValueOnce(new Error("Offline"))
+      .mockResolvedValueOnce(makeCart({ total_items: 2 }));
+    mockedUpdateCartItem.mockRejectedValue(new Error("Update interrupted"));
+    render(<CartPanel />);
+    await screen.findByText("Keyboard");
+    await user.click(screen.getByRole("button", { name: "+" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      /could not be synchronized/i,
+    );
+    expect(
+      screen.getByRole("link", { name: /continue to checkout/i }),
+    ).toHaveAttribute("aria-disabled", "true");
+    await user.click(screen.getByRole("button", { name: /reload cart/i }));
+    expect(await screen.findByText("2 items in cart")).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /continue to checkout/i }),
+    ).toHaveAttribute("aria-disabled", "false");
   });
 });
