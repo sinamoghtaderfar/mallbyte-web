@@ -6,7 +6,6 @@ import { useState } from "react";
 import { useAuthStore } from "@/features/auth/auth-store";
 import { getApiErrorMessage } from "@/lib/api/errors";
 
-import { addToCart } from "../api";
 import { useCartStore } from "../cart-store";
 
 type AddToCartButtonProps = {
@@ -18,7 +17,7 @@ export function AddToCartButton({ productId, disabled }: AddToCartButtonProps) {
   const router = useRouter();
 
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  const setCart = useCartStore((state) => state.setCart);
+  const addProduct = useCartStore((state) => state.addProduct);
 
   const [isAdding, setIsAdding] = useState(false);
   const [error, setError] = useState("");
@@ -34,12 +33,11 @@ export function AddToCartButton({ productId, disabled }: AddToCartButtonProps) {
     setIsAdding(true);
 
     try {
-      const cart = await addToCart({
+      await addProduct({
         product: productId,
         quantity: 1,
       });
 
-      setCart(cart);
       router.push("/cart");
     } catch (addError) {
       setError(getApiErrorMessage(addError));

@@ -12,14 +12,13 @@ import {
   useState,
 } from "react";
 
-import { getAddresses } from "@/features/addresses/api";
+import { getAddressesPage } from "@/features/addresses/api";
 import type { Address } from "@/features/addresses/types";
-import { getCart } from "@/features/cart/api";
 import { useCartStore } from "@/features/cart/cart-store";
-import type { Cart } from "@/features/cart/types";
 import { validateDiscountCode } from "@/features/discounts/api";
 import type { DiscountValidationResult } from "@/features/discounts/types";
 import { getApiErrorMessage } from "@/lib/api/errors";
+import type { PaginatedResponse } from "@/types/api";
 
 import { checkout } from "../api";
 import type { CheckoutPayload } from "../types";
@@ -82,12 +81,23 @@ function mapAddressToCheckoutForm(
 export function CheckoutForm() {
   const router = useRouter();
 
-  const setCart = useCartStore((state) => state.setCart);
-  const clearCartState = useCartStore((state) => state.clearCartState);
+  const cart = useCartStore((state) => state.cart);
+  const loadCart = useCartStore((state) => state.loadCart);
+  const pendingMutations = useCartStore((state) => state.pendingMutations);
+  const needsReload = useCartStore((state) => state.needsReload);
+  const checkoutCart = useCartStore((state) => state.checkoutCart);
 
-  const [cart, setLocalCart] = useState<Cart | null>(null);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState("");
+  const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
+  const [addressPage, setAddressPage] = useState(1);
+  const [addressPagination, setAddressPagination] = useState<
+    PaginatedResponse<Address>
+  >({ count: 0, next: null, previous: null, results: [] });
+  const [failedAddressPage, setFailedAddressPage] = useState<number | null>(
+    null,
+  );
+  const initialAddressLoadCompleted = useRef(false);
   const [form, setForm] = useState<CheckoutPayload>(initialForm);
   const [discountResult, setDiscountResult] =
     useState<DiscountValidationResult | null>(null);
@@ -102,29 +112,42 @@ export function CheckoutForm() {
   const discountRequest = useRef(0);
   const shippingEdited = useRef(false);
 
-  const loadAddresses = useCallback(async () => {
+  const loadAddresses = useCallback(async (page = 1) => {
     const request = ++addressRequest.current;
     try {
-      const data = await getAddresses();
+      const data = await getAddressesPage(page);
       if (request !== addressRequest.current) return;
-      setAddresses(data);
-      const defaultAddress = data.find((address) => address.is_default);
-      if (defaultAddress && !shippingEdited.current) {
-        setSelectedAddressId(String(defaultAddress.id));
-        setForm((current) => mapAddressToCheckoutForm(defaultAddress, current));
+      setAddresses(data.results);
+      setAddressPagination(data);
+      setAddressPage(page);
+      if (!initialAddressLoadCompleted.current && !shippingEdited.current) {
+        const defaultAddress = data.results.find(
+          (address) => address.is_default,
+        );
+        if (defaultAddress) {
+          setSelectedAddressId(String(defaultAddress.id));
+          setSelectedAddress(defaultAddress);
+          setForm((current) =>
+            mapAddressToCheckoutForm(defaultAddress, current),
+          );
+        }
       }
+      initialAddressLoadCompleted.current = true;
     } catch (reason) {
-      if (request === addressRequest.current)
+      if (request === addressRequest.current) {
         setAddressesError(getApiErrorMessage(reason));
+        setFailedAddressPage(page);
+      }
     } finally {
       if (request === addressRequest.current) setAddressesLoading(false);
     }
   }, []);
 
-  function handleAddressRetry() {
+  function handleAddressPage(page: number) {
     setAddressesLoading(true);
     setAddressesError("");
-    void loadAddresses();
+    setFailedAddressPage(null);
+    void loadAddresses(page);
   }
 
   useEffect(() => {
@@ -153,14 +176,11 @@ export function CheckoutForm() {
       setError("");
 
       try {
-        const cartData = await getCart();
+        await loadCart();
 
         if (!isMounted) {
           return;
         }
-
-        setLocalCart(cartData);
-        setCart(cartData);
       } catch (loadError) {
         if (isMounted) {
           setError(getApiErrorMessage(loadError));
@@ -177,7 +197,7 @@ export function CheckoutForm() {
     return () => {
       isMounted = false;
     };
-  }, [setCart]);
+  }, [loadCart]);
 
   const finalTotal = useMemo(() => {
     if (discountResult) {
@@ -223,6 +243,7 @@ export function CheckoutForm() {
     setSelectedAddressId(addressId);
 
     if (!addressId) {
+      setSelectedAddress(null);
       return;
     }
 
@@ -235,6 +256,7 @@ export function CheckoutForm() {
     }
 
     setForm((current) => mapAddressToCheckoutForm(selectedAddress, current));
+    setSelectedAddress(selectedAddress);
   }
 
   async function handleValidateDiscount() {
@@ -281,7 +303,14 @@ export function CheckoutForm() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (isSubmitting) return;
+    const currentCart = useCartStore.getState();
+    if (
+      isSubmitting ||
+      currentCart.pendingMutations > 0 ||
+      currentCart.needsReload ||
+      !currentCart.cart?.items.length
+    )
+      return;
     discountRequest.current += 1;
     setIsValidatingDiscount(false);
 
@@ -289,13 +318,13 @@ export function CheckoutForm() {
     setIsSubmitting(true);
 
     try {
-      const order = await checkout({
-        ...form,
-        discount_code: form.discount_code?.trim() || "",
-        shipping_cost: 0,
-      });
-
-      clearCartState();
+      const order = await checkoutCart(() =>
+        checkout({
+          ...form,
+          discount_code: form.discount_code?.trim() || "",
+          shipping_cost: 0,
+        }),
+      );
       router.push(`/orders/${order.id}`);
     } catch (checkoutError) {
       setError(getApiErrorMessage(checkoutError));
@@ -369,6 +398,14 @@ export function CheckoutForm() {
           </div>
         ) : null}
 
+        {pendingMutations > 0 || needsReload ? (
+          <p role="alert" className="mt-6 text-sm text-amber-900">
+            {needsReload
+              ? "Cart changes could not be synchronized. Return to the cart and reload before placing an order."
+              : "Waiting for cart changes to finish before placing an order."}
+          </p>
+        ) : null}
+
         <div className="mt-8 rounded-3xl border border-slate-200 bg-slate-50 p-5">
           <label className="block">
             <span className="text-sm font-medium text-slate-700">
@@ -382,6 +419,14 @@ export function CheckoutForm() {
               className="mt-2 h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm outline-none transition focus:border-slate-400"
             >
               <option value="">Enter address manually</option>
+              {selectedAddress &&
+              !addresses.some(
+                (address) => address.id === selectedAddress.id,
+              ) ? (
+                <option value={selectedAddress.id}>
+                  {selectedAddress.title} (Selected) - {selectedAddress.city}
+                </option>
+              ) : null}
 
               {addresses.map((address) => (
                 <option key={address.id} value={address.id}>
@@ -392,6 +437,34 @@ export function CheckoutForm() {
             </select>
           </label>
 
+          <nav
+            aria-label="Saved address pages"
+            className="mt-4 flex flex-wrap items-center gap-3 text-sm text-slate-700"
+          >
+            <button
+              type="button"
+              onClick={() => handleAddressPage(addressPage - 1)}
+              disabled={addressPage === 1 || addressesLoading || isSubmitting}
+              className="rounded-xl border px-3 py-2 disabled:opacity-50"
+            >
+              Previous saved addresses
+            </button>
+            <span>
+              Page {addressPage} of{" "}
+              {Math.max(1, Math.ceil(addressPagination.count / 20))} ·{" "}
+              {addressPagination.count} saved addresses
+            </span>
+            <button
+              type="button"
+              onClick={() => handleAddressPage(addressPage + 1)}
+              disabled={
+                !addressPagination.next || addressesLoading || isSubmitting
+              }
+              className="rounded-xl border px-3 py-2 disabled:opacity-50"
+            >
+              Next saved addresses
+            </button>
+          </nav>
           {addressesLoading ? (
             <p className="mt-3 text-sm text-slate-600">
               Loading saved addresses… You can enter an address manually.
@@ -407,7 +480,9 @@ export function CheckoutForm() {
               <p>{addressesError}</p>
               <button
                 type="button"
-                onClick={handleAddressRetry}
+                onClick={() =>
+                  handleAddressPage(failedAddressPage ?? addressPage)
+                }
                 disabled={addressesLoading || isSubmitting}
                 className="mt-2 font-medium underline"
               >
@@ -584,7 +659,7 @@ export function CheckoutForm() {
         <div className="mt-8 flex flex-wrap gap-3">
           <button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting || pendingMutations > 0 || needsReload}
             className="h-12 rounded-2xl bg-slate-900 px-6 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isSubmitting ? "Creating order..." : "Place order"}

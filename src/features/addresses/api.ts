@@ -2,23 +2,31 @@ import { apiClient } from "@/lib/api/client";
 
 import { API_ENDPOINTS } from "@/lib/api/endpoints";
 import type { Address, AddressPayload } from "./types";
+import type { PaginatedResponse } from "@/types/api";
 
-type AddressListResponse = Address[] | { results: Address[] };
-
-function normalizeAddresses(data: AddressListResponse) {
-  if (Array.isArray(data)) {
-    return data;
-  }
-
-  return data.results;
-}
+type AddressListResponse = Address[] | PaginatedResponse<Address>;
 
 export async function getAddresses() {
+  return (await getAddressesPage()).results;
+}
+
+export async function getAddressesPage(
+  page = 1,
+  signal?: AbortSignal,
+): Promise<PaginatedResponse<Address>> {
   const response = await apiClient.get<AddressListResponse>(
     API_ENDPOINTS.auth.addresses,
+    { params: { page, page_size: 20 }, signal },
   );
 
-  return normalizeAddresses(response.data);
+  return Array.isArray(response.data)
+    ? {
+        count: response.data.length,
+        next: null,
+        previous: null,
+        results: response.data,
+      }
+    : response.data;
 }
 
 export async function createAddress(payload: AddressPayload) {

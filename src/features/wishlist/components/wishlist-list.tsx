@@ -5,7 +5,8 @@ import { useEffect, useState } from "react";
 
 import { getApiErrorMessage } from "@/lib/api/errors";
 
-import { getWishlist, removeWishlistItem } from "../api";
+import { getWishlistPage, removeWishlistItem } from "../api";
+import type { PaginatedResponse } from "@/types/api";
 import type { WishlistItem } from "../types";
 
 function formatPrice(value: string | number | null | undefined) {
@@ -41,22 +42,39 @@ function getImageUrl(path: string | null | undefined) {
 
 export function WishlistList() {
   const [items, setItems] = useState<WishlistItem[]>([]);
+  const [page, setPage] = useState(1);
+  const [reload, setReload] = useState(0);
+  const [pagination, setPagination] = useState<PaginatedResponse<WishlistItem>>(
+    {
+      count: 0,
+      next: null,
+      previous: null,
+      results: [],
+    },
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [removingItemId, setRemovingItemId] = useState<number | null>(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
     let isMounted = true;
+    const controller = new AbortController();
 
     async function loadWishlist() {
       setIsLoading(true);
       setError("");
 
       try {
-        const data = await getWishlist();
+        const data = await getWishlistPage(page, controller.signal);
 
         if (isMounted) {
-          setItems(data);
+          const lastPage = Math.max(1, Math.ceil(data.count / 20));
+          if (page > lastPage) {
+            setPage(lastPage);
+            return;
+          }
+          setItems(data.results);
+          setPagination(data);
         }
       } catch (wishlistError) {
         if (isMounted) {
@@ -73,8 +91,9 @@ export function WishlistList() {
 
     return () => {
       isMounted = false;
+      controller.abort();
     };
-  }, []);
+  }, [page, reload]);
 
   async function handleRemoveItem(itemId: number) {
     setError("");
@@ -82,7 +101,8 @@ export function WishlistList() {
 
     try {
       await removeWishlistItem(itemId);
-      setItems((current) => current.filter((item) => item.id !== itemId));
+      if (items.length === 1 && page > 1) setPage(page - 1);
+      else setReload((value) => value + 1);
     } catch (removeError) {
       setError(getApiErrorMessage(removeError));
     } finally {
@@ -105,6 +125,13 @@ export function WishlistList() {
           Could not load wishlist
         </h1>
         <p className="mt-2 text-sm text-red-700">{error}</p>
+        <button
+          type="button"
+          onClick={() => setReload((value) => value + 1)}
+          className="mt-4 text-sm underline"
+        >
+          Retry wishlist
+        </button>
       </div>
     );
   }
@@ -131,7 +158,21 @@ export function WishlistList() {
         </div>
       ) : null}
 
-      {!items.length ? (
+      <p className="mt-4 text-sm text-slate-600">
+        {pagination.count} saved products
+      </p>
+
+      {error ? (
+        <button
+          type="button"
+          onClick={() => setReload((value) => value + 1)}
+          className="mt-4 text-sm underline"
+        >
+          Retry wishlist
+        </button>
+      ) : null}
+
+      {!error && !items.length ? (
         <div className="mt-8 rounded-3xl border border-dashed border-slate-300 p-8">
           <h2 className="text-xl font-semibold text-slate-950">
             Your wishlist is empty
@@ -147,7 +188,7 @@ export function WishlistList() {
             Browse products
           </Link>
         </div>
-      ) : (
+      ) : !error ? (
         <div className="mt-8 grid gap-4">
           {items.map((item) => {
             const imageUrl = getImageUrl(item.product_image);
@@ -186,7 +227,7 @@ export function WishlistList() {
                 <button
                   type="button"
                   onClick={() => void handleRemoveItem(item.id)}
-                  disabled={removingItemId === item.id}
+                  disabled={removingItemId !== null}
                   className="h-11 rounded-2xl border border-red-200 px-5 text-sm font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {removingItemId === item.id ? "Removing..." : "Remove"}
@@ -195,7 +236,34 @@ export function WishlistList() {
             );
           })}
         </div>
-      )}
+      ) : null}
+
+      <nav
+        aria-label="Wishlist pages"
+        className="mt-6 flex items-center justify-between gap-3 text-sm text-slate-700"
+      >
+        <button
+          type="button"
+          onClick={() => setPage(page - 1)}
+          disabled={page === 1 || removingItemId !== null}
+          className="rounded-xl border px-4 py-2 disabled:opacity-50"
+        >
+          Previous
+        </button>
+        <span>
+          Page {page} of {Math.max(1, Math.ceil(pagination.count / 20))}
+        </span>
+        <button
+          type="button"
+          onClick={() => setPage(page + 1)}
+          disabled={
+            !pagination.next || Boolean(error) || removingItemId !== null
+          }
+          className="rounded-xl border px-4 py-2 disabled:opacity-50"
+        >
+          Next
+        </button>
+      </nav>
     </section>
   );
 }

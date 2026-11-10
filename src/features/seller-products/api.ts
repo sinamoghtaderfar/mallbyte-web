@@ -68,7 +68,7 @@ export async function createSellerProduct(payload: SellerProductPayload) {
 
 export async function updateSellerProduct(
   productId: string,
-  payload: SellerProductPayload,
+  payload: Partial<SellerProductPayload>,
 ) {
   const response = await apiClient.patch<ProductDetail>(
     `${API_ENDPOINTS.products.products}${productId}/`,
