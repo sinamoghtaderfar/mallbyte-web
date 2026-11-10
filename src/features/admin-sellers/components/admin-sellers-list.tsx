@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   type AdminSeller,
@@ -48,30 +48,53 @@ function getSellerOwnerLabel(seller: AdminSeller) {
 
 export function AdminSellersList() {
   const [sellers, setSellers] = useState<AdminSeller[]>([]);
-  const [statusFilter, setStatusFilter] = useState<"all" | AdminSellerStatus>(
-    "all",
-  );
+  const [query, setQuery] = useState<{
+    page: number;
+    status: "all" | AdminSellerStatus;
+  }>({ page: 1, status: "all" });
+  const [pagination, setPagination] = useState({
+    count: 0,
+    next: null as string | null,
+    previous: null as string | null,
+  });
+  const [retry, setRetry] = useState(0);
+  const requestVersion = useRef(0);
+  const statusFilter = query.status;
+
+  function changeQuery(next: typeof query) {
+    requestVersion.current += 1;
+    setIsLoading(true);
+    setError("");
+    setQuery(next);
+  }
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    let isMounted = true;
+    const request = ++requestVersion.current;
+    const controller = new AbortController();
+    const isCurrent = () => request === requestVersion.current;
 
     async function loadSellers() {
       try {
         setIsLoading(true);
         setError("");
-        const data = await getAdminSellers();
+        const data = await getAdminSellers(
+          query.page,
+          query.status === "all" ? undefined : query.status,
+          controller.signal,
+        );
 
-        if (isMounted) {
-          setSellers(data);
+        if (isCurrent()) {
+          setSellers(data.results);
+          setPagination(data);
         }
       } catch (caughtError) {
-        if (isMounted) {
+        if (isCurrent()) {
           setError(getApiErrorMessage(caughtError));
         }
       } finally {
-        if (isMounted) {
+        if (isCurrent()) {
           setIsLoading(false);
         }
       }
@@ -80,17 +103,10 @@ export function AdminSellersList() {
     void loadSellers();
 
     return () => {
-      isMounted = false;
+      requestVersion.current += 1;
+      controller.abort();
     };
-  }, []);
-
-  const filteredSellers = useMemo(() => {
-    if (statusFilter === "all") {
-      return sellers;
-    }
-
-    return sellers.filter((seller) => seller.status === statusFilter);
-  }, [sellers, statusFilter]);
+  }, [query, retry]);
 
   const pendingCount = sellers.filter(
     (seller) => seller.status === "pending",
@@ -126,19 +142,19 @@ export function AdminSellersList() {
 
       <section className="mt-8 grid gap-4 md:grid-cols-3">
         <div className="rounded-3xl border border-slate-200 bg-white p-5">
-          <p className="text-sm text-slate-500">Total sellers</p>
+          <p className="text-sm text-slate-500">Matching sellers (all pages)</p>
           <p className="mt-2 text-2xl font-semibold text-slate-950">
-            {sellers.length}
+            {pagination.count}
           </p>
         </div>
         <div className="rounded-3xl border border-slate-200 bg-white p-5">
-          <p className="text-sm text-slate-500">Pending review</p>
+          <p className="text-sm text-slate-500">Pending review (this page)</p>
           <p className="mt-2 text-2xl font-semibold text-slate-950">
             {pendingCount}
           </p>
         </div>
         <div className="rounded-3xl border border-slate-200 bg-white p-5">
-          <p className="text-sm text-slate-500">Approved sellers</p>
+          <p className="text-sm text-slate-500">Approved sellers (this page)</p>
           <p className="mt-2 text-2xl font-semibold text-slate-950">
             {approvedCount}
           </p>
@@ -152,9 +168,13 @@ export function AdminSellersList() {
           </h2>
 
           <select
+            aria-label="Seller status"
             value={statusFilter}
             onChange={(event) =>
-              setStatusFilter(event.target.value as "all" | AdminSellerStatus)
+              changeQuery({
+                page: 1,
+                status: event.target.value as "all" | AdminSellerStatus,
+              })
             }
             className="h-11 rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-slate-400"
           >
@@ -171,9 +191,16 @@ export function AdminSellersList() {
           <p className="mt-6 text-sm text-slate-500">Loading sellers...</p>
         ) : error ? (
           <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-            {error}
+            <p>{error}</p>
+            <button
+              type="button"
+              onClick={() => setRetry((value) => value + 1)}
+              className="mt-3 underline"
+            >
+              Retry sellers
+            </button>
           </div>
-        ) : filteredSellers.length === 0 ? (
+        ) : sellers.length === 0 ? (
           <p className="mt-6 text-sm text-slate-500">
             No seller applications found.
           </p>
@@ -189,7 +216,7 @@ export function AdminSellersList() {
             </div>
 
             <div className="divide-y divide-slate-100">
-              {filteredSellers.map((seller) => (
+              {sellers.map((seller) => (
                 <div
                   key={seller.id}
                   className="grid gap-4 px-4 py-4 md:grid-cols-[1.2fr_1fr_1fr_1fr_1fr_auto] md:items-center"
@@ -233,6 +260,30 @@ export function AdminSellersList() {
             </div>
           </div>
         )}
+        <nav
+          aria-label="Seller pages"
+          className="mt-6 flex items-center justify-between gap-3 text-sm text-slate-700"
+        >
+          <button
+            type="button"
+            disabled={query.page === 1 || isLoading}
+            onClick={() => changeQuery({ ...query, page: query.page - 1 })}
+            className="rounded-xl border px-4 py-2 disabled:opacity-50"
+          >
+            Previous sellers
+          </button>
+          <span>
+            Page {query.page} of {Math.max(1, Math.ceil(pagination.count / 20))}
+          </span>
+          <button
+            type="button"
+            disabled={!pagination.next || isLoading || Boolean(error)}
+            onClick={() => changeQuery({ ...query, page: query.page + 1 })}
+            className="rounded-xl border px-4 py-2 disabled:opacity-50"
+          >
+            Next sellers
+          </button>
+        </nav>
       </section>
     </main>
   );
