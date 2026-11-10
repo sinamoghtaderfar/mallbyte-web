@@ -25,6 +25,7 @@ type CartState = {
   updateItem: (id: number, payload: UpdateCartItemPayload) => Promise<void>;
   removeItem: (id: number) => Promise<void>;
   emptyCart: () => Promise<void>;
+  checkoutCart: <T>(operation: () => Promise<T>) => Promise<T>;
 };
 
 export const useCartStore = create<CartState>((set) => {
@@ -129,5 +130,16 @@ export const useCartStore = create<CartState>((set) => {
         await api.clearCart();
         return null;
       }),
+    checkoutCart: async <T>(operation: () => Promise<T>): Promise<T> => {
+      let result!: T;
+      // Checkout consumes the server cart, so its request and empty snapshot
+      // must occupy the same intent queue as adds, updates, and removals.
+      // mutate also cancels old-session results before exposing the order.
+      await mutate(async () => {
+        result = await operation();
+        return null;
+      });
+      return result;
+    },
   };
 });

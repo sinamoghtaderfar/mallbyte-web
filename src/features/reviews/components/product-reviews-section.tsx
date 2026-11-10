@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { useAuthStore } from "@/features/auth/auth-store";
 import { getApiErrorMessage } from "@/lib/api/errors";
+import type { PaginatedResponse } from "@/types/api";
 
 import {
   createProductReview,
@@ -86,11 +87,20 @@ function updateReviewInList(
 export function ProductReviewsSection({
   productId,
 }: ProductReviewsSectionProps) {
+  return <ProductReviews key={String(productId)} productId={productId} />;
+}
+
+function ProductReviews({ productId }: ProductReviewsSectionProps) {
   const router = useRouter();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
   const [summary, setSummary] = useState<ProductReviewSummary | null>(null);
-  const [reviews, setReviews] = useState<ProductReview[]>([]);
+  const [reviewPage, setReviewPage] = useState<
+    PaginatedResponse<ProductReview>
+  >({ count: 0, next: null, previous: null, results: [] });
+  const reviews = reviewPage.results;
+  const [page, setPage] = useState(1);
+  const [reload, setReload] = useState(0);
   const [draftFilters, setDraftFilters] = useState(emptyFilters);
   const [activeFilters, setActiveFilters] = useState<ProductReviewFilters>({});
   const [form, setForm] = useState<ReviewFormState>(initialForm);
@@ -100,16 +110,6 @@ export function ProductReviewsSection({
   const [error, setError] = useState("");
   const [formError, setFormError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
-
-  async function refreshReviews(filters: ProductReviewFilters = activeFilters) {
-    const [summaryData, reviewsData] = await Promise.all([
-      getProductReviewSummary(productId),
-      getProductReviews(productId, filters),
-    ]);
-
-    setSummary(summaryData);
-    setReviews(reviewsData);
-  }
 
   useEffect(() => {
     let isMounted = true;
@@ -121,12 +121,12 @@ export function ProductReviewsSection({
       try {
         const [summaryData, reviewsData] = await Promise.all([
           getProductReviewSummary(productId),
-          getProductReviews(productId, activeFilters),
+          getProductReviews(productId, activeFilters, page),
         ]);
 
         if (isMounted) {
           setSummary(summaryData);
-          setReviews(reviewsData);
+          setReviewPage(reviewsData);
         }
       } catch (loadError) {
         if (isMounted) {
@@ -144,7 +144,7 @@ export function ProductReviewsSection({
     return () => {
       isMounted = false;
     };
-  }, [activeFilters, productId]);
+  }, [activeFilters, productId, page, reload]);
 
   function handleFilterChange(event: ChangeEvent<HTMLSelectElement>) {
     const { name, value } = event.target;
@@ -156,10 +156,12 @@ export function ProductReviewsSection({
   }
 
   function handleApplyFilters() {
+    setPage(1);
     setActiveFilters(buildFilters(draftFilters));
   }
 
   function handleClearFilters() {
+    setPage(1);
     setDraftFilters(emptyFilters);
     setActiveFilters({});
   }
@@ -199,7 +201,10 @@ export function ProductReviewsSection({
 
       setForm(initialForm);
       setSuccessMessage("Review submitted and is waiting for approval.");
-      await refreshReviews(activeFilters);
+      // Refresh the current query through the guarded effect, rather than
+      // installing results for a filter captured before submission completed.
+      setPage(1);
+      setReload((value) => value + 1);
     } catch (submitError) {
       setFormError(getApiErrorMessage(submitError));
     } finally {
@@ -225,7 +230,10 @@ export function ProductReviewsSection({
           ? await markReviewHelpful(reviewId)
           : await markReviewNotHelpful(reviewId);
 
-      setReviews((current) => updateReviewInList(current, updatedReview));
+      setReviewPage((current) => ({
+        ...current,
+        results: updateReviewInList(current.results, updatedReview),
+      }));
     } catch (voteError) {
       setFormError(getApiErrorMessage(voteError));
     } finally {
@@ -257,7 +265,7 @@ export function ProductReviewsSection({
               {summary.average_rating}
             </p>
             <p className="mt-1 text-sm text-slate-500">
-              {summary.reviews_count} review
+              {summary.reviews_count} approved review
               {summary.reviews_count === 1 ? "" : "s"}
             </p>
           </div>
@@ -271,6 +279,22 @@ export function ProductReviewsSection({
       {!isLoading && error ? (
         <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
+          <button
+            type="button"
+            onClick={() => setReload((value) => value + 1)}
+            className="ml-3 font-semibold underline"
+          >
+            Retry reviews
+          </button>
+          {page > 1 && (
+            <button
+              type="button"
+              onClick={() => setPage((value) => value - 1)}
+              className="ml-3 font-semibold underline"
+            >
+              Previous review page
+            </button>
+          )}
         </div>
       ) : null}
 
@@ -432,10 +456,17 @@ export function ProductReviewsSection({
           </form>
 
           <div className="mt-8">
+            <p className="mb-4 text-sm text-slate-600">
+              {reviewPage.count} matching review
+              {reviewPage.count === 1 ? "" : "s"} · {reviews.length} on this
+              page. Ratings above reflect all approved reviews.
+            </p>
             {!reviews.length ? (
               <div className="rounded-3xl border border-dashed border-slate-300 p-6">
                 <h3 className="text-lg font-semibold text-slate-950">
-                  No reviews yet
+                  {Object.keys(activeFilters).length
+                    ? "No reviews match your filters"
+                    : "No reviews yet"}
                 </h3>
                 <p className="mt-2 text-sm text-slate-500">
                   Reviews will appear here after customers submit feedback.
@@ -517,6 +548,30 @@ export function ProductReviewsSection({
                 ))}
               </div>
             )}
+            <nav
+              aria-label="Review pages"
+              className="mt-6 flex items-center justify-between gap-3 border-t border-slate-200 pt-5"
+            >
+              <button
+                type="button"
+                disabled={!reviewPage.previous}
+                onClick={() => setPage((value) => Math.max(1, value - 1))}
+                className="rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-700 disabled:opacity-40"
+              >
+                Previous reviews
+              </button>
+              <p className="text-sm text-slate-600">
+                Page {page} of {Math.max(1, Math.ceil(reviewPage.count / 20))}
+              </p>
+              <button
+                type="button"
+                disabled={!reviewPage.next}
+                onClick={() => setPage((value) => value + 1)}
+                className="rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-700 disabled:opacity-40"
+              >
+                Next reviews
+              </button>
+            </nav>
           </div>
         </>
       ) : null}

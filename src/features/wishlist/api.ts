@@ -6,20 +6,22 @@ import type { WishlistCreatePayload, WishlistItem } from "./types";
 
 type WishlistListResponse = WishlistItem[] | PaginatedResponse<WishlistItem>;
 
-function normalizeWishlist(data: WishlistListResponse) {
-  if (Array.isArray(data)) {
-    return data;
-  }
-
-  return data.results;
-}
-
-export async function getWishlist() {
+export async function getWishlistPage(
+  page = 1,
+  signal?: AbortSignal,
+): Promise<PaginatedResponse<WishlistItem>> {
   const response = await apiClient.get<WishlistListResponse>(
     API_ENDPOINTS.products.wishlist,
+    { params: { page, page_size: 20 }, signal },
   );
-
-  return normalizeWishlist(response.data);
+  return Array.isArray(response.data)
+    ? {
+        count: response.data.length,
+        next: null,
+        previous: null,
+        results: response.data,
+      }
+    : response.data;
 }
 
 export async function addToWishlist(payload: WishlistCreatePayload) {

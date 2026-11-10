@@ -270,4 +270,195 @@ describe("cart request ordering", () => {
       needsReload: false,
     });
   });
+
+  it("queues newer adds behind checkout and keeps their authoritative cart", async () => {
+    const order = { id: 42 };
+    const response = deferred<typeof order>();
+    const addition = deferred<Cart>();
+    const checkout = vi.fn(() => response.promise);
+    vi.mocked(api.addToCart).mockReturnValue(addition.promise);
+
+    const checkingOut = useCartStore.getState().checkoutCart(checkout);
+    await vi.waitFor(() => expect(checkout).toHaveBeenCalledOnce());
+    const adding = useCartStore.getState().addProduct({ product: 2, quantity: 2 });
+    expect(api.addToCart).not.toHaveBeenCalled();
+    expect(useCartStore.getState().pendingMutations).toBe(2);
+
+    response.resolve(order);
+    await expect(checkingOut).resolves.toEqual(order);
+    await vi.waitFor(() => expect(api.addToCart).toHaveBeenCalledOnce());
+    // An older checkout never publishes its empty snapshot over a newer intent.
+    expect(useCartStore.getState().totalItems).toBe(1);
+    expect(useCartStore.getState().pendingMutations).toBe(1);
+    addition.resolve(cart(2));
+    await adding;
+    expect(useCartStore.getState()).toMatchObject({
+      cart: cart(2),
+      totalItems: 2,
+      pendingMutations: 0,
+      needsReload: false,
+    });
+  });
+
+  it("waits for earlier writes before checkout and clears only its own completed intent", async () => {
+    const update = deferred<Cart>();
+    const order = { id: 42 };
+    const checkout = vi.fn().mockResolvedValue(order);
+    vi.mocked(api.updateCartItem).mockReturnValue(update.promise);
+    const updating = useCartStore.getState().updateItem(10, { quantity: 2 });
+    const checkingOut = useCartStore.getState().checkoutCart(checkout);
+
+    await vi.waitFor(() => expect(api.updateCartItem).toHaveBeenCalledOnce());
+    expect(checkout).not.toHaveBeenCalled();
+    update.resolve(cart(2));
+    await updating;
+    await expect(checkingOut).resolves.toEqual(order);
+    expect(useCartStore.getState()).toMatchObject({
+      cart: null,
+      totalItems: 0,
+      pendingMutations: 0,
+      needsReload: false,
+    });
+    expect(api.clearCart).not.toHaveBeenCalled();
+  });
+
+  it("retires a pre-checkout read instead of restoring the consumed cart", async () => {
+    const staleRead = deferred<Cart>();
+    vi.mocked(api.getCart).mockReturnValue(staleRead.promise);
+    const reading = useCartStore.getState().loadCart();
+    await vi.waitFor(() => expect(api.getCart).toHaveBeenCalledOnce());
+
+    await useCartStore.getState().checkoutCart(async () => ({ id: 42 }));
+    staleRead.resolve(cart(1));
+    await reading;
+    expect(useCartStore.getState()).toMatchObject({
+      cart: null,
+      totalItems: 0,
+      needsReload: false,
+    });
+  });
+
+  it("waits for checkout and subsequently queued writes before a cart reload", async () => {
+    const order = deferred<{ id: number }>();
+    const addition = deferred<Cart>();
+    vi.mocked(api.addToCart).mockReturnValue(addition.promise);
+    vi.mocked(api.getCart).mockResolvedValue(cart(3));
+
+    const checkingOut = useCartStore.getState().checkoutCart(() => order.promise);
+    const reading = useCartStore.getState().loadCart();
+    const adding = useCartStore.getState().addProduct({ product: 2, quantity: 3 });
+    order.resolve({ id: 42 });
+    await checkingOut;
+    await vi.waitFor(() => expect(api.addToCart).toHaveBeenCalledOnce());
+    expect(api.getCart).not.toHaveBeenCalled();
+    addition.resolve(cart(3));
+    await Promise.all([adding, reading]);
+    expect(api.getCart).toHaveBeenCalledOnce();
+    expect(useCartStore.getState().totalItems).toBe(3);
+  });
+
+  it("reconciles an ambiguous checkout failure with the server cart", async () => {
+    vi.mocked(api.getCart).mockResolvedValue(cart(0));
+    const checkout = vi.fn().mockRejectedValue(new Error("Response lost"));
+
+    await expect(useCartStore.getState().checkoutCart(checkout)).rejects.toThrow(
+      "Response lost",
+    );
+    expect(api.getCart).toHaveBeenCalledOnce();
+    expect(useCartStore.getState()).toMatchObject({
+      cart: cart(0),
+      totalItems: 0,
+      pendingMutations: 0,
+      needsReload: false,
+    });
+  });
+
+  it("requires a reload when checkout and its reconciliation both fail", async () => {
+    vi.mocked(api.getCart).mockRejectedValue(new Error("Still offline"));
+    const checkout = vi.fn().mockRejectedValue(new Error("Response lost"));
+
+    await expect(useCartStore.getState().checkoutCart(checkout)).rejects.toThrow(
+      "Response lost",
+    );
+    expect(useCartStore.getState()).toMatchObject({
+      cart: cart(1),
+      totalItems: 1,
+      pendingMutations: 0,
+      needsReload: true,
+    });
+  });
+
+  it("runs newer cart writes after a failed checkout without resetting their queue", async () => {
+    const order = deferred<{ id: number }>();
+    vi.mocked(api.addToCart).mockResolvedValue(cart(3));
+    const checkingOut = useCartStore.getState().checkoutCart(() => order.promise);
+    const rejected = expect(checkingOut).rejects.toThrow("Checkout failed");
+    const adding = useCartStore.getState().addProduct({ product: 2, quantity: 2 });
+
+    order.reject(new Error("Checkout failed"));
+    await Promise.all([rejected, adding]);
+    expect(api.getCart).not.toHaveBeenCalled();
+    expect(api.addToCart).toHaveBeenCalledOnce();
+    expect(useCartStore.getState()).toMatchObject({
+      totalItems: 3,
+      pendingMutations: 0,
+      needsReload: false,
+    });
+  });
+
+  it("cancels old-session checkout completion and its queued writes", async () => {
+    const order = deferred<{ id: number }>();
+    const checkout = vi.fn(() => order.promise);
+    const checkingOut = useCartStore.getState().checkoutCart(checkout);
+    const rejectedCheckout = expect(checkingOut).rejects.toMatchObject({
+      code: "ERR_CANCELED",
+    });
+    const oldAdding = useCartStore.getState().addProduct({ product: 2, quantity: 2 });
+    const rejectedAdd = expect(oldAdding).rejects.toMatchObject({
+      code: "ERR_CANCELED",
+    });
+    await vi.waitFor(() => expect(checkout).toHaveBeenCalledOnce());
+
+    clearSession();
+    useCartStore.getState().clearCartState();
+    vi.mocked(api.addToCart).mockResolvedValue(cart(4));
+    await useCartStore.getState().addProduct({ product: 3, quantity: 4 });
+    order.resolve({ id: 42 });
+    await Promise.all([rejectedCheckout, rejectedAdd]);
+    expect(api.addToCart).toHaveBeenCalledOnce();
+    expect(api.addToCart).toHaveBeenCalledWith({ product: 3, quantity: 4 });
+    expect(api.getCart).not.toHaveBeenCalled();
+    expect(useCartStore.getState()).toMatchObject({
+      totalItems: 4,
+      pendingMutations: 0,
+      needsReload: false,
+    });
+  });
+
+  it("does not issue a queued checkout for a different session", async () => {
+    const update = deferred<Cart>();
+    vi.mocked(api.updateCartItem).mockReturnValue(update.promise);
+    const updating = useCartStore.getState().updateItem(10, { quantity: 2 });
+    const rejectedUpdate = expect(updating).rejects.toMatchObject({
+      code: "ERR_CANCELED",
+    });
+    const checkout = vi.fn().mockResolvedValue({ id: 42 });
+    const checkingOut = useCartStore.getState().checkoutCart(checkout);
+    const rejectedCheckout = expect(checkingOut).rejects.toMatchObject({
+      code: "ERR_CANCELED",
+    });
+    await vi.waitFor(() => expect(api.updateCartItem).toHaveBeenCalledOnce());
+
+    clearSession();
+    useCartStore.getState().clearCartState();
+    useCartStore.getState().setCart(cart(4));
+    update.resolve(cart(2));
+    await Promise.all([rejectedUpdate, rejectedCheckout]);
+    expect(checkout).not.toHaveBeenCalled();
+    expect(api.getCart).not.toHaveBeenCalled();
+    expect(useCartStore.getState()).toMatchObject({
+      totalItems: 4,
+      pendingMutations: 0,
+    });
+  });
 });

@@ -13,15 +13,16 @@ type ListResponse<T> = T[] | PaginatedResponse<T>;
 
 function normalizeList<T>(data: ListResponse<T>) {
   if (Array.isArray(data)) {
-    return data;
+    return { count: data.length, next: null, previous: null, results: data };
   }
 
-  return data.results;
+  return data;
 }
 
 export async function getProductReviews(
   productId: number | string,
   filters: ProductReviewFilters = {},
+  page = 1,
 ) {
   const response = await apiClient.get<ListResponse<ProductReview>>(
     API_ENDPOINTS.reviews.productReviews,
@@ -29,6 +30,8 @@ export async function getProductReviews(
       params: {
         product: productId,
         ...filters,
+        page,
+        page_size: 20,
       },
     },
   );

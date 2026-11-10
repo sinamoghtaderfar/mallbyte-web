@@ -7,10 +7,11 @@ import { getApiErrorMessage } from "@/lib/api/errors";
 import {
   createAddress,
   deleteAddress,
-  getAddresses,
+  getAddressesPage,
   setDefaultAddress,
 } from "../api";
 import type { Address, AddressPayload } from "../types";
+import type { PaginatedResponse } from "@/types/api";
 
 const initialForm: AddressPayload = {
   title: "",
@@ -29,39 +30,43 @@ const initialForm: AddressPayload = {
 
 export function AddressManager() {
   const [addresses, setAddresses] = useState<Address[]>([]);
+  const [page, setPage] = useState(1);
+  const [refresh, setRefresh] = useState(0);
+  const [pagination, setPagination] = useState<PaginatedResponse<Address>>({
+    count: 0,
+    next: null,
+    previous: null,
+    results: [],
+  });
   const [form, setForm] = useState<AddressPayload>(initialForm);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeAddressId, setActiveAddressId] = useState<number | null>(null);
   const [error, setError] = useState("");
-
-  async function loadAddresses() {
-    setIsLoading(true);
-    setError("");
-
-    try {
-      const data = await getAddresses();
-      setAddresses(data);
-    } catch (loadError) {
-      setError(getApiErrorMessage(loadError));
-    } finally {
-      setIsLoading(false);
-    }
-  }
+  const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
     let isMounted = true;
+    const controller = new AbortController();
 
     async function loadInitialAddresses() {
+      setIsLoading(true);
+      setLoadError("");
       try {
-        const data = await getAddresses();
+        const data = await getAddressesPage(page, controller.signal);
 
         if (isMounted) {
-          setAddresses(data);
+          const lastPage = Math.max(1, Math.ceil(data.count / 20));
+          if (page > lastPage) {
+            setPage(lastPage);
+            return;
+          }
+          setAddresses(data.results);
+          setPagination(data);
         }
       } catch (loadError) {
         if (isMounted) {
-          setError(getApiErrorMessage(loadError));
+          setLoadError(getApiErrorMessage(loadError));
         }
       } finally {
         if (isMounted) {
@@ -74,8 +79,9 @@ export function AddressManager() {
 
     return () => {
       isMounted = false;
+      controller.abort();
     };
-  }, []);
+  }, [page, refresh]);
   function handleChange(event: ChangeEvent<HTMLInputElement>) {
     const { name, value, type, checked } = event.target;
 
@@ -94,7 +100,8 @@ export function AddressManager() {
     try {
       await createAddress(form);
       setForm(initialForm);
-      await loadAddresses();
+      setPage(1);
+      setRefresh((value) => value + 1);
     } catch (createError) {
       setError(getApiErrorMessage(createError));
     } finally {
@@ -108,7 +115,8 @@ export function AddressManager() {
 
     try {
       await deleteAddress(addressId);
-      await loadAddresses();
+      if (addresses.length === 1 && page > 1) setPage(page - 1);
+      else setRefresh((value) => value + 1);
     } catch (deleteError) {
       setError(getApiErrorMessage(deleteError));
     } finally {
@@ -122,7 +130,9 @@ export function AddressManager() {
 
     try {
       await setDefaultAddress(addressId);
-      await loadAddresses();
+      // The backend sorts default addresses first, so the changed record moves.
+      setPage(1);
+      setRefresh((value) => value + 1);
     } catch (defaultError) {
       setError(getApiErrorMessage(defaultError));
     } finally {
@@ -320,7 +330,7 @@ export function AddressManager() {
 
         <button
           type="submit"
-          disabled={isSubmitting}
+          disabled={isSubmitting || activeAddressId !== null}
           className="mt-6 h-11 w-full rounded-2xl bg-slate-900 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isSubmitting ? "Saving..." : "Save address"}
@@ -333,12 +343,27 @@ export function AddressManager() {
         <p className="mt-2 text-sm text-slate-500">
           Manage saved delivery addresses.
         </p>
+        <p className="mt-3 text-sm text-slate-600">
+          {pagination.count} saved addresses
+        </p>
+        {loadError ? (
+          <div role="alert" className="mt-4 text-sm text-red-700">
+            <p>{loadError}</p>
+            <button
+              type="button"
+              onClick={() => setRefresh((value) => value + 1)}
+              className="mt-2 underline"
+            >
+              Retry addresses
+            </button>
+          </div>
+        ) : null}
 
         {isLoading ? (
           <p className="mt-8 text-sm text-slate-500">Loading addresses...</p>
         ) : null}
 
-        {!isLoading && !addresses.length ? (
+        {!isLoading && !loadError && !addresses.length ? (
           <div className="mt-8 rounded-3xl border border-dashed border-slate-200 p-8 text-center">
             <h3 className="text-lg font-semibold text-slate-950">
               No saved addresses
@@ -350,69 +375,107 @@ export function AddressManager() {
         ) : null}
 
         <div className="mt-6 grid gap-4">
-          {addresses.map((address) => (
-            <article
-              key={address.id}
-              className="rounded-3xl border border-slate-200 p-5"
-            >
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="text-base font-semibold text-slate-950">
-                      {address.title}
-                    </h3>
+          {!isLoading && !loadError
+            ? addresses.map((address) => (
+                <article
+                  key={address.id}
+                  className="rounded-3xl border border-slate-200 p-5"
+                >
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="text-base font-semibold text-slate-950">
+                          {address.title}
+                        </h3>
 
-                    {address.is_default ? (
-                      <span className="rounded-full bg-slate-900 px-3 py-1 text-xs font-medium text-white">
-                        Default
-                      </span>
-                    ) : null}
+                        {address.is_default ? (
+                          <span className="rounded-full bg-slate-900 px-3 py-1 text-xs font-medium text-white">
+                            Default
+                          </span>
+                        ) : null}
+                      </div>
+
+                      <p className="mt-3 text-sm leading-6 text-slate-600">
+                        {address.province}, {address.city}, {address.street}
+                        {address.alley ? `, ${address.alley}` : ""}
+                        {address.building_number
+                          ? `, Building ${address.building_number}`
+                          : ""}
+                        {address.floor ? `, Floor ${address.floor}` : ""}
+                        {address.unit ? `, Unit ${address.unit}` : ""}
+                      </p>
+
+                      <p className="mt-2 text-sm text-slate-500">
+                        Postal code: {address.postal_code}
+                      </p>
+
+                      <p className="mt-2 text-sm text-slate-500">
+                        Receiver: {address.receiver_name} ·{" "}
+                        {address.receiver_phone}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      {!address.is_default ? (
+                        <button
+                          type="button"
+                          onClick={() => handleSetDefault(address.id)}
+                          disabled={activeAddressId !== null || isSubmitting}
+                          className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          Set default
+                        </button>
+                      ) : null}
+
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(address.id)}
+                        disabled={activeAddressId !== null || isSubmitting}
+                        className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
-
-                  <p className="mt-3 text-sm leading-6 text-slate-600">
-                    {address.province}, {address.city}, {address.street}
-                    {address.alley ? `, ${address.alley}` : ""}
-                    {address.building_number
-                      ? `, Building ${address.building_number}`
-                      : ""}
-                    {address.floor ? `, Floor ${address.floor}` : ""}
-                    {address.unit ? `, Unit ${address.unit}` : ""}
-                  </p>
-
-                  <p className="mt-2 text-sm text-slate-500">
-                    Postal code: {address.postal_code}
-                  </p>
-
-                  <p className="mt-2 text-sm text-slate-500">
-                    Receiver: {address.receiver_name} · {address.receiver_phone}
-                  </p>
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  {!address.is_default ? (
-                    <button
-                      type="button"
-                      onClick={() => handleSetDefault(address.id)}
-                      disabled={activeAddressId === address.id}
-                      className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      Set default
-                    </button>
-                  ) : null}
-
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(address.id)}
-                    disabled={activeAddressId === address.id}
-                    className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            </article>
-          ))}
+                </article>
+              ))
+            : null}
         </div>
+        <nav
+          aria-label="Address pages"
+          className="mt-6 flex items-center justify-between gap-3 text-sm text-slate-700"
+        >
+          <button
+            type="button"
+            onClick={() => setPage(page - 1)}
+            disabled={
+              page === 1 ||
+              isLoading ||
+              isSubmitting ||
+              activeAddressId !== null
+            }
+            className="rounded-xl border px-4 py-2 disabled:opacity-50"
+          >
+            Previous
+          </button>
+          <span>
+            Page {page} of {Math.max(1, Math.ceil(pagination.count / 20))}
+          </span>
+          <button
+            type="button"
+            onClick={() => setPage(page + 1)}
+            disabled={
+              !pagination.next ||
+              isLoading ||
+              Boolean(loadError) ||
+              isSubmitting ||
+              activeAddressId !== null
+            }
+            className="rounded-xl border px-4 py-2 disabled:opacity-50"
+          >
+            Next
+          </button>
+        </nav>
       </section>
     </div>
   );
