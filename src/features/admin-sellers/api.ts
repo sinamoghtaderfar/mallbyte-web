@@ -51,26 +51,36 @@ type SellerModerationResponse = {
 
 function normalizeSellersResponse(
   data: AdminSeller[] | PaginatedAdminSellersResponse,
-) {
+): PaginatedAdminSellersResponse {
   if (Array.isArray(data)) {
-    return data;
+    return { count: data.length, next: null, previous: null, results: data };
   }
 
-  return data.results;
+  return data;
 }
 
-export async function getAdminSellers() {
+export async function getAdminSellers(
+  page = 1,
+  status?: AdminSellerStatus,
+  signal?: AbortSignal,
+) {
   const response = await apiClient.get<
     AdminSeller[] | PaginatedAdminSellersResponse
-  >(API_ENDPOINTS.auth.adminSellers);
+  >(API_ENDPOINTS.auth.adminSellers, {
+    params: { page, page_size: 20, ...(status ? { status } : {}) },
+    signal,
+  });
 
   return normalizeSellersResponse(response.data);
 }
 
-export async function getAdminPendingSellers() {
+export async function getAdminPendingSellers(page = 1, signal?: AbortSignal) {
   const response = await apiClient.get<
     AdminSeller[] | PaginatedAdminSellersResponse
-  >(API_ENDPOINTS.auth.adminPendingSellers);
+  >(API_ENDPOINTS.auth.adminPendingSellers, {
+    params: { page, page_size: 20 },
+    signal,
+  });
 
   return normalizeSellersResponse(response.data);
 }
