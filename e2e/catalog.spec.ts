@@ -34,7 +34,7 @@ test("shared catalog URLs restore filters and page number", async ({ page }) => 
   await expect(page.getByText(/Page 2 of 2/)).toBeVisible();
   expect(requested.some(s => s.includes("search=keyboard") && s.includes("page=2") && s.includes("page_size=12"))).toBeTruthy();
 
-  await page.getByRole("button", { name: "Previous" }).click();
+  await page.getByRole("button", { name: "Previous", exact: true }).click();
   await expect(page).toHaveURL(/search=keyboard/);
   await expect(page).not.toHaveURL(/page=2/);
   await expect(page.getByText("First Page Keyboard")).toBeVisible();

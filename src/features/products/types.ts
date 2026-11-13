@@ -99,6 +99,7 @@ export type ProductDetail = {
 export type ProductCategory = {
   id: number;
   name: string;
+  children?: ProductCategory[];
   slug: string;
   parent: number | null;
   parent_name: string | null;
@@ -118,6 +119,11 @@ export type ProductBrand = {
   website: string;
   is_active: boolean;
   created_at: string;
+};
+
+export type ProductReferenceQuery = {
+  categoryPage?: number;
+  brandPage?: number;
 };
 
 export type ProductQueryParams = {

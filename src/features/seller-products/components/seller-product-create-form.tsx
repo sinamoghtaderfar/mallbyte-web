@@ -2,16 +2,13 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChangeEvent, FormEvent, useEffect, useState } from "react";
+import { ChangeEvent, FormEvent, useState } from "react";
 
 import { getApiErrorMessage } from "@/lib/api/errors";
 
 import { createSellerProduct, getSellerProductOptions } from "../api";
-import type {
-  SellerProductBrand,
-  SellerProductCategory,
-  SellerProductPayload,
-} from "../types";
+import type { SellerProductPayload } from "../types";
+import { ProductReferenceFields } from "@/features/products/components/product-reference-fields";
 
 type FormState = {
   name: string;
@@ -79,43 +76,8 @@ export function SellerProductCreateForm() {
   const router = useRouter();
 
   const [form, setForm] = useState<FormState>(initialForm);
-  const [categories, setCategories] = useState<SellerProductCategory[]>([]);
-  const [brands, setBrands] = useState<SellerProductBrand[]>([]);
-  const [isLoadingOptions, setIsLoadingOptions] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
-
-  useEffect(() => {
-    let isMounted = true;
-
-    async function loadOptions() {
-      setIsLoadingOptions(true);
-      setError("");
-
-      try {
-        const data = await getSellerProductOptions();
-
-        if (isMounted) {
-          setCategories(data.categories);
-          setBrands(data.brands);
-        }
-      } catch (optionsError) {
-        if (isMounted) {
-          setError(getApiErrorMessage(optionsError));
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoadingOptions(false);
-        }
-      }
-    }
-
-    void loadOptions();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
 
   function handleChange(
     event: ChangeEvent<
@@ -215,46 +177,14 @@ export function SellerProductCreateForm() {
             />
           </label>
 
-          <label className="block">
-            <span className="text-sm font-medium text-slate-700">Category</span>
-            <select
-              name="category"
-              value={form.category}
-              onChange={handleChange}
-              required
-              disabled={isLoadingOptions}
-              className="mt-2 h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm outline-none transition focus:border-slate-400 disabled:opacity-60"
-            >
-              <option value="">
-                {isLoadingOptions ? "Loading categories..." : "Select category"}
-              </option>
-
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="block">
-            <span className="text-sm font-medium text-slate-700">Brand</span>
-            <select
-              name="brand"
-              value={form.brand}
-              onChange={handleChange}
-              disabled={isLoadingOptions}
-              className="mt-2 h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm outline-none transition focus:border-slate-400 disabled:opacity-60"
-            >
-              <option value="">No brand</option>
-
-              {brands.map((brand) => (
-                <option key={brand.id} value={brand.id}>
-                  {brand.name}
-                </option>
-              ))}
-            </select>
-          </label>
+          <ProductReferenceFields
+            category={form.category}
+            brand={form.brand}
+            onChange={handleChange}
+            loadOptions={getSellerProductOptions}
+            required
+            disabled={isSubmitting}
+          />
 
           <label className="block">
             <span className="text-sm font-medium text-slate-700">Price</span>
@@ -314,7 +244,7 @@ export function SellerProductCreateForm() {
         <div className="mt-8 flex flex-wrap gap-3">
           <button
             type="submit"
-            disabled={isSubmitting || isLoadingOptions}
+            disabled={isSubmitting || !form.category}
             className="h-12 rounded-2xl bg-slate-900 px-6 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isSubmitting ? "Creating..." : "Create product"}
