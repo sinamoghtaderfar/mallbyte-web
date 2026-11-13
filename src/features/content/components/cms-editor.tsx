@@ -1,5 +1,7 @@
 "use client";
 
+import { AccessibleDialog } from "@/components/ui/accessible-dialog";
+
 import { useEffect, useMemo, useState } from "react";
 import { X, Save } from "lucide-react";
 import { createCms, listCmsAll, updateCms } from "../api";
@@ -108,11 +110,10 @@ export function CmsEditor({ resource, definition, initial, onClose, onSaved, can
   }
 
   return (
-    <div className="fixed inset-0 z-[60] flex justify-end bg-slate-950/45" role="presentation">
-      <div role="dialog" aria-modal="true" aria-labelledby="cms-editor-title" className="flex h-full w-full max-w-2xl flex-col bg-white shadow-2xl">
+    <AccessibleDialog onClose={onClose} dismissible={!busy} labelledBy="cms-editor-title" overlayClassName="fixed inset-0 z-[60] flex justify-end bg-slate-950/45" className="flex h-full w-full max-w-2xl flex-col bg-white shadow-2xl">
         <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4 sm:px-7">
           <div><p className="text-xs font-semibold uppercase tracking-widest text-cyan-700">Content workspace</p><h2 id="cms-editor-title" className="mt-1 text-xl font-bold text-slate-950">{initial ? `Edit ${definition.singular}` : `Create ${definition.singular}`}</h2></div>
-          <button type="button" onClick={onClose} aria-label="Close editor" className="rounded-xl p-2 hover:bg-slate-100"><X size={21} /></button>
+          <button type="button" onClick={onClose} disabled={busy} aria-label="Close editor" className="rounded-xl p-2 hover:bg-slate-100"><X size={21} /></button>
         </div>
         <form onSubmit={(e) => void submit(e)} className="flex min-h-0 flex-1 flex-col">
           <div className="flex-1 space-y-5 overflow-y-auto px-5 py-6 sm:px-7">
@@ -153,7 +154,6 @@ export function CmsEditor({ resource, definition, initial, onClose, onSaved, can
             <button type="submit" disabled={busy} className="inline-flex items-center gap-2 rounded-xl bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50"><Save size={17} />{busy ? "Saving…" : "Save changes"}</button>
           </div>
         </form>
-      </div>
-    </div>
+    </AccessibleDialog>
   );
 }

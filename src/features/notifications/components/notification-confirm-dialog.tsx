@@ -1,5 +1,7 @@
 "use client";
 
+import { AccessibleDialog } from "@/components/ui/accessible-dialog";
+
 type NotificationConfirmDialogProps = {
   open: boolean;
   title: string;
@@ -26,56 +28,53 @@ export function NotificationConfirmDialog({
   }
 
   return (
-    <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/40 px-4"
-      role="presentation"
-      onMouseDown={onCancel}
+    <AccessibleDialog
+      onClose={onCancel}
+      dismissible={!isBusy}
+      closeOnBackdrop
+      labelledBy="notification-confirm-title"
+      describedBy="notification-confirm-description"
+      overlayClassName="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/40 px-4"
+      className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl"
     >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="notification-confirm-title"
-        className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl"
-        onMouseDown={(event) =>
-          event.stopPropagation()
-        }
+      <h2
+        id="notification-confirm-title"
+        className="text-xl font-semibold text-slate-950"
       >
-        <h2
-          id="notification-confirm-title"
-          className="text-xl font-semibold text-slate-950"
+        {title}
+      </h2>
+
+      <p
+        id="notification-confirm-description"
+        className="mt-3 text-sm leading-6 text-slate-600"
+      >
+        {description}
+      </p>
+
+      <div className="mt-6 flex justify-end gap-3">
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={isBusy}
+          className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
         >
-          {title}
-        </h2>
+          Cancel
+        </button>
 
-        <p className="mt-3 text-sm leading-6 text-slate-600">
-          {description}
-        </p>
-
-        <div className="mt-6 flex justify-end gap-3">
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={isBusy}
-            className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-          >
-            Cancel
-          </button>
-
-          <button
-            type="button"
-            onClick={onConfirm}
-            disabled={isBusy}
-            className={[
-              "rounded-2xl px-4 py-2 text-sm font-semibold text-white disabled:opacity-50",
-              danger
-                ? "bg-red-600 hover:bg-red-700"
-                : "bg-slate-900 hover:bg-slate-800",
-            ].join(" ")}
-          >
-            {isBusy ? "Working..." : confirmLabel}
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={onConfirm}
+          disabled={isBusy}
+          className={[
+            "rounded-2xl px-4 py-2 text-sm font-semibold text-white disabled:opacity-50",
+            danger
+              ? "bg-red-600 hover:bg-red-700"
+              : "bg-slate-900 hover:bg-slate-800",
+          ].join(" ")}
+        >
+          {isBusy ? "Working..." : confirmLabel}
+        </button>
       </div>
-    </div>
+    </AccessibleDialog>
   );
 }
