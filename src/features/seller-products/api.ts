@@ -25,12 +25,15 @@ function normalizeList<T>(data: ListResponse<T>) {
   return data.results;
 }
 
-export async function getSellerProducts() {
+export async function getSellerProducts(page = 1, signal?: AbortSignal) {
   const response = await apiClient.get<ListResponse<ProductListItem>>(
     API_ENDPOINTS.products.myProducts,
+    { params: { page, page_size: 20 }, signal },
   );
 
-  return normalizeList(response.data);
+  return Array.isArray(response.data)
+    ? { count: response.data.length, next: null, previous: null, results: normalizeList(response.data) }
+    : response.data;
 }
 
 export async function getSellerProduct(productId: string) {
