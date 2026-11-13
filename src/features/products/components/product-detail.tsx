@@ -1,5 +1,7 @@
 "use client";
 
+import { getImageUrl } from "@/lib/media/image-url";
+
 import { AddToCartButton } from "@/features/cart/components/add-to-cart-button";
 import { ProductReviewsSection } from "@/features/reviews/components/product-reviews-section";
 import { WishlistButton } from "@/features/wishlist/components/wishlist-button";
@@ -27,21 +29,6 @@ function formatPrice(value: string | null | undefined) {
   return new Intl.NumberFormat("en-US", {
     maximumFractionDigits: 2,
   }).format(numberValue);
-}
-
-function getImageUrl(path: string | null | undefined) {
-  if (!path) {
-    return null;
-  }
-
-  if (path.startsWith("http://") || path.startsWith("https://")) {
-    return path;
-  }
-
-  const baseUrl =
-    process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
-
-  return `${baseUrl.replace(/\/$/, "")}${path}`;
 }
 
 export function ProductDetail() {

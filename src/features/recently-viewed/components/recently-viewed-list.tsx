@@ -1,5 +1,7 @@
 "use client";
 
+import { getImageUrl } from "@/lib/media/image-url";
+
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -26,21 +28,6 @@ function formatPrice(value: string | number | null | undefined) {
 
 function formatDate(value: string) {
   return new Date(value).toLocaleString();
-}
-
-function getImageUrl(path: string | null | undefined) {
-  if (!path) {
-    return null;
-  }
-
-  if (path.startsWith("http://") || path.startsWith("https://")) {
-    return path;
-  }
-
-  const baseUrl =
-    process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
-
-  return `${baseUrl.replace(/\/$/, "")}${path}`;
 }
 
 export function RecentlyViewedList() {
