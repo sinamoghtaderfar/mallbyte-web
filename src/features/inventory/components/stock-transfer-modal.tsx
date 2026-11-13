@@ -1,5 +1,7 @@
 "use client";
 
+import { AccessibleDialog } from "@/components/ui/accessible-dialog";
+
 import type { FormEvent } from "react";
 import { useMemo, useState } from "react";
 
@@ -97,16 +99,13 @@ export function StockTransferModal({
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4"
-      role="presentation"
+    <AccessibleDialog
+      onClose={onClose}
+      dismissible={!isSubmitting}
+      labelledBy="create-transfer-title"
+      overlayClassName="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4"
+      className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6 shadow-xl"
     >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="create-transfer-title"
-        className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6 shadow-xl"
-      >
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">
@@ -280,7 +279,6 @@ export function StockTransferModal({
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </AccessibleDialog>
   );
 }
