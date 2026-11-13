@@ -41,7 +41,7 @@ export function FinancialMonitoring() {
   const [detail, setDetail] = useState<AuditRunDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState("");
-  const [requestedDetailId, setRequestedDetailId] = useState<number | null>(null);
+  const [requestedDetail, setRequestedDetail] = useState<{ id: number } | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -132,20 +132,20 @@ export function FinancialMonitoring() {
   }, [queuedKey]);
 
   useEffect(() => {
-    if (requestedDetailId == null) return;
+    if (requestedDetail == null) return;
     let active = true;
-    void getAuditRunDetail(requestedDetailId)
+    void getAuditRunDetail(requestedDetail.id)
       .then((result) => { if (active) { setDetail(result); setDetailError(""); } })
       .catch((reason: unknown) => { if (active) { setDetail(null); setDetailError(getApiErrorMessage(reason)); } })
       .finally(() => { if (active) setDetailLoading(false); });
     return () => { active = false; };
-  }, [requestedDetailId]);
+  }, [requestedDetail]);
 
   function inspectRun(id: number) {
     setDetail(null);
     setDetailError("");
     setDetailLoading(true);
-    setRequestedDetailId(id);
+    setRequestedDetail({ id });
   }
 
   const runs = history?.runs;
@@ -234,9 +234,9 @@ export function FinancialMonitoring() {
           </>
         )}
         {(detailLoading || detailError || detail) && (
-          <Panel title="Selected audit run" extra={<button type="button" className="text-sm text-slate-600 underline" onClick={() => { setRequestedDetailId(null); setDetail(null); setDetailError(""); setDetailLoading(false); }}>Close</button>}>
+          <Panel title="Selected audit run" extra={<button type="button" className="text-sm text-slate-600 underline" onClick={() => { setRequestedDetail(null); setDetail(null); setDetailError(""); setDetailLoading(false); }}>Close</button>}>
             {detailLoading && <p role="status" className="text-sm text-slate-500">Loading run details…</p>}
-            {detailError && <Notice variant="error">{detailError}</Notice>}
+            {detailError && <Notice variant="error">{detailError}. <button type="button" onClick={() => { if (requestedDetail) inspectRun(requestedDetail.id); }} className="font-semibold underline">Retry audit details</button></Notice>}
             {detail && <div className="space-y-5">
               <div className="flex flex-wrap items-center gap-3 text-sm text-slate-600"><AuditStatus status={detail.status}/><span>Run #{detail.id}</span><Clock3 size={15}/><span>{readableDate(detail.finished_at)}</span></div>
               {detail.error && <Notice variant="error">Audit failed: {detail.error}</Notice>}
