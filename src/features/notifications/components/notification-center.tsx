@@ -7,7 +7,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
   clearAllNotifications,
@@ -24,6 +24,8 @@ import { NotificationConfirmDialog } from "@/features/notifications/components/n
 import { NotificationToast } from "@/features/notifications/components/notification-toast";
 import { useNotificationStore } from "@/features/notifications/notification-store";
 import type { Notification } from "@/features/notifications/types";
+
+import { getSessionGeneration, isCurrentSession } from "@/lib/auth/session-storage";
 
 type NotificationFilter = "all" | "unread" | "read";
 
@@ -42,18 +44,6 @@ function formatNotificationTime(value: string) {
 export function NotificationCenter() {
   const router = useRouter();
 
-  const decrementUnreadCount = useNotificationStore(
-    (state) => state.decrementUnreadCount,
-  );
-
-  const incrementUnreadCount = useNotificationStore(
-    (state) => state.incrementUnreadCount,
-  );
-
-  const setUnreadCount = useNotificationStore(
-    (state) => state.setUnreadCount,
-  );
-
   const refreshUnreadCount = useNotificationStore(
     (state) => state.refreshUnreadCount,
   );
@@ -66,6 +56,12 @@ export function NotificationCenter() {
 
   const [loadedFilter, setLoadedFilter] =
     useState<NotificationFilter | null>(null);
+
+  const queryVersion = useRef(0);
+  const mounted = useRef(false);
+  const [isItemActionRunning, setIsItemActionRunning] = useState(false);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  const [retry, setRetry] = useState(0);
 
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
@@ -95,6 +91,10 @@ export function NotificationCenter() {
 
   useEffect(() => {
     let mounted = true;
+    const query = ++queryVersion.current;
+    const session = getSessionGeneration();
+    const current = () =>
+      mounted && query === queryVersion.current && isCurrentSession(session);
 
     async function loadNotifications() {
       try {
@@ -107,7 +107,7 @@ export function NotificationCenter() {
           1,
         );
 
-        if (!mounted) {
+        if (!current()) {
           return;
         }
 
@@ -117,7 +117,7 @@ export function NotificationCenter() {
         setError("");
         setLoadedFilter(filter);
       } catch {
-        if (!mounted) {
+        if (!current()) {
           return;
         }
 
@@ -130,12 +130,9 @@ export function NotificationCenter() {
 
     return () => {
       mounted = false;
+      queryVersion.current += 1;
     };
-  }, [filter]);
-
-  const unreadCount = notifications.filter(
-    (notification) => !notification.is_read,
-  ).length;
+  }, [filter, retry]);
 
   const selectedCount = selectedIds.size;
 
@@ -148,17 +145,31 @@ export function NotificationCenter() {
   function handleFilterChange(
     nextFilter: NotificationFilter,
   ) {
+    if (nextFilter === filter && !error) return;
+    queryVersion.current += 1;
     setSelectedIds(new Set());
+    setNotifications([]);
+    setLoadedFilter(null);
+    setIsLoadingMore(false);
+    setError("");
     setPage(1);
     setHasMore(false);
+    if (nextFilter === filter) setRetry((value) => value + 1);
     setFilter(nextFilter);
   }
 
   async function handleLoadMore() {
-    if (!hasMore || isLoadingMore) {
+    if (
+      !hasMore || isLoadingMore || isLoading ||
+      isBulkActionRunning || isMarkingAllRead || isItemActionRunning
+    ) {
       return;
     }
 
+    const query = queryVersion.current;
+    const session = getSessionGeneration();
+    const current = () =>
+      query === queryVersion.current && isCurrentSession(session);
     try {
       setIsLoadingMore(true);
       setError("");
@@ -174,20 +185,38 @@ export function NotificationCenter() {
         nextPage,
       );
 
-      setNotifications((current) => [
-        ...current,
-        ...data.results,
-      ]);
+      if (!current()) return;
+      setNotifications((items) => {
+        const ids = new Set(items.map((item) => item.id));
+        return [...items, ...data.results.filter((item) => !ids.has(item.id))];
+      });
 
       setPage(nextPage);
       setHasMore(Boolean(data.next));
     } catch {
-      setError(
-        "Could not load more notifications.",
-      );
+      if (current()) setError("Could not load more notifications.");
     } finally {
-      setIsLoadingMore(false);
+      if (current()) setIsLoadingMore(false);
     }
+  }
+
+  function retirePendingPages() {
+    queryVersion.current += 1;
+    setIsLoadingMore(false);
+  }
+
+  function refreshPages() {
+    retirePendingPages();
+    setNotifications([]);
+    setLoadedFilter(null);
+    setPage(1);
+    setHasMore(false);
+    setSelectedIds(new Set());
+    setRetry((value) => value + 1);
+  }
+
+  function currentSession(session: number) {
+    return mounted.current && isCurrentSession(session);
   }
 
   function handleSelectNotification(
@@ -221,155 +250,95 @@ export function NotificationCenter() {
     );
   }
 
-  async function handleOpen(
-    notification: Notification,
-  ) {
+  async function handleOpen(notification: Notification) {
+    if (isItemActionRunning || isBulkActionRunning || isMarkingAllRead) return;
+    const session = getSessionGeneration();
+    setIsItemActionRunning(true);
+    retirePendingPages();
+    const query = queryVersion.current;
     try {
       if (!notification.is_read) {
-        const updated =
-          await markNotificationRead(notification.id);
-
-        setNotifications((current) =>
-          current.map((item) =>
-            item.id === updated.id
-              ? updated
-              : item,
-          ),
-        );
-
-        decrementUnreadCount();
+        await markNotificationRead(notification.id);
+        if (!currentSession(session)) return;
+        refreshPages();
+        void refreshUnreadCount(true);
         setFeedback("Notification marked as read.");
       }
-
-      if (
-        notification.action_url.startsWith("/")
-      ) {
+      if (currentSession(session) && notification.action_url.startsWith("/")) {
         router.push(notification.action_url);
       }
     } catch {
-      setError(
-        "Could not update notification.",
-      );
+      if (currentSession(session) && query === queryVersion.current) {
+        setError("Could not update notification.");
+      }
+    } finally {
+      if (currentSession(session)) setIsItemActionRunning(false);
     }
   }
 
-  async function handleToggleRead(
-    notification: Notification,
-  ) {
+  async function handleToggleRead(notification: Notification) {
+    if (isItemActionRunning || isBulkActionRunning || isMarkingAllRead) return;
+    const session = getSessionGeneration();
+    setIsItemActionRunning(true);
+    retirePendingPages();
+    const query = queryVersion.current;
     try {
       const updated = notification.is_read
-        ? await markNotificationUnread(
-            notification.id,
-          )
-        : await markNotificationRead(
-            notification.id,
-          );
-
-      if (
-        notification.is_read &&
-        !updated.is_read
-      ) {
-        incrementUnreadCount();
-      }
-
-      if (
-        !notification.is_read &&
-        updated.is_read
-      ) {
-        decrementUnreadCount();
-      }
-
-      setNotifications((current) => {
-        if (
-          filter === "unread" &&
-          updated.is_read
-        ) {
-          return current.filter(
-            (item) =>
-              item.id !== updated.id,
-          );
-        }
-
-        if (
-          filter === "read" &&
-          !updated.is_read
-        ) {
-          return current.filter(
-            (item) =>
-              item.id !== updated.id,
-          );
-        }
-
-        return current.map((item) =>
-          item.id === updated.id
-            ? updated
-            : item,
-        );
-      });
-
-      setFeedback(
-        updated.is_read
-          ? "Notification marked as read."
-          : "Notification marked as unread.",
-      );
+        ? await markNotificationUnread(notification.id)
+        : await markNotificationRead(notification.id);
+      if (!currentSession(session)) return;
+      refreshPages();
+      await refreshUnreadCount(true);
+      if (!currentSession(session)) return;
+      setFeedback(updated.is_read
+        ? "Notification marked as read." : "Notification marked as unread.");
     } catch {
-      setError(
-        "Could not update notification.",
-      );
+      if (currentSession(session) && query === queryVersion.current) {
+        setError("Could not update notification.");
+      }
+    } finally {
+      if (currentSession(session)) setIsItemActionRunning(false);
     }
   }
 
   async function handleMarkAllRead() {
+    if (isItemActionRunning || isBulkActionRunning || isMarkingAllRead) return;
+    const session = getSessionGeneration();
+    retirePendingPages();
+    const query = queryVersion.current;
     try {
       setIsMarkingAllRead(true);
       setError("");
 
       await markAllNotificationsRead();
+      if (!currentSession(session)) return;
 
-      if (filter === "unread") {
-        setNotifications([]);
-      } else {
-        setNotifications((current) =>
-          current.map(
-            (notification) => ({
-              ...notification,
-              is_read: true,
-              read_at:
-                notification.read_at ??
-                new Date().toISOString(),
-            }),
-          ),
-        );
-      }
+      refreshPages();
 
       setSelectedIds(new Set());
-      setUnreadCount(0);
+      await refreshUnreadCount(true);
+      if (!currentSession(session)) return;
       setFeedback("Notifications marked as read.");
     } catch {
-      setError(
+      if (currentSession(session) && query === queryVersion.current) setError(
         "Could not mark all notifications as read.",
       );
     } finally {
-      setIsMarkingAllRead(false);
+      if (currentSession(session)) setIsMarkingAllRead(false);
     }
   }
 
   async function handleSelectedRead() {
+    if (isItemActionRunning || isBulkActionRunning || isMarkingAllRead) return;
     const ids = Array.from(selectedIds);
 
     if (ids.length === 0) {
       return;
     }
 
-    const selectedUnreadCount =
-      notifications.filter(
-        (notification) =>
-          selectedIds.has(
-            notification.id,
-          ) &&
-          !notification.is_read,
-      ).length;
-
+    const session = getSessionGeneration();
+    retirePendingPages();
+    const query = queryVersion.current;
     try {
       setIsBulkActionRunning(true);
       setError("");
@@ -377,66 +346,35 @@ export function NotificationCenter() {
       await markSelectedNotificationsRead(
         ids,
       );
+      if (!currentSession(session)) return;
 
-      setNotifications((current) => {
-        if (filter === "unread") {
-          return current.filter(
-            (notification) =>
-              !selectedIds.has(
-                notification.id,
-              ),
-          );
-        }
+      refreshPages();
 
-        return current.map(
-          (notification) =>
-            selectedIds.has(
-              notification.id,
-            )
-              ? {
-                  ...notification,
-                  is_read: true,
-                  read_at:
-                    notification.read_at ??
-                    new Date().toISOString(),
-                }
-              : notification,
-        );
-      });
-
-      if (selectedUnreadCount > 0) {
-        decrementUnreadCount(
-          selectedUnreadCount,
-        );
-      }
+      await refreshUnreadCount(true);
+      if (!currentSession(session)) return;
 
       setSelectedIds(new Set());
       setFeedback("Selected notifications marked as read.");
     } catch {
-      setError(
+      if (currentSession(session) && query === queryVersion.current) setError(
         "Could not mark selected notifications as read.",
       );
     } finally {
-      setIsBulkActionRunning(false);
+      if (currentSession(session)) setIsBulkActionRunning(false);
     }
   }
 
   async function handleSelectedUnread() {
+    if (isItemActionRunning || isBulkActionRunning || isMarkingAllRead) return;
     const ids = Array.from(selectedIds);
 
     if (ids.length === 0) {
       return;
     }
 
-    const selectedReadCount =
-      notifications.filter(
-        (notification) =>
-          selectedIds.has(
-            notification.id,
-          ) &&
-          notification.is_read,
-      ).length;
-
+    const session = getSessionGeneration();
+    retirePendingPages();
+    const query = queryVersion.current;
     try {
       setIsBulkActionRunning(true);
       setError("");
@@ -444,45 +382,21 @@ export function NotificationCenter() {
       await markSelectedNotificationsUnread(
         ids,
       );
+      if (!currentSession(session)) return;
 
-      setNotifications((current) => {
-        if (filter === "read") {
-          return current.filter(
-            (notification) =>
-              !selectedIds.has(
-                notification.id,
-              ),
-          );
-        }
+      refreshPages();
 
-        return current.map(
-          (notification) =>
-            selectedIds.has(
-              notification.id,
-            )
-              ? {
-                  ...notification,
-                  is_read: false,
-                  read_at: null,
-                }
-              : notification,
-        );
-      });
-
-      if (selectedReadCount > 0) {
-        incrementUnreadCount(
-          selectedReadCount,
-        );
-      }
+      await refreshUnreadCount(true);
+      if (!currentSession(session)) return;
 
       setSelectedIds(new Set());
       setFeedback("Selected notifications marked as unread.");
     } catch {
-      setError(
+      if (currentSession(session) && query === queryVersion.current) setError(
         "Could not mark selected notifications as unread.",
       );
     } finally {
-      setIsBulkActionRunning(false);
+      if (currentSession(session)) setIsBulkActionRunning(false);
     }
   }
 
@@ -510,90 +424,93 @@ export function NotificationCenter() {
       return;
     }
 
+    const session = getSessionGeneration();
+    retirePendingPages();
+    const query = queryVersion.current;
     try {
       setIsBulkActionRunning(true);
       setError("");
 
       await deleteSelectedNotifications(ids);
+      if (!currentSession(session)) return;
 
-      setNotifications((current) =>
-        current.filter(
-          (notification) =>
-            !selectedIds.has(
-              notification.id,
-            ),
-        ),
-      );
+      refreshPages();
 
       setSelectedIds(new Set());
       setConfirmAction(null);
 
-      await refreshUnreadCount();
+      await refreshUnreadCount(true);
+      if (!currentSession(session)) return;
 
       setFeedback(
         "Selected notifications deleted.",
       );
     } catch {
-      setError(
+      if (currentSession(session) && query === queryVersion.current) setError(
         "Could not delete selected notifications.",
       );
     } finally {
-      setIsBulkActionRunning(false);
+      if (currentSession(session)) setIsBulkActionRunning(false);
     }
   }
 
   async function executeClearRead() {
+    const session = getSessionGeneration();
+    retirePendingPages();
+    const query = queryVersion.current;
     try {
       setIsBulkActionRunning(true);
       setError("");
 
       await clearReadNotifications();
+      if (!currentSession(session)) return;
 
-      setNotifications((current) =>
-        current.filter(
-          (notification) =>
-            !notification.is_read,
-        ),
-      );
+      refreshPages();
 
       setSelectedIds(new Set());
       setConfirmAction(null);
 
-      await refreshUnreadCount();
+      await refreshUnreadCount(true);
+      if (!currentSession(session)) return;
 
       setFeedback(
         "Read notifications cleared.",
       );
     } catch {
-      setError(
+      if (currentSession(session) && query === queryVersion.current) setError(
         "Could not clear read notifications.",
       );
     } finally {
-      setIsBulkActionRunning(false);
+      if (currentSession(session)) setIsBulkActionRunning(false);
     }
   }
 
   async function executeClearAll() {
+    const session = getSessionGeneration();
+    retirePendingPages();
+    const query = queryVersion.current;
     try {
       setIsBulkActionRunning(true);
       setError("");
 
       await clearAllNotifications();
+      if (!currentSession(session)) return;
 
-      setNotifications([]);
+      refreshPages();
       setSelectedIds(new Set());
-      setUnreadCount(0);
+      await refreshUnreadCount(true);
+      if (!currentSession(session)) return;
       setConfirmAction(null);
 
       setFeedback(
         "All notifications cleared.",
       );
     } catch {
-      setError(
+      if (currentSession(session) && query === queryVersion.current) setError(
         "Could not clear notifications.",
       );
     } finally {
-      setIsBulkActionRunning(false);
+      if (currentSession(session)) setIsBulkActionRunning(false);
     }
   }
 
@@ -622,8 +539,7 @@ export function NotificationCenter() {
             void handleMarkAllRead()
           }
           disabled={
-            isMarkingAllRead ||
-            unreadCount === 0
+            isMarkingAllRead || isBulkActionRunning || isItemActionRunning || isLoading
           }
           className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
         >
@@ -650,6 +566,7 @@ export function NotificationCenter() {
               onClick={() =>
                 handleFilterChange(item)
               }
+              disabled={isBulkActionRunning || isMarkingAllRead}
               className={[
                 "rounded-2xl px-4 py-2 text-sm font-medium capitalize transition",
                 filter === item
@@ -667,7 +584,7 @@ export function NotificationCenter() {
             type="button"
             onClick={handleClearRead}
             disabled={
-              isBulkActionRunning
+              isBulkActionRunning || isMarkingAllRead || isItemActionRunning || isLoading
             }
             className="rounded-2xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
           >
@@ -678,7 +595,7 @@ export function NotificationCenter() {
             type="button"
             onClick={handleClearAll}
             disabled={
-              isBulkActionRunning
+              isBulkActionRunning || isMarkingAllRead || isItemActionRunning || isLoading
             }
             className="rounded-2xl border border-red-200 px-3 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-50"
           >
@@ -699,7 +616,7 @@ export function NotificationCenter() {
               void handleSelectedRead()
             }
             disabled={
-              isBulkActionRunning
+              isBulkActionRunning || isMarkingAllRead || isItemActionRunning || isLoading
             }
             className="inline-flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-100 disabled:opacity-50"
           >
@@ -713,7 +630,7 @@ export function NotificationCenter() {
               void handleSelectedUnread()
             }
             disabled={
-              isBulkActionRunning
+              isBulkActionRunning || isMarkingAllRead || isItemActionRunning || isLoading
             }
             className="inline-flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-100 disabled:opacity-50"
           >
@@ -725,7 +642,7 @@ export function NotificationCenter() {
             type="button"
             onClick={handleDeleteSelected}
             disabled={
-              isBulkActionRunning
+              isBulkActionRunning || isMarkingAllRead || isItemActionRunning || isLoading
             }
             className="inline-flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-xs font-semibold text-red-600 shadow-sm transition hover:bg-red-50 disabled:opacity-50"
           >
@@ -738,6 +655,13 @@ export function NotificationCenter() {
       {!isLoading && error ? (
         <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
           {error}
+          <button
+            type="button"
+            onClick={() => handleFilterChange(filter)}
+            className="ml-3 font-semibold underline"
+          >
+            Retry notifications
+          </button>
         </div>
       ) : null}
 
@@ -821,6 +745,7 @@ export function NotificationCenter() {
                       notification,
                     )
                   }
+                  disabled={isItemActionRunning || isBulkActionRunning || isMarkingAllRead}
                   className="min-w-0 flex-1 text-left"
                 >
                   <div className="flex flex-wrap items-center gap-2">
@@ -869,6 +794,7 @@ export function NotificationCenter() {
                         notification,
                       )
                     }
+                    disabled={isItemActionRunning || isBulkActionRunning || isMarkingAllRead}
                     className="rounded-xl px-3 py-2 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
                   >
                     {notification.is_read
@@ -882,12 +808,12 @@ export function NotificationCenter() {
         </div>
       ) : null}
 
-      {hasMore ? (
+      {!isLoading && hasMore ? (
         <div className="mt-6 flex justify-center">
           <button
             type="button"
             onClick={() => void handleLoadMore()}
-            disabled={isLoadingMore}
+            disabled={isLoadingMore || isBulkActionRunning || isMarkingAllRead || isItemActionRunning}
             className="rounded-2xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
           >
             {isLoadingMore
