@@ -2,7 +2,9 @@ import type {
   ProductDetail,
   ProductListItem,
   ProductVariant,
+  ProductReferenceQuery,
 } from "@/features/products/types";
+import { referencePage } from "@/features/products/api";
 import { apiClient } from "@/lib/api/client";
 import { API_ENDPOINTS } from "@/lib/api/endpoints";
 import type { PaginatedResponse } from "@/types/api";
@@ -41,19 +43,24 @@ export async function getSellerProduct(productId: string) {
   return response.data;
 }
 
-export async function getSellerProductOptions() {
+export async function getSellerProductOptions(
+  { categoryPage = 1, brandPage = 1 }: ProductReferenceQuery = {},
+  signal?: AbortSignal,
+) {
   const [categoriesResponse, brandsResponse] = await Promise.all([
     apiClient.get<ListResponse<SellerProductCategory>>(
       API_ENDPOINTS.products.categories,
+      { params: { page: categoryPage, page_size: 20 }, signal },
     ),
     apiClient.get<ListResponse<SellerProductBrand>>(
       API_ENDPOINTS.products.brands,
+      { params: { page: brandPage, page_size: 20 }, signal },
     ),
   ]);
 
   return {
-    categories: normalizeList(categoriesResponse.data),
-    brands: normalizeList(brandsResponse.data),
+    categories: referencePage(categoriesResponse.data),
+    brands: referencePage(brandsResponse.data),
   };
 }
 

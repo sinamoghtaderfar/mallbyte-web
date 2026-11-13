@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -32,7 +32,7 @@ const mockedGetProducts = vi.mocked(getProducts);
 const mockedGetProductFilters = vi.mocked(getProductFilters);
 
 const filterOptions = {
-  categories: [
+  categories: { count: 1, next: null, previous: null, results: [
     {
       id: 1,
       name: "Accessories",
@@ -45,8 +45,8 @@ const filterOptions = {
       order: 1,
       created_at: "2026-09-05T18:00:00Z",
     },
-  ],
-  brands: [
+  ] },
+  brands: { count: 1, next: null, previous: null, results: [
     {
       id: 2,
       name: "Keychron",
@@ -57,7 +57,7 @@ const filterOptions = {
       is_active: true,
       created_at: "2026-09-05T18:00:00Z",
     },
-  ],
+  ] },
 };
 
 function makeProduct(
@@ -137,8 +137,8 @@ describe("ProductList", () => {
     await screen.findByText(/no products yet/i);
 
     await user.type(screen.getByLabelText(/search products/i), "keyboard");
-    await user.selectOptions(screen.getByLabelText(/category/i), "1");
-    await user.selectOptions(screen.getByLabelText(/brand/i), "2");
+    await user.selectOptions(screen.getByRole("combobox", { name: /^category$/i }), "1");
+    await user.selectOptions(screen.getByRole("combobox", { name: /^brand$/i }), "2");
     await user.type(screen.getByLabelText(/min price/i), "1000");
     await user.type(screen.getByLabelText(/max price/i), "2000");
     await user.selectOptions(screen.getByLabelText(/label/i), "new");
@@ -234,7 +234,7 @@ describe("ProductList", () => {
     await user.type(screen.getByLabelText(/search products/i), "keyboard");
     await user.click(screen.getByRole("button", { name: /apply filters/i }));
     await waitFor(() => expect(mockedGetProducts).toHaveBeenLastCalledWith({ search: "keyboard" }));
-    expect(screen.getByText(/Page 1 of/)).toBeInTheDocument();
+    expect(within(screen.getByRole("navigation", { name: "Product pagination" })).getByText(/Page 1 of/)).toBeInTheDocument();
   });
 
   it("rejects an inverted price range without making a catalog request", async () => {
