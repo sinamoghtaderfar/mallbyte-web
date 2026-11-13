@@ -6,13 +6,13 @@ import { AlertTriangle, ArrowRight, BarChart3, BookOpen, Boxes, ClipboardList, C
 import { apiClient } from "@/lib/api/client";
 import { useAuthStore } from "@/features/auth/auth-store";
 import { AccessDenied } from "@/features/auth/components/access-denied";
+import { ProductModerationCollection } from "./product-moderation-collection";
 
 type Paginated<T> = { count: number; results: T[]; next: string | null; previous: string | null };
 type Overview = { users:number; active_users:number; sellers:number; pending_sellers:number; products:number; pending_products:number; orders:number; open_tickets:number; roles:number; recent_admin_actions:number };
 type User = { id:number; email:string; full_name:string; phone:string|null; is_active:boolean; is_staff:boolean; is_superuser:boolean; is_seller:boolean; email_verified:boolean; date_joined:string; roles:{id:number;name:string}[] };
 type Permission = { id:number; name:string; codename:string; module:string };
 type Role = { id:number; name:string; description:string; level:number; is_system_role:boolean; permissions:string[]; permissions_count:number };
-type Product = { id:number; name:string; sku:string; status:string; seller_email:string; is_active:boolean };
 type Audit = { id:number; admin_email:string; action:string; target_user_email:string|null; target_role_name:string|null; details: Record<string,unknown>; created_at:string };
 type Tab = "overview"|"users"|"roles"|"products"|"audit"|"settings";
 const base = "/api/rbac";
@@ -54,8 +54,6 @@ export function SuperAdminConsole(){
   const [userQuery,setUserQuery]=useState("");
   const [roles,setRoles]=useState<Role[]>([]);
   const [permissions,setPermissions]=useState<Permission[]>([]);
-  const [products,setProducts]=useState<Product[]>([]);
-  const [productStatus,setProductStatus]=useState("pending");
   const [audit,setAudit]=useState<Audit[]>([]);
   const [busy,setBusy]=useState(false),[error,setError]=useState(""),[notice,setNotice]=useState("");
   const [version,setVersion]=useState(0);
@@ -74,13 +72,13 @@ export function SuperAdminConsole(){
       overview:async()=>{const r=await apiClient.get<Overview>(`${base}/console/overview/`);if(active)setOverview(r.data)},
       users:async()=>{const r=await apiClient.get<Paginated<User>>(`${base}/console/users/`,{params:{page:userPage,search:userQuery}});if(active){setUsers(unwrap(r.data));setUserCount(r.data.count)}},
       roles:async()=>{const r=await apiClient.get<{roles:Role[];permissions:Permission[]}>(`${base}/console/role-catalog/`);if(active){setRoles(r.data.roles);setPermissions(r.data.permissions)}},
-      products:async()=>{const r=await apiClient.get<Paginated<Product>>(`${base}/console/products/`,{params:{status:productStatus}});if(active)setProducts(unwrap(r.data))},
+      products:async()=>{},
       audit:async()=>{const r=await apiClient.get<Paginated<Audit>>(`${base}/admin-logs/`);if(active)setAudit(unwrap(r.data))},
       settings:async()=>{},
     };
     void calls[tab]().catch(e=>{if(active)setError(message(e))}).finally(()=>{if(active)setBusy(false)});
     return()=>{active=false};
-  },[bootstrapped,allowed,tab,version,userPage,userQuery,productStatus]);
+  },[bootstrapped,allowed,tab,version,userPage,userQuery]);
   async function run(fn:()=>Promise<unknown>,success:string){
     setBusy(true);setError("");setNotice("");
     try{await fn();setNotice(success);refresh()}
@@ -109,7 +107,7 @@ export function SuperAdminConsole(){
       <form className="space-y-3 rounded-2xl border bg-white p-5" onSubmit={e=>{e.preventDefault();void run(()=>apiClient.post(`${base}/console/roles/${roleEdit}/permissions/`,{permission_id:Number(permissionEdit),enabled:permissionEnabled}),"Role permission updated and audited.")}}><h2 className="font-semibold">Edit role permission</h2><p className="text-sm text-slate-500">System roles are immutable here. Changes invalidate the permission cache.</p><div className="grid gap-3 sm:grid-cols-3"><select required className={field} value={roleEdit} onChange={e=>setRoleEdit(e.target.value)}><option value="">Choose non-system role</option>{roles.filter(r=>!r.is_system_role).map(r=><option key={r.id} value={r.id}>{r.name}</option>)}</select><select required className={field} value={permissionEdit} onChange={e=>setPermissionEdit(e.target.value)}><option value="">Choose permission</option>{permissions.map(p=><option key={p.id} value={p.id}>{p.module} / {p.codename}</option>)}</select><select className={field} value={permissionEnabled?"add":"remove"} onChange={e=>setPermissionEnabled(e.target.value==="add")}><option value="add">Grant permission</option><option value="remove">Revoke permission</option></select></div><button className={button} disabled={busy}>Update permission</button></form>
       <div className="grid gap-3 md:grid-cols-2">{roles.map(r=><div key={r.id} className="rounded-2xl border bg-white p-5"><div className="flex items-center justify-between gap-2"><h3 className="font-semibold">{r.name}</h3>{r.is_system_role&&<span className="rounded-lg bg-slate-100 px-2 py-1 text-xs">System role</span>}</div><p className="mt-1 text-sm text-slate-500">{r.description||"No description"}</p><p className="mt-2 text-xs text-slate-500">{r.permissions_count} permissions · level {r.level}</p><div className="mt-3 flex flex-wrap gap-1">{r.permissions.map(p=><span key={p} className="rounded bg-cyan-50 px-2 py-1 text-xs text-cyan-800">{p}</span>)}</div></div>)}</div>
     </section>}
-    {tab==="products"&&<section className="space-y-4"><div className="flex items-center gap-2"><label htmlFor="moderation-status" className="text-sm font-semibold">Status</label><select id="moderation-status" className={field} value={productStatus} onChange={e=>setProductStatus(e.target.value)}><option value="pending">Pending</option><option value="approved">Approved</option><option value="rejected">Rejected</option><option value="draft">Draft</option></select></div><div className="space-y-3">{products.map(p=><article key={p.id} className="flex flex-wrap items-center gap-3 rounded-2xl border bg-white p-5"><div className="flex-1"><h3 className="font-semibold">{p.name}</h3><div className="text-sm text-slate-500">{p.sku} · {p.seller_email} · {p.status}</div></div>{p.status==="pending"&&<><button className={button} disabled={busy} onClick={()=>void run(()=>apiClient.post(`/api/products/products/${p.id}/approve/`),"Product approved.")}>Approve</button><button className={field} disabled={busy} onClick={()=>{const reason=window.prompt("Reason for rejection (required)");if(reason&&reason.trim().length>=5)void run(()=>apiClient.post(`/api/products/products/${p.id}/reject/`,{reason}),"Product rejected.");else if(reason!==null)setError("Enter a reason of at least 5 characters.")}}>Reject</button></>}</article>)}{!busy&&!products.length&&<p className="text-sm text-slate-500">No products found for this filter.</p>}</div></section>}
+    {tab==="products"&&<ProductModerationCollection key={user?.id}/>}
     {tab==="audit"&&<section className="space-y-3">{audit.map(item=><article key={item.id} className="rounded-xl border bg-white p-4"><div className="flex flex-wrap items-center justify-between gap-2"><strong>{item.action}</strong><time className="text-xs text-slate-500">{new Date(item.created_at).toLocaleString()}</time></div><p className="mt-1 text-sm text-slate-600">{item.admin_email||"Unknown actor"} · {item.target_user_email||item.target_role_name||"Platform"}</p><pre className="mt-2 overflow-x-auto whitespace-pre-wrap break-all rounded-lg bg-slate-50 p-3 text-xs text-slate-600">{JSON.stringify(item.details,null,2)}</pre></article>)}{!busy&&!audit.length&&<p className="text-sm text-slate-500">No audit actions found.</p>}</section>}
     {tab==="settings"&&<section className="space-y-4"><div className="rounded-2xl border border-cyan-200 bg-cyan-50 p-5"><h2 className="font-semibold">Platform operations</h2><p className="mt-2 text-sm text-slate-700">Use existing permission-protected workspaces for content, finance and monitoring. Infrastructure secrets, tokens, database settings and security controls are intentionally not editable from the browser.</p></div><div className="grid gap-3 sm:grid-cols-2">{integrations.map(({href,title,desc,Icon})=><Link key={href} href={href} className="flex items-center gap-3 rounded-xl border bg-white p-4 hover:border-cyan-400"><Icon size={20}/><div className="flex-1"><div className="font-semibold">{title}</div><div className="text-sm text-slate-500">{desc}</div></div><ArrowRight size={16}/></Link>)}</div></section>}
   </div></main>;
