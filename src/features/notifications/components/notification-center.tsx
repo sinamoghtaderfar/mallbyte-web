@@ -7,7 +7,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
   clearAllNotifications,
@@ -24,6 +24,8 @@ import { NotificationConfirmDialog } from "@/features/notifications/components/n
 import { NotificationToast } from "@/features/notifications/components/notification-toast";
 import { useNotificationStore } from "@/features/notifications/notification-store";
 import type { Notification } from "@/features/notifications/types";
+
+import { getSessionGeneration, isCurrentSession } from "@/lib/auth/session-storage";
 
 type NotificationFilter = "all" | "unread" | "read";
 
@@ -67,6 +69,9 @@ export function NotificationCenter() {
   const [loadedFilter, setLoadedFilter] =
     useState<NotificationFilter | null>(null);
 
+  const queryVersion = useRef(0);
+  const [retry, setRetry] = useState(0);
+
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [isLoadingMore, setIsLoadingMore] =
@@ -95,6 +100,10 @@ export function NotificationCenter() {
 
   useEffect(() => {
     let mounted = true;
+    const query = ++queryVersion.current;
+    const session = getSessionGeneration();
+    const current = () =>
+      mounted && query === queryVersion.current && isCurrentSession(session);
 
     async function loadNotifications() {
       try {
@@ -107,7 +116,7 @@ export function NotificationCenter() {
           1,
         );
 
-        if (!mounted) {
+        if (!current()) {
           return;
         }
 
@@ -117,7 +126,7 @@ export function NotificationCenter() {
         setError("");
         setLoadedFilter(filter);
       } catch {
-        if (!mounted) {
+        if (!current()) {
           return;
         }
 
@@ -130,12 +139,9 @@ export function NotificationCenter() {
 
     return () => {
       mounted = false;
+      queryVersion.current += 1;
     };
-  }, [filter]);
-
-  const unreadCount = notifications.filter(
-    (notification) => !notification.is_read,
-  ).length;
+  }, [filter, retry]);
 
   const selectedCount = selectedIds.size;
 
@@ -148,17 +154,31 @@ export function NotificationCenter() {
   function handleFilterChange(
     nextFilter: NotificationFilter,
   ) {
+    if (nextFilter === filter && !error) return;
+    queryVersion.current += 1;
     setSelectedIds(new Set());
+    setNotifications([]);
+    setLoadedFilter(null);
+    setIsLoadingMore(false);
+    setError("");
     setPage(1);
     setHasMore(false);
+    if (nextFilter === filter) setRetry((value) => value + 1);
     setFilter(nextFilter);
   }
 
   async function handleLoadMore() {
-    if (!hasMore || isLoadingMore) {
+    if (
+      !hasMore || isLoadingMore || isLoading ||
+      isBulkActionRunning || isMarkingAllRead
+    ) {
       return;
     }
 
+    const query = queryVersion.current;
+    const session = getSessionGeneration();
+    const current = () =>
+      query === queryVersion.current && isCurrentSession(session);
     try {
       setIsLoadingMore(true);
       setError("");
@@ -174,20 +194,24 @@ export function NotificationCenter() {
         nextPage,
       );
 
-      setNotifications((current) => [
-        ...current,
-        ...data.results,
-      ]);
+      if (!current()) return;
+      setNotifications((items) => {
+        const ids = new Set(items.map((item) => item.id));
+        return [...items, ...data.results.filter((item) => !ids.has(item.id))];
+      });
 
       setPage(nextPage);
       setHasMore(Boolean(data.next));
     } catch {
-      setError(
-        "Could not load more notifications.",
-      );
+      if (current()) setError("Could not load more notifications.");
     } finally {
-      setIsLoadingMore(false);
+      if (current()) setIsLoadingMore(false);
     }
+  }
+
+  function retirePendingPages() {
+    queryVersion.current += 1;
+    setIsLoadingMore(false);
   }
 
   function handleSelectNotification(
@@ -326,21 +350,13 @@ export function NotificationCenter() {
 
       await markAllNotificationsRead();
 
-      if (filter === "unread") {
-        setNotifications([]);
-      } else {
-        setNotifications((current) =>
-          current.map(
-            (notification) => ({
-              ...notification,
-              is_read: true,
-              read_at:
-                notification.read_at ??
-                new Date().toISOString(),
-            }),
-          ),
-        );
-      }
+      retirePendingPages();
+      // Refetch because filtered page offsets change. Superusers may see other
+      // users' rows, while this action only marks the current user's rows read.
+      setLoadedFilter(null);
+      setPage(1);
+      setHasMore(false);
+      setRetry((value) => value + 1);
 
       setSelectedIds(new Set());
       setUnreadCount(0);
@@ -622,8 +638,7 @@ export function NotificationCenter() {
             void handleMarkAllRead()
           }
           disabled={
-            isMarkingAllRead ||
-            unreadCount === 0
+            isMarkingAllRead || isBulkActionRunning || isLoading
           }
           className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
         >
@@ -650,6 +665,7 @@ export function NotificationCenter() {
               onClick={() =>
                 handleFilterChange(item)
               }
+              disabled={isBulkActionRunning || isMarkingAllRead}
               className={[
                 "rounded-2xl px-4 py-2 text-sm font-medium capitalize transition",
                 filter === item
@@ -738,6 +754,13 @@ export function NotificationCenter() {
       {!isLoading && error ? (
         <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
           {error}
+          <button
+            type="button"
+            onClick={() => handleFilterChange(filter)}
+            className="ml-3 font-semibold underline"
+          >
+            Retry notifications
+          </button>
         </div>
       ) : null}
 
@@ -882,12 +905,12 @@ export function NotificationCenter() {
         </div>
       ) : null}
 
-      {hasMore ? (
+      {!isLoading && hasMore ? (
         <div className="mt-6 flex justify-center">
           <button
             type="button"
             onClick={() => void handleLoadMore()}
-            disabled={isLoadingMore}
+            disabled={isLoadingMore || isBulkActionRunning || isMarkingAllRead}
             className="rounded-2xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
           >
             {isLoadingMore

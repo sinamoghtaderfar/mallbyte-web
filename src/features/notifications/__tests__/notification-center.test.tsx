@@ -1,4 +1,5 @@
 import {
+  act,
   render,
   screen,
   waitFor,
@@ -103,6 +104,16 @@ function makeNotification(
     updated_at: "2026-10-14T18:00:00Z",
     ...overrides,
   };
+}
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason: Error) => void;
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return { promise, resolve, reject };
 }
 
 describe("NotificationCenter", () => {
@@ -748,4 +759,157 @@ describe("NotificationCenter", () => {
       "All notifications cleared.",
     );
   });
+  it("retires a 21-record query's pending page and loading state when filters change", async () => {
+    const user = userEvent.setup();
+    const oldPage =
+      deferred<Awaited<ReturnType<typeof getNotificationsPage>>>();
+    const newPage =
+      deferred<Awaited<ReturnType<typeof getNotificationsPage>>>();
+    const first = Array.from({ length: 20 }, (_, index) =>
+      makeNotification({ id: index + 1, title: `Old ${index + 1}` }),
+    );
+    mockedGetNotificationsPage
+      .mockResolvedValueOnce({
+        count: 21,
+        next: "?page=2",
+        previous: null,
+        results: first,
+      })
+      .mockReturnValueOnce(oldPage.promise)
+      .mockResolvedValueOnce({
+        count: 21,
+        next: "?is_read=true&page=2",
+        previous: null,
+        results: [
+          makeNotification({ id: 50, title: "Current read", is_read: true }),
+        ],
+      })
+      .mockReturnValueOnce(newPage.promise);
+    render(<NotificationCenter />);
+    await screen.findByText("Old 1");
+    await user.click(screen.getByRole("button", { name: "Load more" }));
+    await user.click(screen.getByRole("button", { name: "read" }));
+    await screen.findByText("Current read");
+    await user.click(screen.getByRole("button", { name: "Load more" }));
+    expect(mockedGetNotificationsPage).toHaveBeenLastCalledWith(
+      { is_read: true },
+      2,
+    );
+    await act(async () =>
+      oldPage.resolve({
+        count: 21,
+        next: null,
+        previous: "?page=1",
+        results: [makeNotification({ id: 21, title: "Obsolete unread" })],
+      }),
+    );
+    expect(screen.queryByText("Obsolete unread")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Loading..." })).toBeDisabled();
+    await act(async () =>
+      newPage.resolve({
+        count: 21,
+        next: null,
+        previous: "?is_read=true&page=1",
+        results: [
+          makeNotification({
+            id: 51,
+            title: "Current page two",
+            is_read: true,
+          }),
+        ],
+      }),
+    );
+    expect(screen.getByText("Current page two")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Load more" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("ignores errors from load-more requests belonging to an obsolete filter", async () => {
+    const user = userEvent.setup();
+    const oldPage =
+      deferred<Awaited<ReturnType<typeof getNotificationsPage>>>();
+    mockedGetNotificationsPage
+      .mockResolvedValueOnce({
+        count: 21,
+        next: "?page=2",
+        previous: null,
+        results: [makeNotification()],
+      })
+      .mockReturnValueOnce(oldPage.promise)
+      .mockResolvedValueOnce({
+        count: 1,
+        next: null,
+        previous: null,
+        results: [
+          makeNotification({ id: 50, title: "Read result", is_read: true }),
+        ],
+      });
+    render(<NotificationCenter />);
+    await screen.findByText("Shipment delivered");
+    await user.click(screen.getByRole("button", { name: "Load more" }));
+    await user.click(screen.getByRole("button", { name: "read" }));
+    await screen.findByText("Read result");
+    await act(async () => oldPage.reject(new Error("Old page failed")));
+    expect(screen.getByText("Read result")).toBeInTheDocument();
+    expect(
+      screen.queryByText("Could not load more notifications."),
+    ).not.toBeInTheDocument();
+  });
+
+  it("keeps the global mark-all action available when unread records are only on a later page", async () => {
+    const user = userEvent.setup();
+    mockedGetNotificationsPage.mockResolvedValueOnce({
+      count: 21,
+      next: "?page=2",
+      previous: null,
+      results: Array.from({ length: 20 }, (_, index) =>
+        makeNotification({
+          id: index + 1,
+          title: `Read ${index + 1}`,
+          is_read: true,
+        }),
+      ),
+    });
+    useNotificationStore.getState().setUnreadCount(1);
+    render(<NotificationCenter />);
+    await screen.findByText("Read 1");
+    const action = screen.getByRole("button", { name: "Mark all as read" });
+    expect(action).toBeEnabled();
+    await user.click(action);
+    expect(mockedMarkAllRead).toHaveBeenCalledOnce();
+    expect(useNotificationStore.getState().unreadCount).toBe(0);
+  });
+
+  it("retries a failed current filter without showing rows from the previous filter", async () => {
+    const user = userEvent.setup();
+    render(<NotificationCenter />);
+    await screen.findByText("Shipment delivered");
+    mockedGetNotificationsPage.mockRejectedValueOnce(new Error("Offline"));
+    await user.click(screen.getByRole("button", { name: "read" }));
+    await screen.findByText("Could not load notifications.");
+    expect(screen.queryByText("Shipment delivered")).not.toBeInTheDocument();
+    mockedGetNotificationsPage.mockResolvedValueOnce({ count: 1, next: null, previous: null, results: [makeNotification({ id: 5, title: "Recovered read", is_read: true })] });
+    await user.click(screen.getByRole("button", { name: "Retry notifications" }));
+    expect(await screen.findByText("Recovered read")).toBeInTheDocument();
+    expect(mockedGetNotificationsPage).toHaveBeenLastCalledWith({ is_read: true }, 1);
+  });
+
+  it("reloads authoritative page one after global read and retires an older pending page", async () => {
+    const user = userEvent.setup();
+    const stale = deferred<Awaited<ReturnType<typeof getNotificationsPage>>>();
+    mockedGetNotificationsPage.mockResolvedValueOnce({ count: 21, next: "?page=2", previous: null, results: [makeNotification()] })
+      .mockReturnValueOnce(stale.promise)
+      .mockResolvedValueOnce({ count: 21, next: "?page=2", previous: null, results: [makeNotification({ is_read: true }), makeNotification({ id: 40, title: "Other visible user's unread", is_read: false })] });
+    render(<NotificationCenter />);
+    await screen.findByText("Shipment delivered");
+    await user.click(screen.getByRole("button", { name: "Load more" }));
+    await user.click(screen.getByRole("button", { name: "Mark all as read" }));
+    await screen.findByText("Other visible user's unread");
+    expect(mockedGetNotificationsPage).toHaveBeenLastCalledWith({}, 1);
+    await act(async () => stale.resolve({ count: 21, next: null, previous: "?page=1", results: [makeNotification({ id: 21, title: "Stale unread page" })] }));
+    expect(screen.queryByText("Stale unread page")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Load more" })).toBeEnabled();
+  });
+
 });
