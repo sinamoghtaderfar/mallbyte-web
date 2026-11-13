@@ -1,5 +1,7 @@
 "use client";
 
+import { OrderReturnHistory } from "@/features/returns/components/order-return-history";
+
 import {
   OrderReturnActionButton,
   OrderReturnStatusCard,
@@ -79,6 +81,10 @@ function isStepCompleted(orderStatus: string, stepValue: string) {
 }
 
 export function OrderDetail() {
+  return <OrderReturnHistory><OrderDetailContent /></OrderReturnHistory>;
+}
+
+function OrderDetailContent() {
   const params = useParams<{ id: string }>();
 
   const [order, setOrder] = useState<OrderDetailType | null>(null);

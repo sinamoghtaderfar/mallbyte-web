@@ -15,6 +15,17 @@ type PaginatedReturnsResponse = {
   results: ReturnListItem[];
 };
 
+/** One bounded history page for shared order status displays. */
+export async function getReturnsPage(page = 1, signal?: AbortSignal): Promise<PaginatedReturnsResponse> {
+  const response = await apiClient.get<ReturnListItem[] | PaginatedReturnsResponse>(
+    API_ENDPOINTS.returns.requests,
+    { params: { page, page_size: 20 }, signal },
+  );
+  return Array.isArray(response.data)
+    ? { count: response.data.length, next: null, previous: null, results: response.data }
+    : response.data;
+}
+
 export async function getReturns(): Promise<ReturnListItem[]> {
   const all: ReturnListItem[] = [];
   const visited = new Set<string>();
