@@ -1,3 +1,5 @@
+import { getImageUrl } from "@/lib/media/image-url";
+
 import Link from "next/link";
 
 import type { ProductListItem } from "../types";
@@ -16,21 +18,6 @@ function formatPrice(value: string) {
   return new Intl.NumberFormat("en-US", {
     maximumFractionDigits: 2,
   }).format(numberValue);
-}
-
-function getImageUrl(path: string | null) {
-  if (!path) {
-    return null;
-  }
-
-  if (path.startsWith("http://") || path.startsWith("https://")) {
-    return path;
-  }
-
-  const baseUrl =
-    process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
-
-  return `${baseUrl.replace(/\/$/, "")}${path}`;
 }
 
 export function ProductCard({ product }: ProductCardProps) {
