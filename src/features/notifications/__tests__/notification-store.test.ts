@@ -215,4 +215,16 @@ describe("notification store", () => {
       isRefreshing: false,
     });
   });
+  it("forces a fresh post-mutation count instead of joining a pre-mutation poll", async () => {
+    let resolveOld!: (count: number) => void;
+    mockedGetUnreadCount.mockReturnValueOnce(new Promise((resolve) => { resolveOld = resolve; }))
+      .mockResolvedValueOnce(1);
+    const old = useNotificationStore.getState().refreshUnreadCount();
+    await useNotificationStore.getState().refreshUnreadCount(true);
+    expect(mockedGetUnreadCount).toHaveBeenCalledTimes(2);
+    resolveOld(20);
+    await old;
+    expect(useNotificationStore.getState().unreadCount).toBe(1);
+  });
+
 });

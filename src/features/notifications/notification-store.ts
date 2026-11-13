@@ -9,7 +9,7 @@ type NotificationStore = {
   setUnreadCount: (count: number) => void;
   incrementUnreadCount: (amount?: number) => void;
   decrementUnreadCount: (amount?: number) => void;
-  refreshUnreadCount: () => Promise<void>;
+  refreshUnreadCount: (force?: boolean) => Promise<void>;
   reset: () => void;
 };
 
@@ -46,7 +46,8 @@ export const useNotificationStore = create<NotificationStore>((set) => ({
     set((state) => ({ unreadCount: Math.max(0, state.unreadCount - amount) }));
   },
 
-  refreshUnreadCount: async () => {
+  refreshUnreadCount: async (force = false) => {
+    if (force) countRevision += 1;
     const generation = getSessionGeneration();
     const revision = countRevision;
     if (pendingRefresh?.revision === revision && pendingRefresh.session === generation) {
