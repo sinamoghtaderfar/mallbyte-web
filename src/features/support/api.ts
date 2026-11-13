@@ -92,6 +92,7 @@ export async function getSupportSummary(
   return response.data;
 }
 
+/** Legacy bounded first-page helper; collection views use getSupportTagsPage. */
 export async function getSupportTags() {
   const response = await apiClient.get<MaybePaginated<SupportTag>>(
     API_ENDPOINTS.support.tags,
@@ -103,6 +104,15 @@ export async function getSupportTags() {
   );
 
   return normalizeList(response.data);
+}
+
+export async function getSupportTagsPage(page = 1, signal?: AbortSignal) {
+  const response = await apiClient.get<MaybePaginated<SupportTag>>(
+    API_ENDPOINTS.support.tags,
+    { params: { page, page_size: 20 }, signal },
+  );
+
+  return normalizePage(response.data, page);
 }
 
 export async function createSupportTag(payload: SupportTagPayload) {
