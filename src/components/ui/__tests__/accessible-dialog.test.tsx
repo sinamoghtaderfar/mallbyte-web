@@ -101,6 +101,22 @@ describe("AccessibleDialog", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
+  it.each([true, false])("keeps completion focus in its workspace before outer navigation when opener removed=%s", async (removeTrigger) => {
+    const user = userEvent.setup();
+    render(
+      <>
+        <nav aria-label="Site navigation"><button>Other workspace</button></nav>
+        <Completion removeTrigger={removeTrigger} disableRemaining />
+      </>,
+    );
+    await user.click(screen.getByRole("button", { name: "Delete selected" }));
+    await user.click(screen.getByRole("button", { name: "Confirm deletion" }));
+    const workspace = screen.getByRole("main", { name: "Notification actions" });
+    expect(workspace).toHaveFocus();
+    expect(workspace).not.toHaveAttribute("tabindex");
+    expect(screen.getByRole("button", { name: "Other workspace" })).not.toHaveFocus();
+  });
+
   it("restores focus and page interaction after StrictMode effect replay", async () => {
     const user = userEvent.setup();
     const view = render(

@@ -199,14 +199,14 @@ export function AccessibleDialog({
             target.focus();
             if (document.activeElement === target) return;
           }
-        }
-        const container = scopes[0];
-        if (container) {
-          const originalTabIndex = container.getAttribute("tabindex");
-          container.setAttribute("tabindex", "-1");
-          container.focus();
-          if (originalTabIndex === null) container.removeAttribute("tabindex");
-          else container.setAttribute("tabindex", originalTabIndex);
+          // Keep completion in its surviving workspace even while its actions
+          // are disabled, before considering unrelated outer page controls.
+          const originalTabIndex = scope.getAttribute("tabindex");
+          scope.setAttribute("tabindex", "-1");
+          scope.focus();
+          if (originalTabIndex === null) scope.removeAttribute("tabindex");
+          else scope.setAttribute("tabindex", originalTabIndex);
+          if (document.activeElement === scope) return;
         }
       });
     };
