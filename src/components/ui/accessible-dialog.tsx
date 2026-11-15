@@ -48,29 +48,24 @@ function updateBackground() {
   }
 }
 
+function isAvailable(element: HTMLElement) {
+  if (
+    !element.isConnected || element.matches(":disabled") ||
+    element.closest('[hidden], [inert], [aria-hidden="true"]')
+  ) return false;
+  for (let node: HTMLElement | null = element; node; node = node.parentElement) {
+    const style = getComputedStyle(node);
+    if (style.display === "none" || style.visibility === "hidden") return false;
+  }
+  return true;
+}
+
 function focusableElements(panel: HTMLElement) {
   return Array.from(
     panel.querySelectorAll<HTMLElement>(
       'button, a[href], input:not([type="hidden"]), select, textarea, [tabindex]',
     ),
-  ).filter((element) => {
-    if (
-      element.tabIndex < 0 ||
-      element.matches(":disabled") ||
-      element.closest("[hidden], [inert]")
-    )
-      return false;
-    for (
-      let node: HTMLElement | null = element;
-      node && node !== panel.parentElement;
-      node = node.parentElement
-    ) {
-      const style = getComputedStyle(node);
-      if (style.display === "none" || style.visibility === "hidden")
-        return false;
-    }
-    return true;
-  });
+  ).filter((element) => element.tabIndex >= 0 && isAvailable(element));
 }
 
 /** A portal keeps the dialog outside the page made inert while it is open. */
@@ -102,6 +97,13 @@ export function AccessibleDialog({
       document.activeElement instanceof HTMLElement
         ? document.activeElement
         : null;
+    // A successful action may remove the opener or disable its entire toolbar.
+    const ancestors: HTMLElement[] = [];
+    for (
+      let node = previous?.parentElement;
+      node && node !== document.body && node !== document.documentElement;
+      node = node.parentElement
+    ) ancestors.push(node);
     if (!stack.length) {
       bodyOverflow = document.body.style.overflow;
       document.body.style.overflow = "hidden";
@@ -167,8 +169,37 @@ export function AccessibleDialog({
       if (index !== -1) stack.splice(index, 1);
       updateBackground();
       if (!stack.length) document.body.style.overflow = bodyOverflow;
-      if (previous?.isConnected && !previous.closest("[inert]"))
-        previous.focus();
+      // Sibling disabled/removal changes can commit after this layout cleanup.
+      queueMicrotask(() => {
+        if (stack.includes(overlay)) return; // StrictMode replay reopened it.
+        const activeOverlay = stack.at(-1);
+        if (activeOverlay?.contains(document.activeElement)) return;
+        const canRestore = (element: HTMLElement) =>
+          isAvailable(element) && !overlay.contains(element) &&
+          (!activeOverlay || activeOverlay.contains(element));
+        if (previous && canRestore(previous)) {
+          previous.focus();
+          if (document.activeElement === previous) return;
+        }
+        const scopes = ancestors.filter(canRestore);
+        const fallback = activeOverlay?.querySelector<HTMLElement>('[role="dialog"]') ??
+          document.querySelector<HTMLElement>("main") ?? document.body;
+        if (canRestore(fallback) && !scopes.includes(fallback)) scopes.push(fallback);
+        for (const scope of scopes) {
+          for (const target of focusableElements(scope).filter(canRestore)) {
+            target.focus();
+            if (document.activeElement === target) return;
+          }
+        }
+        const container = scopes[0];
+        if (container) {
+          const originalTabIndex = container.getAttribute("tabindex");
+          container.setAttribute("tabindex", "-1");
+          container.focus();
+          if (originalTabIndex === null) container.removeAttribute("tabindex");
+          else container.setAttribute("tabindex", originalTabIndex);
+        }
+      });
     };
   }, []);
 

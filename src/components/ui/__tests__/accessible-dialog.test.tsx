@@ -52,7 +52,55 @@ function Example() {
   );
 }
 
+function Completion({
+  removeTrigger,
+  disableRemaining = false,
+}: {
+  removeTrigger: boolean;
+  disableRemaining?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [complete, setComplete] = useState(false);
+  return (
+    <main aria-label="Notification actions">
+      {!(complete && removeTrigger) && (
+        <button disabled={complete} onClick={() => setOpen(true)}>
+          Delete selected
+        </button>
+      )}
+      <button disabled={complete && disableRemaining}>Refresh notifications</button>
+      {open && (
+        <Dialog onClose={() => setOpen(false)}>
+          <button onClick={() => { setComplete(true); setOpen(false); }}>
+            Confirm deletion
+          </button>
+        </Dialog>
+      )}
+    </main>
+  );
+}
+
 describe("AccessibleDialog", () => {
+  it.each([true, false])("restores logical focus after completion leaves its opener removed=%s", async (removeTrigger) => {
+    const user = userEvent.setup();
+    render(<Completion removeTrigger={removeTrigger} />);
+    await user.click(screen.getByRole("button", { name: "Delete selected" }));
+    await user.click(screen.getByRole("button", { name: "Confirm deletion" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Refresh notifications" })).toHaveFocus();
+  });
+
+  it("focuses the logical container when all page actions become disabled on completion", async () => {
+    const user = userEvent.setup();
+    render(<Completion removeTrigger={false} disableRemaining />);
+    await user.click(screen.getByRole("button", { name: "Delete selected" }));
+    await user.click(screen.getByRole("button", { name: "Confirm deletion" }));
+    const main = screen.getByRole("main", { name: "Notification actions" });
+    expect(main).toHaveFocus();
+    expect(main).not.toHaveAttribute("tabindex");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
   it("restores focus and page interaction after StrictMode effect replay", async () => {
     const user = userEvent.setup();
     const view = render(

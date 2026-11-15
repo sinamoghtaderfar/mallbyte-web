@@ -15,6 +15,7 @@ const customer = {
 test("notification confirmation contains keyboard focus and restores its trigger", async ({
   page,
 }) => {
+  let deleted = false;
   await installApiMocks(page, {
     "/api/auth/token/refresh/": (route) =>
       fulfillJson(route, { access: "dialog-browser-access" }),
@@ -29,13 +30,17 @@ test("notification confirmation contains keyboard focus and restores its trigger
         subtotal: "0",
       }),
     "/api/notifications/unread-count/": (route) =>
-      fulfillJson(route, { unread_count: 1 }),
+      fulfillJson(route, { unread_count: deleted ? 0 : 1 }),
+    "/api/notifications/delete-selected/": (route) => {
+      deleted = true;
+      return fulfillJson(route, { deleted_count: 1 });
+    },
     "/api/notifications/": (route) =>
       fulfillJson(route, {
-        count: 1,
+        count: deleted ? 0 : 1,
         next: null,
         previous: null,
-        results: [
+        results: deleted ? [] : [
           {
             id: 1,
             user: customer.email,
@@ -76,4 +81,24 @@ test("notification confirmation contains keyboard focus and restores its trigger
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);
   await expect(trigger).toBeFocused();
+
+  await page.getByRole("checkbox", { name: "Select Order update", exact: true }).check();
+  const selectedDelete = page.getByRole("button", { name: "Delete", exact: true });
+  await selectedDelete.focus();
+  await page.keyboard.press("Enter");
+  const deleteDialog = page.getByRole("dialog", { name: "Delete selected notifications?" });
+  await deleteDialog.getByRole("button", { name: "Delete", exact: true }).click();
+  await expect(deleteDialog).toHaveCount(0);
+  await expect(selectedDelete).toHaveCount(0);
+  const workspace = page.locator("section").filter({
+    has: page.getByRole("heading", { name: "Notifications", exact: true }),
+  });
+  await expect.poll(() => workspace.evaluate((element) =>
+    element.contains(document.activeElement),
+  )).toBe(true);
+  expect(await page.evaluate(() => {
+    const active = document.activeElement;
+    return active !== document.body && active !== document.documentElement &&
+      !active?.closest("[inert]") && !active?.matches(":disabled");
+  })).toBe(true);
 });
