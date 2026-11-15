@@ -1,7 +1,7 @@
 import { StrictMode, useState } from "react";
 import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { AccessibleDialog } from "../accessible-dialog";
 
@@ -55,14 +55,16 @@ function Example() {
 function Completion({
   removeTrigger,
   disableRemaining = false,
+  tabIndex,
 }: {
   removeTrigger: boolean;
   disableRemaining?: boolean;
+  tabIndex?: number;
 }) {
   const [open, setOpen] = useState(false);
   const [complete, setComplete] = useState(false);
   return (
-    <main aria-label="Notification actions">
+    <main aria-label="Notification actions" tabIndex={tabIndex}>
       {!(complete && removeTrigger) && (
         <button disabled={complete} onClick={() => setOpen(true)}>
           Delete selected
@@ -97,6 +99,8 @@ describe("AccessibleDialog", () => {
     await user.click(screen.getByRole("button", { name: "Confirm deletion" }));
     const main = screen.getByRole("main", { name: "Notification actions" });
     expect(main).toHaveFocus();
+    expect(main).toHaveAttribute("tabindex", "-1");
+    await user.tab();
     expect(main).not.toHaveAttribute("tabindex");
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
@@ -113,8 +117,36 @@ describe("AccessibleDialog", () => {
     await user.click(screen.getByRole("button", { name: "Confirm deletion" }));
     const workspace = screen.getByRole("main", { name: "Notification actions" });
     expect(workspace).toHaveFocus();
-    expect(workspace).not.toHaveAttribute("tabindex");
+    expect(workspace).toHaveAttribute("tabindex", "-1");
     expect(screen.getByRole("button", { name: "Other workspace" })).not.toHaveFocus();
+    await user.click(screen.getByRole("button", { name: "Other workspace" }));
+    expect(workspace).not.toHaveAttribute("tabindex");
+  });
+
+  it("preserves an existing fallback tabindex while restoring focus and after blur", async () => {
+    const user = userEvent.setup();
+    render(<><button>Other workspace</button><Completion removeTrigger disableRemaining tabIndex={0} /></>);
+    await user.click(screen.getByRole("button", { name: "Delete selected" }));
+    await user.click(screen.getByRole("button", { name: "Confirm deletion" }));
+    const workspace = screen.getByRole("main", { name: "Notification actions" });
+    expect(workspace).toHaveFocus();
+    expect(workspace).toHaveAttribute("tabindex", "0");
+    await user.click(screen.getByRole("button", { name: "Other workspace" }));
+    expect(workspace).toHaveAttribute("tabindex", "0");
+  });
+
+  it("immediately restores a borrowed tabindex when the focus attempt fails", async () => {
+    const user = userEvent.setup();
+    const view = render(<Completion removeTrigger disableRemaining />);
+    const workspace = screen.getByRole("main", { name: "Notification actions" });
+    const focus = vi.spyOn(workspace, "focus").mockImplementation(() => {});
+    await user.click(screen.getByRole("button", { name: "Delete selected" }));
+    await user.click(screen.getByRole("button", { name: "Confirm deletion" }));
+    expect(workspace).not.toHaveAttribute("tabindex");
+    expect(view.container).toHaveFocus();
+    view.container.blur();
+    expect(view.container).not.toHaveAttribute("tabindex");
+    focus.mockRestore();
   });
 
   it("restores focus and page interaction after StrictMode effect replay", async () => {

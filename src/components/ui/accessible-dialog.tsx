@@ -204,6 +204,15 @@ export function AccessibleDialog({
           const originalTabIndex = scope.getAttribute("tabindex");
           scope.setAttribute("tabindex", "-1");
           scope.focus();
+          if (document.activeElement === scope && originalTabIndex === null) {
+            // Chromium blurs an otherwise non-focusable container if its
+            // borrowed tabindex is removed while it still owns focus.
+            scope.addEventListener("blur", () => {
+              if (scope.getAttribute("tabindex") === "-1")
+                scope.removeAttribute("tabindex");
+            }, { once: true });
+            return;
+          }
           if (originalTabIndex === null) scope.removeAttribute("tabindex");
           else scope.setAttribute("tabindex", originalTabIndex);
           if (document.activeElement === scope) return;

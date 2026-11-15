@@ -16,6 +16,8 @@ test("notification confirmation contains keyboard focus and restores its trigger
   page,
 }) => {
   let deleted = false;
+  let releaseCount!: () => void;
+  const pendingCount = new Promise<void>((resolve) => { releaseCount = resolve; });
   await installApiMocks(page, {
     "/api/auth/token/refresh/": (route) =>
       fulfillJson(route, { access: "dialog-browser-access" }),
@@ -29,8 +31,10 @@ test("notification confirmation contains keyboard focus and restores its trigger
         total_items: 0,
         subtotal: "0",
       }),
-    "/api/notifications/unread-count/": (route) =>
-      fulfillJson(route, { unread_count: deleted ? 0 : 1 }),
+    "/api/notifications/unread-count/": async (route) => {
+      if (deleted) await pendingCount;
+      await fulfillJson(route, { unread_count: deleted ? 0 : 1 });
+    },
     "/api/notifications/delete-selected/": (route) => {
       deleted = true;
       return fulfillJson(route, { deleted_count: 1 });
@@ -101,4 +105,13 @@ test("notification confirmation contains keyboard focus and restores its trigger
     return active !== document.body && active !== document.documentElement &&
       !active?.closest("[inert]") && !active?.matches(":disabled");
   })).toBe(true);
+  // A workspace with an available control restores to it. If all controls are
+  // busy, native focus needs the borrowed tabindex until the container blurs.
+  if (await workspace.evaluate((element) => element === document.activeElement)) {
+    await expect(workspace).toHaveAttribute("tabindex", "-1");
+  }
+  await headerLink.focus();
+  await expect(headerLink).toBeFocused();
+  await expect(workspace).not.toHaveAttribute("tabindex");
+  releaseCount();
 });
