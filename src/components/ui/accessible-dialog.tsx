@@ -83,6 +83,10 @@ export function AccessibleDialog({
   const panelRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef(onClose);
   const dismissibleRef = useRef(dismissible);
+  const returnTargetRef = useRef<{
+    previous: HTMLElement | null;
+    ancestors: HTMLElement[];
+  } | null>(null);
 
   useLayoutEffect(() => {
     closeRef.current = onClose;
@@ -93,17 +97,22 @@ export function AccessibleDialog({
     const overlay = overlayRef.current;
     const panel = panelRef.current;
     if (!overlay || !panel) return;
-    const previous =
-      document.activeElement instanceof HTMLElement
-        ? document.activeElement
-        : null;
-    // A successful action may remove the opener or disable its entire toolbar.
-    const ancestors: HTMLElement[] = [];
-    for (
-      let node = previous?.parentElement;
-      node && node !== document.body && node !== document.documentElement;
-      node = node.parentElement
-    ) ancestors.push(node);
+    if (!returnTargetRef.current) {
+      const previous =
+        document.activeElement instanceof HTMLElement
+          ? document.activeElement
+          : null;
+      // Capture once: StrictMode replay already has focus inside this dialog.
+      // A successful action may later remove or disable the original opener.
+      const ancestors: HTMLElement[] = [];
+      for (
+        let node = previous?.parentElement;
+        node && node !== document.body && node !== document.documentElement;
+        node = node.parentElement
+      ) ancestors.push(node);
+      returnTargetRef.current = { previous, ancestors };
+    }
+    const { previous, ancestors } = returnTargetRef.current;
     if (!stack.length) {
       bodyOverflow = document.body.style.overflow;
       document.body.style.overflow = "hidden";

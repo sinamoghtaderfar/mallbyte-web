@@ -120,6 +120,22 @@ describe("AccessibleDialog", () => {
     expect(document.body.style.overflow).not.toBe("hidden");
   });
 
+  it("retains the original opener across StrictMode replay instead of choosing the first background action", async () => {
+    const user = userEvent.setup();
+    render(
+      <StrictMode>
+        <button>Earlier background action</button>
+        <Example />
+      </StrictMode>,
+    );
+    const trigger = screen.getByRole("button", { name: "Open settings" });
+    await user.click(trigger);
+    expect(screen.getByRole("textbox", { name: "Setting value" })).toHaveFocus();
+    await user.keyboard("{Escape}");
+    expect(trigger).toHaveFocus();
+    expect(screen.getByRole("button", { name: "Earlier background action" })).not.toHaveFocus();
+  });
+
   it("makes the page inert, contains programmatic focus and restores focus/background on closing", async () => {
     const user = userEvent.setup();
     const view = render(<Example />);
