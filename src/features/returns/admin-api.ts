@@ -91,16 +91,24 @@ type PaginatedAdminReturnsResponse = {
   results: AdminReturnListItem[];
 };
 
-export async function getAdminReturns() {
+export async function getAdminReturns(page = 1, signal?: AbortSignal) {
   const response = await apiClient.get<
     AdminReturnListItem[] | PaginatedAdminReturnsResponse
-  >(API_ENDPOINTS.returns.requests);
+  >(API_ENDPOINTS.returns.requests, {
+    params: { page, page_size: 20 },
+    signal,
+  });
 
   if (Array.isArray(response.data)) {
-    return response.data;
+    return {
+      count: response.data.length,
+      next: null,
+      previous: null,
+      results: response.data,
+    };
   }
 
-  return response.data.results;
+  return response.data;
 }
 
 export async function getAdminReturn(returnId: number | string) {
