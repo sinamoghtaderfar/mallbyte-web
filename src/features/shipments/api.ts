@@ -1,5 +1,6 @@
 import { apiClient } from "@/lib/api/client";
 import { API_ENDPOINTS } from "@/lib/api/endpoints";
+import type { PaginatedResponse } from "@/types/api";
 
 export type ShipmentStatus =
   | "pending"
@@ -189,12 +190,15 @@ export async function getShipments(): Promise<ShipmentListItem[]> {
   return shipments;
 }
 
-export async function getEligibleShipmentOrders() {
-  const response = await apiClient.get<EligibleShipmentOrder[]>(
+export async function getEligibleShipmentOrders(page = 1, signal?: AbortSignal) {
+  const response = await apiClient.get<EligibleShipmentOrder[] | PaginatedResponse<EligibleShipmentOrder>>(
     API_ENDPOINTS.shipping.eligibleOrders,
+    { params: { page, page_size: 20 }, signal },
   );
 
-  return response.data;
+  return Array.isArray(response.data)
+    ? { count: response.data.length, next: null, previous: null, results: response.data }
+    : response.data;
 }
 
 export async function getShipment(shipmentId: number | string) {

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   createShipment,
@@ -16,6 +16,8 @@ import {
   type ShipmentStatus,
 } from "@/features/shipments/api";
 import { getApiErrorMessage } from "@/lib/api/errors";
+import { getSessionGeneration, isCurrentSession } from "@/lib/auth/session-storage";
+import type { PaginatedResponse } from "@/types/api";
 
 function formatMoney(value: string) {
   return `${Number(value).toLocaleString()} IRR`;
@@ -31,9 +33,46 @@ function formatDate(value: string | null) {
 
 export function AdminShipmentsList() {
   const [shipments, setShipments] = useState<ShipmentListItem[]>([]);
-  const [eligibleOrders, setEligibleOrders] = useState<EligibleShipmentOrder[]>(
-    [],
-  );
+  const [eligiblePagination, setEligiblePagination] = useState<PaginatedResponse<EligibleShipmentOrder> | null>(null);
+  const eligibleOrders = eligiblePagination?.results ?? [];
+  const [eligibleQuery, setEligibleQuery] = useState({ page: 1, revision: 0 });
+  const [eligibleLoading, setEligibleLoading] = useState(true);
+  const [eligibleError, setEligibleError] = useState("");
+  const eligibleRequest = useRef(0);
+  const mounted = useRef(false);
+
+  function refreshEligible(page: number) {
+    eligibleRequest.current += 1;
+    setEligibleLoading(true);
+    setEligibleError("");
+    setEligibleQuery((current) => ({ page, revision: current.revision + 1 }));
+  }
+
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
+
+  useEffect(() => {
+    const request = ++eligibleRequest.current;
+    const session = getSessionGeneration();
+    const controller = new AbortController();
+    const current = () => mounted.current && request === eligibleRequest.current && isCurrentSession(session);
+    async function load() {
+      setEligibleLoading(true);
+      setEligibleError("");
+      try {
+        const data = await getEligibleShipmentOrders(eligibleQuery.page, controller.signal);
+        if (current()) setEligiblePagination(data);
+      } catch (reason) {
+        if (current()) setEligibleError(getApiErrorMessage(reason));
+      } finally {
+        if (current()) setEligibleLoading(false);
+      }
+    }
+    void load();
+    return () => { eligibleRequest.current += 1; controller.abort(); };
+  }, [eligibleQuery]);
   const [statusFilter, setStatusFilter] = useState<"all" | ShipmentStatus>(
     "all",
   );
@@ -51,13 +90,8 @@ export function AdminShipmentsList() {
       setIsLoading(true);
       setError("");
 
-      const [shipmentData, eligibleOrderData] = await Promise.all([
-        getShipments(),
-        getEligibleShipmentOrders(),
-      ]);
-
-      setShipments(shipmentData);
-      setEligibleOrders(eligibleOrderData);
+      const shipmentData = await getShipments();
+      if (mounted.current) setShipments(shipmentData);
     } catch (caughtError) {
       setError(getApiErrorMessage(caughtError));
     } finally {
@@ -70,13 +104,9 @@ export function AdminShipmentsList() {
 
     async function loadInitialShippingData() {
       try {
-        const [shipmentData, eligibleOrderData] = await Promise.all([
-          getShipments(),
-          getEligibleShipmentOrders(),
-        ]);
+        const shipmentData = await getShipments();
         if (cancelled) return;
         setShipments(shipmentData);
-        setEligibleOrders(eligibleOrderData);
       } catch (caughtError) {
         if (!cancelled) setError(getApiErrorMessage(caughtError));
       } finally {
@@ -102,6 +132,8 @@ export function AdminShipmentsList() {
       return;
     }
 
+    const session = getSessionGeneration();
+    const current = () => mounted.current && isCurrentSession(session);
     try {
       setCreatingOrderId(order.id);
       setError("");
@@ -113,16 +145,19 @@ export function AdminShipmentsList() {
         ...(sellerId ? { seller: sellerId } : {}),
       });
 
+      if (!current()) return;
       setMessage(
         `Shipment ${shipment.shipment_number} created for order ${order.order_number}${shipment.seller_name ? ` (${shipment.seller_name})` : ""}.`,
       );
 
+      refreshEligible(1);
       await loadShippingData();
+      if (!current()) return;
       setSelectedSeller((previous) => ({ ...previous, [order.id]: "" }));
     } catch (caughtError) {
-      setError(getApiErrorMessage(caughtError));
+      if (current()) setError(getApiErrorMessage(caughtError));
     } finally {
-      setCreatingOrderId(null);
+      if (current()) setCreatingOrderId(null);
     }
   }
 
@@ -246,10 +281,20 @@ export function AdminShipmentsList() {
           </label>
         </div>
 
-        {isLoading ? (
+        <nav aria-label="Eligible order pages" className="mt-6 flex flex-wrap items-center gap-4 text-sm text-slate-700">
+          <span>{eligiblePagination ? `${eligiblePagination.count} eligible orders · Page ${eligibleQuery.page} of ${Math.max(1, Math.ceil(eligiblePagination.count / 20))}` : "Eligible order pages"}</span>
+          <button type="button" disabled={eligibleQuery.page <= 1 || creatingOrderId !== null} onClick={() => refreshEligible(eligibleQuery.page - 1)} className="rounded-xl border px-3 py-2 disabled:opacity-40">Previous eligible orders</button>
+          <button type="button" disabled={!eligiblePagination?.next || eligibleLoading || Boolean(eligibleError) || creatingOrderId !== null} onClick={() => refreshEligible(eligibleQuery.page + 1)} className="rounded-xl border px-3 py-2 disabled:opacity-40">Next eligible orders</button>
+        </nav>
+        {eligibleLoading ? (
           <p className="mt-6 text-sm text-slate-500">
             Loading eligible orders...
           </p>
+        ) : eligibleError ? (
+          <div role="alert" className="mt-6 rounded-2xl bg-red-50 p-4 text-sm text-red-700">
+            <p>{eligibleError}</p>
+            <button type="button" onClick={() => refreshEligible(eligibleQuery.page)} className="mt-2 underline">Retry eligible orders</button>
+          </div>
         ) : eligibleOrders.length === 0 ? (
           <div className="mt-6 rounded-2xl bg-slate-50 p-5">
             <p className="text-sm font-medium text-slate-700">
