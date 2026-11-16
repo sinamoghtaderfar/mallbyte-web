@@ -5,10 +5,11 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import type { OrderDetail } from "@/features/orders/types";
-import { getReturns } from "@/features/returns/api";
+import type { ReturnListItem } from "@/features/returns/types";
+import { useOrderReturnHistory } from "./order-return-history";
 import { getReturnAvailability } from "@/features/returns/eligibility";
 
-type CustomerReturn = Awaited<ReturnType<typeof getReturns>>[number] & {
+type CustomerReturn = ReturnListItem & {
   id: number;
   order?: number | string;
   order_id?: number | string;
@@ -177,39 +178,8 @@ export function OrderReturnBadge({
   showLink = false,
   className = "",
 }: OrderReturnBadgeProps) {
-  const [returnRequest, setReturnRequest] = useState<CustomerReturn | null>(
-    null,
-  );
-
-  useEffect(() => {
-    let isMounted = true;
-
-    async function loadReturnStatus() {
-      try {
-        const returns = await getReturns();
-
-        const matchingReturn = pickMostRelevantReturn(
-          returns,
-          orderId,
-          orderNumber,
-        );
-
-        if (isMounted) {
-          setReturnRequest(matchingReturn ?? null);
-        }
-      } catch {
-        if (isMounted) {
-          setReturnRequest(null);
-        }
-      }
-    }
-
-    void loadReturnStatus();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [orderId, orderNumber]);
+  const history = useOrderReturnHistory();
+  const returnRequest = pickMostRelevantReturn(history?.returns ?? [], orderId, orderNumber);
 
   const config = getStatusConfig(returnRequest?.status);
 
@@ -240,39 +210,8 @@ export function OrderReturnStatusCard({
   orderId,
   orderNumber,
 }: OrderReturnStatusCardProps) {
-  const [returnRequest, setReturnRequest] = useState<CustomerReturn | null>(
-    null,
-  );
-
-  useEffect(() => {
-    let isMounted = true;
-
-    async function loadReturnStatus() {
-      try {
-        const returns = await getReturns();
-
-        const matchingReturn = pickMostRelevantReturn(
-          returns,
-          orderId,
-          orderNumber,
-        );
-
-        if (isMounted) {
-          setReturnRequest(matchingReturn ?? null);
-        }
-      } catch {
-        if (isMounted) {
-          setReturnRequest(null);
-        }
-      }
-    }
-
-    void loadReturnStatus();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [orderId, orderNumber]);
+  const history = useOrderReturnHistory();
+  const returnRequest = pickMostRelevantReturn(history?.returns ?? [], orderId, orderNumber);
 
   const config = getStatusConfig(returnRequest?.status);
 

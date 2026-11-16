@@ -96,6 +96,10 @@ describe("SellerDashboardCard", () => {
       await screen.findByText(/seller dashboard is not available/i),
     ).toBeInTheDocument();
     expect(screen.getByText("Seller is not approved.")).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: /view returns/i })).toHaveLength(1);
+    expect(screen.getByRole("link", { name: /view returns/i })).toHaveAttribute(
+      "href", "/seller/returns",
+    );
 
     expect(
       screen.getByRole("link", { name: /check seller status/i }),

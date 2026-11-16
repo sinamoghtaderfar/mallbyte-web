@@ -12,7 +12,7 @@ import {
   createSupportTicket,
   getSupportAgents,
   getSupportSummary,
-  getSupportTags,
+  getSupportTagsPage,
   getSupportTicket,
   getSupportTickets,
   replyToSupportTicket,
@@ -36,7 +36,7 @@ vi.mock("../api", () => ({
   getSupportAgents: vi.fn(),
   getSupportAuditLogs: vi.fn(),
   getSupportSummary: vi.fn(),
-  getSupportTags: vi.fn(),
+  getSupportTagsPage: vi.fn(),
   getSupportTicket: vi.fn(),
   getSupportTickets: vi.fn(),
   removeSupportTicketTag: vi.fn(),
@@ -50,7 +50,7 @@ vi.mock("../api", () => ({
 const mockedGetMyPermissions = vi.mocked(getMyPermissions);
 const mockedGetSupportTickets = vi.mocked(getSupportTickets);
 const mockedGetSupportSummary = vi.mocked(getSupportSummary);
-const mockedGetSupportTags = vi.mocked(getSupportTags);
+const mockedGetSupportTagsPage = vi.mocked(getSupportTagsPage);
 const mockedGetSupportAgents = vi.mocked(getSupportAgents);
 const mockedGetSupportTicket = vi.mocked(getSupportTicket);
 const mockedCreateSupportTicket = vi.mocked(createSupportTicket);
@@ -169,7 +169,7 @@ describe("SupportCenter", () => {
       results: [ticket],
     });
     mockedGetSupportSummary.mockResolvedValue(summary);
-    mockedGetSupportTags.mockResolvedValue([]);
+    mockedGetSupportTagsPage.mockResolvedValue({ count: 0, next: null, previous: null, results: [] });
     mockedGetSupportAgents.mockResolvedValue([]);
     mockedGetSupportTicket.mockResolvedValue(ticket);
     mockedReplyToSupportTicket.mockResolvedValue(ticket);
