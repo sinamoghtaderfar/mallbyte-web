@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { fetchPublicNavigation } from "../api";
 import { safeContentUrl } from "../safety";
+import { publicNavigationItems } from "../navigation";
 import type { NavigationItem } from "../types";
 
 export function CmsFooter() {
@@ -11,7 +12,7 @@ export function CmsFooter() {
   useEffect(() => {
     let active = true;
     void fetchPublicNavigation("footer")
-      .then((menus) => { if (active) setItems(menus.flatMap((m) => m.items).filter((i) => i.is_active && !i.requires_auth)); })
+      .then((menus) => { if (active) setItems(publicNavigationItems(menus)); })
       .catch(() => { /* Keep the static fallback footer on public API failures. */ });
     return () => { active = false; };
   }, []);

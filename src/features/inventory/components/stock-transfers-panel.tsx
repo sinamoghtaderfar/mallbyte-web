@@ -1,5 +1,7 @@
 "use client";
 
+import { AccessibleDialog } from "@/components/ui/accessible-dialog";
+
 import { useEffect, useMemo, useState } from "react";
 
 import { useAuthStore } from "@/features/auth/auth-store";
@@ -644,13 +646,13 @@ function StockTransfersPanelContent({
       ) : null}
 
       {shippingTransfer ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="ship-transfer-title"
-            className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-xl"
-          >
+        <AccessibleDialog
+          onClose={() => { setShippingTransfer(null); setTrackingNumber(""); }}
+          dismissible={actionId !== shippingTransfer.id}
+          labelledBy="ship-transfer-title"
+          overlayClassName="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4"
+          className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-xl"
+        >
             <h2
               id="ship-transfer-title"
               className="text-xl font-semibold text-slate-950"
@@ -708,8 +710,7 @@ function StockTransfersPanelContent({
                   : "Confirm shipment"}
               </button>
             </div>
-          </div>
-        </div>
+        </AccessibleDialog>
       ) : null}
     </>
   );

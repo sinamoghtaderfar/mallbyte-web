@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { getApiErrorMessage } from "@/lib/api/errors";
+import { getSessionGeneration, isCurrentSession } from "@/lib/auth/session-storage";
+import type { PaginatedResponse } from "@/types/api";
 
 import { getSellerOrders } from "../api";
 import type { SellerOrderListItem } from "../types";
@@ -23,42 +25,77 @@ export function SellerOrdersList() {
   const [orders, setOrders] = useState<SellerOrderListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [page, setPage] = useState(1);
+  const [retry, setRetry] = useState(0);
+  const [pagination, setPagination] = useState<PaginatedResponse<SellerOrderListItem> | null>(null);
+  const requestVersion = useRef(0);
+
+  function changePage(nextPage: number) {
+    requestVersion.current += 1;
+    setIsLoading(true);
+    setError("");
+    setPage(nextPage);
+  }
+
+  function retryPage() {
+    requestVersion.current += 1;
+    setIsLoading(true);
+    setError("");
+    setRetry((current) => current + 1);
+  }
 
   useEffect(() => {
     let isMounted = true;
+    const version = ++requestVersion.current;
+    const session = getSessionGeneration();
+    const controller = new AbortController();
+    const current = () => isMounted && version === requestVersion.current && isCurrentSession(session);
 
     async function loadOrders() {
       try {
         setIsLoading(true);
         setError("");
 
-        const data = await getSellerOrders();
+        const data = await getSellerOrders(page, controller.signal);
 
-        if (isMounted) {
-          setOrders(data);
+        if (current()) {
+          setOrders(data.results);
+          setPagination(data);
         }
       } catch (loadError) {
-        if (isMounted) {
+        if (current()) {
           setError(getApiErrorMessage(loadError));
         }
       } finally {
-        if (isMounted) {
+        if (current()) {
           setIsLoading(false);
         }
       }
     }
 
-    loadOrders();
+    void loadOrders();
 
     return () => {
       isMounted = false;
+      controller.abort();
     };
-  }, []);
+  }, [page, retry]);
+
+  const pager = (
+    <nav aria-label="Seller order pages" className="mt-6 flex flex-wrap items-center gap-3 text-sm text-slate-700">
+      <span>
+        {pagination ? `${pagination.count} seller orders · Page ${page} of ${Math.max(1, Math.ceil(pagination.count / 20))}` : `Page ${page}`}
+      </span>
+      <button type="button" disabled={page <= 1} onClick={() => changePage(page - 1)} className="rounded-xl border border-slate-200 px-3 py-2 disabled:opacity-40">Previous seller orders</button>
+      <button type="button" disabled={isLoading || Boolean(error) || !pagination?.next} onClick={() => changePage(page + 1)} className="rounded-xl border border-slate-200 px-3 py-2 disabled:opacity-40">Next seller orders</button>
+    </nav>
+  );
 
   if (isLoading) {
     return (
       <div className="rounded-3xl border border-slate-200 bg-white p-8 text-sm text-slate-600 shadow-sm">
         Loading seller orders...
+        {pager}
       </div>
     );
   }
@@ -67,6 +104,8 @@ export function SellerOrdersList() {
     return (
       <div className="rounded-3xl border border-red-200 bg-red-50 p-8 text-sm text-red-700">
         {error}
+        <button type="button" onClick={retryPage} className="ml-3 font-semibold underline">Retry seller orders</button>
+        {pager}
       </div>
     );
   }
@@ -85,6 +124,8 @@ export function SellerOrdersList() {
           the fulfillment flow.
         </p>
       </div>
+
+      {pager}
 
       {orders.length === 0 ? (
         <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-600">
