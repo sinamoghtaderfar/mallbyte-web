@@ -12,11 +12,8 @@ import {
   getSellerProductOptions,
   updateSellerProduct,
 } from "../api";
-import type {
-  SellerProductBrand,
-  SellerProductCategory,
-  SellerProductPayload,
-} from "../types";
+import type { SellerProductPayload } from "../types";
+import { ProductReferenceFields } from "@/features/products/components/product-reference-fields";
 
 type FormState = {
   name: string;
@@ -120,8 +117,10 @@ export function SellerProductEditForm() {
 
   const [form, setForm] = useState<FormState>(initialForm);
   const originalForm = useRef<FormState | null>(null);
-  const [categories, setCategories] = useState<SellerProductCategory[]>([]);
-  const [brands, setBrands] = useState<SellerProductBrand[]>([]);
+  const [referenceLabels, setReferenceLabels] = useState<{
+    category: string | null;
+    brand: string | null;
+  }>({ category: null, brand: null });
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -134,10 +133,7 @@ export function SellerProductEditForm() {
       setError("");
 
       try {
-        const [product, options] = await Promise.all([
-          getSellerProduct(productId),
-          getSellerProductOptions(),
-        ]);
+        const product = await getSellerProduct(productId);
 
         if (!isMounted) {
           return;
@@ -146,8 +142,10 @@ export function SellerProductEditForm() {
         const loadedForm = mapProductToForm(product);
         originalForm.current = loadedForm;
         setForm(loadedForm);
-        setCategories(options.categories);
-        setBrands(options.brands);
+        setReferenceLabels({
+          category: product.category_name,
+          brand: product.brand_name,
+        });
       } catch (editError) {
         if (isMounted) {
           setError(getApiErrorMessage(editError));
@@ -292,42 +290,16 @@ export function SellerProductEditForm() {
             />
           </label>
 
-          <label className="block">
-            <span className="text-sm font-medium text-slate-700">Category</span>
-            <select
-              name="category"
-              value={form.category}
-              onChange={handleChange}
-              required
-              className="mt-2 h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm outline-none transition focus:border-slate-400"
-            >
-              <option value="">Select category</option>
-
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="block">
-            <span className="text-sm font-medium text-slate-700">Brand</span>
-            <select
-              name="brand"
-              value={form.brand}
-              onChange={handleChange}
-              className="mt-2 h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm outline-none transition focus:border-slate-400"
-            >
-              <option value="">No brand</option>
-
-              {brands.map((brand) => (
-                <option key={brand.id} value={brand.id}>
-                  {brand.name}
-                </option>
-              ))}
-            </select>
-          </label>
+          <ProductReferenceFields
+            category={form.category}
+            brand={form.brand}
+            onChange={handleChange}
+            loadOptions={getSellerProductOptions}
+            required
+            disabled={isSubmitting}
+            categoryLabel={referenceLabels.category}
+            brandLabel={referenceLabels.brand}
+          />
 
           <label className="block">
             <span className="text-sm font-medium text-slate-700">Price</span>

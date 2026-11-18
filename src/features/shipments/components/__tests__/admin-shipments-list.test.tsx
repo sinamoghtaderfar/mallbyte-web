@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -12,6 +12,7 @@ import {
   type ShipmentListItem,
 } from "@/features/shipments/api";
 import { AdminShipmentsList } from "../admin-shipments-list";
+import { invalidateSession } from "@/lib/auth/session-storage";
 
 vi.mock("next/link", () => ({
   default: ({
@@ -116,7 +117,7 @@ describe("AdminShipmentsList", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockedGetShipments.mockResolvedValue([]);
-    mockedGetEligibleShipmentOrders.mockResolvedValue([]);
+    mockedGetEligibleShipmentOrders.mockResolvedValue({ count: 0, next: null, previous: null, results: [] });
   });
 
   it("renders shipment summaries, eligible orders, and existing shipments", async () => {
@@ -137,7 +138,7 @@ describe("AdminShipmentsList", () => {
         status_display: "Delivered",
       }),
     ]);
-    mockedGetEligibleShipmentOrders.mockResolvedValue([makeEligibleOrder()]);
+    mockedGetEligibleShipmentOrders.mockResolvedValue({ count: 1, next: null, previous: null, results: [makeEligibleOrder()] });
 
     render(<AdminShipmentsList />);
 
@@ -182,8 +183,8 @@ describe("AdminShipmentsList", () => {
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([createdShipment]);
     mockedGetEligibleShipmentOrders
-      .mockResolvedValueOnce([eligibleOrder])
-      .mockResolvedValueOnce([]);
+      .mockResolvedValueOnce({ count: 1, next: null, previous: null, results: [eligibleOrder] })
+      .mockResolvedValueOnce({ count: 0, next: null, previous: null, results: [] });
     mockedCreateShipment.mockResolvedValue(createdShipment);
 
     render(<AdminShipmentsList />);
@@ -274,7 +275,7 @@ describe("AdminShipmentsList", () => {
     const user = userEvent.setup();
     const eligibleOrder = makeEligibleOrder();
 
-    mockedGetEligibleShipmentOrders.mockResolvedValue([eligibleOrder]);
+    mockedGetEligibleShipmentOrders.mockResolvedValue({ count: 1, next: null, previous: null, results: [eligibleOrder] });
     mockedCreateShipment.mockRejectedValue(
       new Error("Shipment could not be created."),
     );
@@ -292,5 +293,97 @@ describe("AdminShipmentsList", () => {
     ).toBeInTheDocument();
     expect(screen.getByText(eligibleOrder.order_number)).toBeInTheDocument();
     expect(mockedGetShipments).toHaveBeenCalledTimes(1);
+  });
+
+  const records = Array.from({ length: 21 }, (_, index) => makeEligibleOrder({
+    id: index + 1,
+    order_number: `ELIGIBLE-${index + 1}`,
+    eligible_sellers: [{ id: 11, name: "Seller A", status: "paid" }],
+  }));
+  const firstPage = { count: 21, next: "?page=2", previous: null, results: records.slice(0, 20) };
+  const lastPage = { count: 21, next: null, previous: "?page=1", results: records.slice(20) };
+
+  it("browses all 21 eligible orders without reloading shipment history and retains the carrier", async () => {
+    mockedGetEligibleShipmentOrders.mockResolvedValueOnce(firstPage).mockResolvedValueOnce(lastPage);
+    render(<AdminShipmentsList />);
+    expect(await screen.findByText("ELIGIBLE-20")).toBeInTheDocument();
+    expect(screen.queryByText("ELIGIBLE-21")).not.toBeInTheDocument();
+    expect(screen.getByText("21 eligible orders · Page 1 of 2")).toBeInTheDocument();
+    fireEvent.change(screen.getByRole("combobox", { name: "Carrier" }), { target: { value: "dhl" } });
+    fireEvent.click(screen.getByRole("button", { name: "Next eligible orders" }));
+    expect(await screen.findByText("ELIGIBLE-21")).toBeInTheDocument();
+    expect(mockedGetEligibleShipmentOrders).toHaveBeenNthCalledWith(2, 2, expect.any(AbortSignal));
+    expect(screen.getByRole("combobox", { name: "Carrier" })).toHaveValue("dhl");
+    expect(screen.getByRole("button", { name: "Next eligible orders" })).toBeDisabled();
+    expect(mockedGetShipments).toHaveBeenCalledTimes(1);
+  });
+
+  it("retains seller selection while browsing other eligible pages", async () => {
+    const selectedPage = { ...firstPage, results: [{ ...records[0], eligible_sellers: [
+      { id: 11, name: "Seller A", status: "paid" as const },
+      { id: 12, name: "Seller B", status: "paid" as const },
+    ] }, ...records.slice(1, 20)] };
+    mockedGetEligibleShipmentOrders.mockResolvedValueOnce(selectedPage).mockResolvedValueOnce(lastPage).mockResolvedValueOnce(selectedPage);
+    render(<AdminShipmentsList />);
+    fireEvent.change(await screen.findByRole("combobox", { name: "Seller for ELIGIBLE-1" }), { target: { value: "12" } });
+    fireEvent.click(screen.getByRole("button", { name: "Next eligible orders" }));
+    await screen.findByText("ELIGIBLE-21");
+    fireEvent.click(screen.getByRole("button", { name: "Previous eligible orders" }));
+    expect(await screen.findByRole("combobox", { name: "Seller for ELIGIBLE-1" })).toHaveValue("12");
+  });
+
+  it("retries a failed later eligible page while keeping existing shipments usable", async () => {
+    mockedGetShipments.mockResolvedValue([makeShipment()]);
+    mockedGetEligibleShipmentOrders.mockResolvedValueOnce(firstPage).mockRejectedValueOnce(new Error("Eligible page failed")).mockResolvedValueOnce(lastPage);
+    render(<AdminShipmentsList />);
+    await screen.findByText("ELIGIBLE-1");
+    fireEvent.click(screen.getByRole("button", { name: "Next eligible orders" }));
+    await screen.findByText("Eligible page failed");
+    expect(screen.getByText("SHP-20260917-AAA111")).toBeInTheDocument();
+    expect(screen.queryByText("No eligible paid orders.")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Retry eligible orders" }));
+    expect(await screen.findByText("ELIGIBLE-21")).toBeInTheDocument();
+    expect(mockedGetEligibleShipmentOrders).toHaveBeenNthCalledWith(3, 2, expect.any(AbortSignal));
+    expect(mockedGetShipments).toHaveBeenCalledTimes(1);
+  });
+
+  it("ignores a later page completing after newer back navigation", async () => {
+    let finish!: (page: typeof lastPage) => void;
+    mockedGetEligibleShipmentOrders.mockResolvedValueOnce(firstPage)
+      .mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }))
+      .mockResolvedValueOnce(firstPage);
+    render(<AdminShipmentsList />);
+    await screen.findByText("ELIGIBLE-1");
+    fireEvent.click(screen.getByRole("button", { name: "Next eligible orders" }));
+    fireEvent.click(screen.getByRole("button", { name: "Previous eligible orders" }));
+    await screen.findByText("ELIGIBLE-1");
+    await act(async () => finish(lastPage));
+    expect(screen.queryByText("ELIGIBLE-21")).not.toBeInTheDocument();
+    expect(screen.getByText("21 eligible orders · Page 1 of 2")).toBeInTheDocument();
+  });
+
+  it("refreshes page one after creating the only shipment on the last eligible page", async () => {
+    mockedGetEligibleShipmentOrders.mockResolvedValueOnce(firstPage).mockResolvedValueOnce(lastPage)
+      .mockResolvedValueOnce({ count: 20, next: null, previous: null, results: records.slice(0, 20) });
+    mockedCreateShipment.mockResolvedValue(makeShipmentDetail({ shipment_number: "SHP-LATER" }));
+    render(<AdminShipmentsList />);
+    await screen.findByText("ELIGIBLE-1");
+    fireEvent.click(screen.getByRole("button", { name: "Next eligible orders" }));
+    await screen.findByText("ELIGIBLE-21");
+    fireEvent.click(screen.getByRole("button", { name: "Create Post" }));
+    await screen.findByText("20 eligible orders · Page 1 of 1");
+    expect(screen.queryByText("ELIGIBLE-21")).not.toBeInTheDocument();
+    expect(mockedCreateShipment).toHaveBeenCalledWith({ order: 21, seller: 11, carrier: "post" });
+    expect(mockedGetEligibleShipmentOrders).toHaveBeenNthCalledWith(3, 1, expect.any(AbortSignal));
+  });
+
+  it("drops held eligibility responses from an invalidated session", async () => {
+    let finish!: (page: typeof lastPage) => void;
+    mockedGetEligibleShipmentOrders.mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
+    const view = render(<AdminShipmentsList />);
+    await waitFor(() => expect(mockedGetEligibleShipmentOrders).toHaveBeenCalledTimes(1));
+    await act(async () => { invalidateSession("expired"); finish(lastPage); });
+    expect(screen.queryByText("ELIGIBLE-21")).not.toBeInTheDocument();
+    view.unmount();
   });
 });

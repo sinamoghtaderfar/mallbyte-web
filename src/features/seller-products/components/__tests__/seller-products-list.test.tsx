@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { ProductListItem } from "@/features/products/types";
@@ -61,7 +61,7 @@ describe("SellerProductsList", () => {
   });
 
   it("renders seller products", async () => {
-    mockedGetSellerProducts.mockResolvedValue([
+    mockedGetSellerProducts.mockResolvedValue({ count: 2, next: null, previous: null, results: [
       makeProduct(),
       makeProduct({
         id: 2,
@@ -71,7 +71,7 @@ describe("SellerProductsList", () => {
         final_price: "800000",
         available_stock: 3,
       }),
-    ]);
+    ] });
 
     render(<SellerProductsList />);
 
@@ -87,7 +87,7 @@ describe("SellerProductsList", () => {
   });
 
   it("shows empty state when seller has no products", async () => {
-    mockedGetSellerProducts.mockResolvedValue([]);
+    mockedGetSellerProducts.mockResolvedValue({count: 0, next: null, previous: null, results: []});
 
     render(<SellerProductsList />);
 
@@ -110,5 +110,54 @@ describe("SellerProductsList", () => {
     expect(
       screen.getByText("Seller products are not available."),
     ).toBeInTheDocument();
+  });
+
+  const records = Array.from({ length: 21 }, (_, index) => makeProduct({
+    id: index + 1, name: `Seller item ${index + 1}`,
+  }));
+  const firstPage = { count: 21, next: "?page=2", previous: null, results: records.slice(0, 20) };
+  const lastPage = { count: 21, next: null, previous: "?page=1", results: records.slice(20) };
+
+  it("makes all 21 products accessible with bounded server navigation and global counts", async () => {
+    mockedGetSellerProducts.mockResolvedValueOnce(firstPage).mockResolvedValueOnce(lastPage).mockResolvedValueOnce(firstPage);
+    render(<SellerProductsList />);
+    expect(await screen.findByText("Seller item 20")).toBeInTheDocument();
+    expect(screen.queryByText("Seller item 21")).not.toBeInTheDocument();
+    expect(mockedGetSellerProducts).toHaveBeenCalledTimes(1);
+    expect(screen.getByText("21 products · Page 1 of 2")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Next products" }));
+    expect(await screen.findByText("Seller item 21")).toBeInTheDocument();
+    expect(screen.queryByText("Seller item 1")).not.toBeInTheDocument();
+    expect(mockedGetSellerProducts).toHaveBeenNthCalledWith(2, 2, expect.any(AbortSignal));
+    expect(screen.getByRole("button", { name: "Next products" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Previous products" }));
+    expect(await screen.findByText("Seller item 1")).toBeInTheDocument();
+    expect(mockedGetSellerProducts).toHaveBeenCalledTimes(3);
+  });
+
+  it("retries a failed later page without skipping records", async () => {
+    mockedGetSellerProducts.mockResolvedValueOnce(firstPage).mockRejectedValueOnce(new Error("Page unavailable")).mockResolvedValueOnce(lastPage);
+    render(<SellerProductsList />);
+    await screen.findByText("Seller item 1");
+    fireEvent.click(screen.getByRole("button", { name: "Next products" }));
+    await screen.findByText("Page unavailable");
+    fireEvent.click(screen.getByRole("button", { name: "Retry products" }));
+    expect(await screen.findByText("Seller item 21")).toBeInTheDocument();
+    expect(mockedGetSellerProducts).toHaveBeenNthCalledWith(3, 2, expect.any(AbortSignal));
+  });
+
+  it("ignores an old page completing after returning to the first page", async () => {
+    let resolvePage!: (page: typeof lastPage) => void;
+    mockedGetSellerProducts.mockResolvedValueOnce(firstPage)
+      .mockImplementationOnce(() => new Promise((resolve) => { resolvePage = resolve; }))
+      .mockResolvedValueOnce(firstPage);
+    render(<SellerProductsList />);
+    await screen.findByText("Seller item 1");
+    fireEvent.click(screen.getByRole("button", { name: "Next products" }));
+    fireEvent.click(screen.getByRole("button", { name: "Previous products" }));
+    await screen.findByText("Seller item 1");
+    await act(async () => resolvePage(lastPage));
+    expect(screen.queryByText("Seller item 21")).not.toBeInTheDocument();
+    expect(within(screen.getByRole("navigation", { name: "Seller product pages" })).getByText("21 products · Page 1 of 2")).toBeInTheDocument();
   });
 });
