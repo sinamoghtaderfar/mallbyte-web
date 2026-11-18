@@ -20,9 +20,9 @@ describe("seller product API routing", () => {
 
     const products = await getSellerProducts();
 
-    expect(apiClient.get).toHaveBeenCalledWith(API_ENDPOINTS.products.myProducts);
+    expect(apiClient.get).toHaveBeenCalledWith(API_ENDPOINTS.products.myProducts, { params: { page: 1, page_size: 20 }, signal: undefined });
     expect(apiClient.get).not.toHaveBeenCalledWith(API_ENDPOINTS.products.products);
-    expect(products).toHaveLength(1);
+    expect(products.results).toHaveLength(1);
   });
 
   it("normalizes a paginated seller response", async () => {
@@ -31,6 +31,6 @@ describe("seller product API routing", () => {
     });
 
     const products = await getSellerProducts();
-    expect(products).toEqual([{ id: 11 }]);
+    expect(products).toEqual({ count: 1, next: null, previous: null, results: [{ id: 11 }] });
   });
 });

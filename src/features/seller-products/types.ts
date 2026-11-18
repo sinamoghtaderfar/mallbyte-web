@@ -1,6 +1,7 @@
 export type SellerProductCategory = {
   id: number;
   name: string;
+  children?: SellerProductCategory[];
   slug: string;
   parent: number | null;
   parent_name: string | null;
