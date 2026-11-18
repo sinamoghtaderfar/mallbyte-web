@@ -1,5 +1,7 @@
 "use client";
 
+import { OrderReturnHistory } from "@/features/returns/components/order-return-history";
+
 import { OrderReturnBadge } from "@/features/returns/components/order-return-badge";
 import Link from "next/link";
 import { ChangeEvent, useEffect, useMemo, useState } from "react";
@@ -117,6 +119,10 @@ function sortOrders(orders: OrderListItem[], sort: string) {
 }
 
 export function OrdersList() {
+  return <OrderReturnHistory><OrdersListContent /></OrderReturnHistory>;
+}
+
+function OrdersListContent() {
   const [data, setData] = useState<PaginatedResponse<OrderListItem>>({
     count: 0,
     next: null,
