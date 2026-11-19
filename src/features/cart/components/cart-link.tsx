@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ShoppingBag } from "lucide-react";
 import { useEffect } from "react";
 
 import { useAuthStore } from "@/features/auth/auth-store";
@@ -39,11 +40,12 @@ export function CartLink() {
   return (
     <Link
       href="/cart"
-      className="relative inline-flex h-10 items-center justify-center rounded-2xl border border-slate-200 px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+      className="relative inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-lg px-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100"
     >
-      Cart
+      <ShoppingBag size={20} strokeWidth={1.8} aria-hidden="true" />
+      <span className="sr-only xl:not-sr-only">Cart</span>
       {totalItems > 0 ? (
-        <span className="ml-2 rounded-full bg-slate-900 px-2 py-0.5 text-xs font-semibold text-white">
+        <span className="rounded-full bg-brand px-1.5 py-0.5 text-xs font-semibold text-white">
           {totalItems}
         </span>
       ) : null}
