@@ -5,13 +5,9 @@ import { ChangeEvent, FormEvent, useEffect, useMemo, useState, useSyncExternalSt
 import { getApiErrorMessage } from "@/lib/api/errors";
 
 import { getProductFilters, getProducts } from "../api";
-import type {
-  ProductBrand,
-  ProductCategory,
-  ProductListItem,
-  ProductQueryParams,
-} from "../types";
+import type { ProductListItem, ProductQueryParams } from "../types";
 import { ProductCard } from "./product-card";
+import { ProductReferenceFields } from "./product-reference-fields";
 import { getCatalogUrlSnapshot, getServerCatalogUrlSnapshot, navigateCatalog, parseCatalogUrlState, subscribeCatalogUrl } from "../url-state";
 
 type FilterFormState = {
@@ -25,7 +21,6 @@ type FilterFormState = {
   label: string;
   ordering: string;
 };
-
 
 const productLabels = [
   { value: "new", label: "New" },
@@ -96,8 +91,6 @@ function toFilterForm(params: ProductQueryParams): FilterFormState {
 
 export function ProductList() {
   const [products, setProducts] = useState<ProductListItem[]>([]);
-  const [categories, setCategories] = useState<ProductCategory[]>([]);
-  const [brands, setBrands] = useState<ProductBrand[]>([]);
   const urlSearch = useSyncExternalStore(subscribeCatalogUrl, getCatalogUrlSnapshot, getServerCatalogUrlSnapshot);
   const urlState = useMemo(() => parseCatalogUrlState(urlSearch), [urlSearch]);
   const { filters: appliedFilters, page, pageSize } = urlState;
@@ -106,41 +99,7 @@ export function ProductList() {
   const [resultCount, setResultCount] = useState<number | null>(null);
   const [hasNextPage, setHasNextPage] = useState(false);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
-  const [isLoadingFilters, setIsLoadingFilters] = useState(true);
   const [error, setError] = useState("");
-  const [filterError, setFilterError] = useState("");
-
-  useEffect(() => {
-    let isMounted = true;
-
-    async function loadFilters() {
-      setIsLoadingFilters(true);
-      setFilterError("");
-
-      try {
-        const data = await getProductFilters();
-
-        if (isMounted) {
-          setCategories(data.categories);
-          setBrands(data.brands);
-        }
-      } catch (loadError) {
-        if (isMounted) {
-          setFilterError(getApiErrorMessage(loadError));
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoadingFilters(false);
-        }
-      }
-    }
-
-    void loadFilters();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -190,11 +149,19 @@ export function ProductList() {
 
   function handleFilterSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (draftFilters.min_price && draftFilters.max_price && Number(draftFilters.min_price) > Number(draftFilters.max_price)) {
+    if (
+      draftFilters.min_price &&
+      draftFilters.max_price &&
+      Number(draftFilters.min_price) > Number(draftFilters.max_price)
+    ) {
       setError("Minimum price cannot exceed maximum price.");
       return;
     }
-    navigateCatalog({ filters: buildProductQueryParams(draftFilters), page: 1, pageSize });
+    navigateCatalog({
+      filters: buildProductQueryParams(draftFilters),
+      page: 1,
+      pageSize,
+    });
     setEditedFilters(null);
   }
 
@@ -223,12 +190,6 @@ export function ProductList() {
           </p>
         </div>
 
-        {filterError ? (
-          <div className="mt-5 rounded-2xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800">
-            {filterError}
-          </div>
-        ) : null}
-
         <form onSubmit={handleFilterSubmit} className="mt-6 space-y-4">
           <label className="block">
             <span className="text-sm font-medium text-slate-700">
@@ -243,43 +204,12 @@ export function ProductList() {
             />
           </label>
 
-          <label className="block">
-            <span className="text-sm font-medium text-slate-700">Category</span>
-            <select
-              name="category"
-              value={draftFilters.category}
-              onChange={handleFilterChange}
-              disabled={isLoadingFilters}
-              className="mt-2 h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm outline-none transition focus:border-slate-400 disabled:opacity-60"
-            >
-              <option value="">All categories</option>
-
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="block">
-            <span className="text-sm font-medium text-slate-700">Brand</span>
-            <select
-              name="brand"
-              value={draftFilters.brand}
-              onChange={handleFilterChange}
-              disabled={isLoadingFilters}
-              className="mt-2 h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm outline-none transition focus:border-slate-400 disabled:opacity-60"
-            >
-              <option value="">All brands</option>
-
-              {brands.map((brand) => (
-                <option key={brand.id} value={brand.id}>
-                  {brand.name}
-                </option>
-              ))}
-            </select>
-          </label>
+          <ProductReferenceFields
+            category={draftFilters.category}
+            brand={draftFilters.brand}
+            onChange={handleFilterChange}
+            loadOptions={getProductFilters}
+          />
 
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
             <label className="block">

@@ -16,6 +16,7 @@ import {
 } from "@/features/notifications/api";
 import { useNotificationStore } from "@/features/notifications/notification-store";
 import type { Notification } from "@/features/notifications/types";
+import { getSessionGeneration, isCurrentSession } from "@/lib/auth/session-storage";
 
 function formatNotificationTime(value: string) {
   return new Intl.DateTimeFormat("en", {
@@ -33,19 +34,14 @@ export function NotificationBell() {
     (state) => state.unreadCount,
   );
 
-  const setUnreadCount = useNotificationStore(
-    (state) => state.setUnreadCount,
-  );
-
-  const decrementUnreadCount = useNotificationStore(
-    (state) => state.decrementUnreadCount,
-  );
-
   const refreshUnreadCount = useNotificationStore(
     (state) => state.refreshUnreadCount,
   );
 
   const [isOpen, setIsOpen] = useState(false);
+  const pageVersion = useRef(0);
+  const mounted = useRef(false);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const [notifications, setNotifications] =
     useState<Notification[]>([]);
@@ -60,6 +56,7 @@ export function NotificationBell() {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    mounted.current = true;
     void refreshUnreadCount();
 
     const intervalId = window.setInterval(() => {
@@ -84,6 +81,8 @@ export function NotificationBell() {
     );
 
     return () => {
+      mounted.current = false;
+      pageVersion.current += 1;
       window.clearInterval(intervalId);
 
       document.removeEventListener(
@@ -111,6 +110,7 @@ export function NotificationBell() {
         containerRef.current &&
         !containerRef.current.contains(target)
       ) {
+        pageVersion.current += 1;
         setIsOpen(false);
       }
     }
@@ -119,6 +119,7 @@ export function NotificationBell() {
       event: KeyboardEvent,
     ) {
       if (event.key === "Escape") {
+        pageVersion.current += 1;
         setIsOpen(false);
       }
     }
@@ -148,6 +149,9 @@ export function NotificationBell() {
 
   async function handleToggle() {
     const nextOpen = !isOpen;
+    const query = ++pageVersion.current;
+    const session = getSessionGeneration();
+    const current = () => mounted.current && query === pageVersion.current && isCurrentSession(session);
 
     setIsOpen(nextOpen);
 
@@ -165,83 +169,64 @@ export function NotificationBell() {
         6,
       );
 
+      if (!current()) return;
       setNotifications(page.results);
 
       await refreshUnreadCount();
     } catch {
-      setError(
-        "Could not load notifications.",
-      );
+      if (current()) setError("Could not load notifications.");
     } finally {
-      setIsLoading(false);
+      if (current()) setIsLoading(false);
     }
   }
 
-  async function handleNotificationClick(
-    notification: Notification,
-  ) {
+  async function handleNotificationClick(notification: Notification) {
+    if (isUpdating || isMarkingAllRead) return;
+    const session = getSessionGeneration();
+    const query = pageVersion.current;
+    setIsUpdating(true);
     try {
       setError("");
-
       if (!notification.is_read) {
-        const updated =
-          await markNotificationRead(
-            notification.id,
-          );
-
-        setNotifications((current) =>
-          current.map((item) =>
-            item.id === updated.id
-              ? updated
-              : item,
-          ),
-        );
-
-        decrementUnreadCount();
+        await markNotificationRead(notification.id);
+        if (!mounted.current || !isCurrentSession(session)) return;
+        void refreshUnreadCount(true);
       }
-
+      if (!mounted.current || !isCurrentSession(session) || query !== pageVersion.current) return;
+      pageVersion.current += 1;
       setIsOpen(false);
-
-      if (
-        notification.action_url.startsWith(
-          "/",
-        )
-      ) {
-        router.push(
-          notification.action_url,
-        );
-      }
+      if (notification.action_url.startsWith("/")) router.push(notification.action_url);
     } catch {
-      setError(
-        "Could not update notification.",
-      );
+      if (mounted.current && isCurrentSession(session) && query === pageVersion.current) {
+        setError("Could not update notification.");
+      }
+    } finally {
+      if (mounted.current && isCurrentSession(session)) setIsUpdating(false);
     }
   }
 
   async function handleMarkAllRead() {
+    if (isUpdating || isMarkingAllRead) return;
+    const session = getSessionGeneration();
+    let query = ++pageVersion.current;
+    const current = () => mounted.current && query === pageVersion.current && isCurrentSession(session);
     try {
       setIsMarkingAllRead(true);
+      setIsLoading(true);
       setError("");
-
       await markAllNotificationsRead();
-
-      setNotifications((current) =>
-        current.map((notification) => ({
-          ...notification,
-          is_read: true,
-          read_at:
-            notification.read_at ??
-            new Date().toISOString(),
-        })),
-      );
-
-      setUnreadCount(0);
+      if (!mounted.current || !isCurrentSession(session)) return;
+      // The public badge count and global action are self-scoped, even when
+      // superadmins can inspect other users' notification rows.
+      query = ++pageVersion.current;
+      void refreshUnreadCount(true);
+      const page = await getNotificationsPage({}, 1, 6);
+      if (current()) setNotifications(page.results);
     } catch {
-      setError(
-        "Could not mark notifications as read.",
-      );
+      if (current()) setError("Could not mark notifications as read.");
     } finally {
-      setIsMarkingAllRead(false);
+      if (current()) setIsLoading(false);
+      if (mounted.current && isCurrentSession(session)) setIsMarkingAllRead(false);
     }
   }
 
@@ -288,7 +273,7 @@ export function NotificationBell() {
                   void handleMarkAllRead()
                 }
                 disabled={
-                  isMarkingAllRead
+                  isMarkingAllRead || isUpdating
                 }
                 className="text-xs font-semibold text-blue-600 transition hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
@@ -333,6 +318,7 @@ export function NotificationBell() {
                         notification,
                       )
                     }
+                    disabled={isUpdating || isMarkingAllRead}
                     className={[
                       "block w-full border-b border-slate-100 px-5 py-4 text-left transition last:border-b-0 hover:bg-slate-50",
                       notification.is_read
@@ -379,9 +365,10 @@ export function NotificationBell() {
           <div className="border-t border-slate-100 p-3">
             <Link
               href="/notifications"
-              onClick={() =>
-                setIsOpen(false)
-              }
+              onClick={() => {
+                pageVersion.current += 1;
+                setIsOpen(false);
+              }}
               className="flex h-10 items-center justify-center rounded-2xl text-sm font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-slate-950"
             >
               View all notifications

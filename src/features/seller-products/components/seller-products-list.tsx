@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import type { ProductListItem } from "@/features/products/types";
 import { getApiErrorMessage } from "@/lib/api/errors";
+import type { PaginatedResponse } from "@/types/api";
 
 import { getSellerProducts } from "../api";
 
@@ -28,26 +29,43 @@ export function SellerProductsList() {
   const [products, setProducts] = useState<ProductListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [page, setPage] = useState(1);
+  const [retry, setRetry] = useState(0);
+  const [pagination, setPagination] = useState<PaginatedResponse<ProductListItem>>({
+    count: 0, next: null, previous: null, results: [],
+  });
+  const requestVersion = useRef(0);
+
+  function changePage(next: number) {
+    requestVersion.current += 1;
+    setIsLoading(true);
+    setError("");
+    setPage(next);
+  }
 
   useEffect(() => {
     let isMounted = true;
+    const version = ++requestVersion.current;
+    const controller = new AbortController();
+    const current = () => isMounted && version === requestVersion.current;
 
     async function loadProducts() {
       setIsLoading(true);
       setError("");
 
       try {
-        const data = await getSellerProducts();
+        const data = await getSellerProducts(page, controller.signal);
 
-        if (isMounted) {
-          setProducts(data);
+        if (current()) {
+          setProducts(data.results);
+          setPagination(data);
         }
       } catch (productsError) {
-        if (isMounted) {
+        if (current()) {
           setError(getApiErrorMessage(productsError));
         }
       } finally {
-        if (isMounted) {
+        if (current()) {
           setIsLoading(false);
         }
       }
@@ -57,13 +75,23 @@ export function SellerProductsList() {
 
     return () => {
       isMounted = false;
+      controller.abort();
     };
-  }, []);
+  }, [page, retry]);
+
+  const pager = (
+    <nav aria-label="Seller product pages" className="mt-6 flex items-center gap-4 text-sm text-slate-700">
+      <span>{pagination.count} products · Page {page} of {Math.max(1, Math.ceil(pagination.count / 20))}</span>
+      <button type="button" disabled={page <= 1} onClick={() => changePage(page - 1)} className="rounded-xl border px-3 py-2 disabled:opacity-40">Previous products</button>
+      <button type="button" disabled={isLoading || Boolean(error) || !pagination.next} onClick={() => changePage(page + 1)} className="rounded-xl border px-3 py-2 disabled:opacity-40">Next products</button>
+    </nav>
+  );
 
   if (isLoading) {
     return (
       <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
         <p className="text-sm text-slate-500">Loading seller products...</p>
+        {pager}
       </div>
     );
   }
@@ -75,6 +103,8 @@ export function SellerProductsList() {
           Could not load seller products
         </h1>
         <p className="mt-2 text-sm text-red-700">{error}</p>
+        <button type="button" onClick={() => { requestVersion.current += 1; setIsLoading(true); setRetry((value) => value + 1); }} className="mt-4 rounded-xl border px-3 py-2 text-sm">Retry products</button>
+        {pager}
 
         <Link
           href="/seller/dashboard"
@@ -110,6 +140,8 @@ export function SellerProductsList() {
           New product
         </Link>
       </div>
+
+      {pager}
 
       {!products.length ? (
         <div className="mt-8 rounded-3xl border border-dashed border-slate-300 p-8">

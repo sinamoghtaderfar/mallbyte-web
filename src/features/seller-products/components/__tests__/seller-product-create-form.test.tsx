@@ -39,7 +39,7 @@ const mockedGetSellerProductOptions = vi.mocked(getSellerProductOptions);
 const mockedCreateSellerProduct = vi.mocked(createSellerProduct);
 
 const options = {
-  categories: [
+  categories: { count: 1, next: null, previous: null, results: [
     {
       id: 1,
       name: "Accessories",
@@ -52,8 +52,8 @@ const options = {
       order: 1,
       created_at: "2026-08-28T08:00:00Z",
     },
-  ],
-  brands: [
+  ] },
+  brands: { count: 1, next: null, previous: null, results: [
     {
       id: 2,
       name: "Keychron",
@@ -64,7 +64,7 @@ const options = {
       is_active: true,
       created_at: "2026-08-28T08:00:00Z",
     },
-  ],
+  ] },
 };
 
 describe("SellerProductCreateForm", () => {
@@ -115,8 +115,8 @@ describe("SellerProductCreateForm", () => {
       "Compact keyboard",
     );
 
-    await user.selectOptions(screen.getByLabelText(/category/i), "1");
-    await user.selectOptions(screen.getByLabelText(/brand/i), "2");
+    await user.selectOptions(screen.getByRole("combobox", { name: /^category$/i }), "1");
+    await user.selectOptions(screen.getByRole("combobox", { name: /^brand$/i }), "2");
 
     await user.type(screen.getByLabelText(/^price$/i), "1200000");
     await user.type(screen.getByLabelText(/sku/i), "KB-001");
@@ -175,7 +175,7 @@ describe("SellerProductCreateForm", () => {
 
     await user.type(await screen.findByLabelText(/product name/i), "Keyboard");
     await user.type(screen.getByLabelText(/^description$/i), "Description");
-    await user.selectOptions(screen.getByLabelText(/category/i), "1");
+    await user.selectOptions(screen.getByRole("combobox", { name: /^category$/i }), "1");
     await user.type(screen.getByLabelText(/^price$/i), "1000");
     await user.type(screen.getByLabelText(/sku/i), "KB-001");
 

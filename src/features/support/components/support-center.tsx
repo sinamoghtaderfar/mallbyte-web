@@ -6,6 +6,8 @@ import { useAuthStore } from "@/features/auth/auth-store";
 import { AccessDenied } from "@/features/auth/components/access-denied";
 import { getMyPermissions } from "@/features/rbac/api";
 import { getApiErrorMessage } from "@/lib/api/errors";
+import { getSessionGeneration, isCurrentSession } from "@/lib/auth/session-storage";
+import type { PaginatedResponse } from "@/types/api";
 
 import {
   addSupportTicketTag,
@@ -18,7 +20,7 @@ import {
   getSupportAgents,
   getSupportAuditLogs,
   getSupportSummary,
-  getSupportTags,
+  getSupportTagsPage,
   getSupportTicket,
   getSupportTickets,
   removeSupportTicketTag,
@@ -328,13 +330,17 @@ function CreateTicketForm({
   );
 }
 
+type TagChange = { page: number; created?: boolean; removedLast?: boolean };
+
 type TagManagerProps = {
   tags: SupportTag[];
-  onChanged: () => Promise<void>;
+  page: number;
+  onChanged: (change: TagChange) => Promise<void>;
 };
 
 function TagManager({
   tags,
+  page,
   onChanged,
 }: TagManagerProps) {
   const [name, setName] = useState("");
@@ -362,7 +368,7 @@ function TagManager({
       });
 
       setName("");
-      await onChanged();
+      await onChanged({ page, created: true });
     } catch (caughtError) {
       setError(getApiErrorMessage(caughtError));
     } finally {
@@ -379,7 +385,7 @@ function TagManager({
         is_active: !tag.is_active,
       });
 
-      await onChanged();
+      await onChanged({ page });
     } catch (caughtError) {
       setError(getApiErrorMessage(caughtError));
     } finally {
@@ -401,7 +407,7 @@ function TagManager({
 
     try {
       await deleteSupportTag(tag.id);
-      await onChanged();
+      await onChanged({ page, removedLast: tags.length === 1 });
     } catch (caughtError) {
       setError(getApiErrorMessage(caughtError));
     } finally {
@@ -410,13 +416,13 @@ function TagManager({
   }
 
   return (
-    <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h2 className="text-lg font-semibold text-slate-950">
+    <section aria-labelledby="support-tag-management-heading" className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+      <h2 id="support-tag-management-heading" className="text-lg font-semibold text-slate-950">
         Tag management
       </h2>
 
       <p className="mt-1 text-sm text-slate-500">
-        Managers can maintain the shared support taxonomy here.
+        Managers can maintain the shared support taxonomy here. Showing the current support tag page.
       </p>
 
       {error ? (
@@ -518,6 +524,8 @@ type TicketDetailProps = {
   currentUserId: number;
   capabilities: SupportCapabilities;
   tags: SupportTag[];
+  tagRequest: number;
+  tagsReady: boolean;
   agents: SupportAgent[];
   onChanged: (ticketId: number) => Promise<void>;
   onClose: () => void;
@@ -528,6 +536,8 @@ function TicketDetail({
   currentUserId,
   capabilities,
   tags,
+  tagRequest,
+  tagsReady,
   agents,
   onChanged,
   onClose,
@@ -568,7 +578,10 @@ function TicketDetail({
       ticket.priority,
     );
 
-  const [tagId, setTagId] = useState("");
+  const [tagSelection, setTagSelection] = useState({
+    request: tagRequest,
+    id: "",
+  });
   const [file, setFile] =
     useState<File | null>(null);
 
@@ -658,6 +671,11 @@ function TicketDetail({
       (tag) =>
         !assignedTagIds.has(tag.id),
     );
+  const tagId =
+    tagSelection.request === tagRequest &&
+    availableTags.some((tag) => String(tag.id) === tagSelection.id)
+      ? tagSelection.id
+      : "";
 
   return (
     <section className="rounded-3xl border border-slate-200 bg-white shadow-sm">
@@ -891,10 +909,9 @@ function TicketDetail({
                 <select
                   aria-label="Add ticket tag"
                   value={tagId}
+                  disabled={!tagsReady || busy === "add-tag"}
                   onChange={(event) =>
-                    setTagId(
-                      event.target.value,
-                    )
+                    setTagSelection({ request: tagRequest, id: event.target.value })
                   }
                   className="mt-1.5 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-sm"
                 >
@@ -919,6 +936,7 @@ function TicketDetail({
                 type="button"
                 disabled={
                   !tagId ||
+                  !tagsReady ||
                   busy === "add-tag"
                 }
                 onClick={() =>
@@ -930,7 +948,7 @@ function TicketDetail({
                         Number(tagId),
                       );
 
-                      setTagId("");
+                      setTagSelection({ request: tagRequest, id: "" });
                     },
                   )
                 }
@@ -1347,6 +1365,8 @@ export function SupportCenter({
   const workspaceRequestRef = useRef(0);
   const detailRequestRef = useRef(0);
   const tagsRequestRef = useRef(0);
+  const tagsAbortRef = useRef<AbortController | null>(null);
+  const tagsPageRef = useRef(1);
   const selectedTicketIdRef = useRef<number | null>(null);
   const selectionRevisionRef = useRef(0);
   const mountedRef = useRef(true);
@@ -1385,8 +1405,19 @@ export function SupportCenter({
       EMPTY_SUMMARY,
     );
 
-  const [tags, setTags] =
-    useState<SupportTag[]>([]);
+  const [tagPage, setTagPage] = useState<{
+    page: number;
+    request: number;
+    data: PaginatedResponse<SupportTag>;
+    loading: boolean;
+    error: string;
+  }>({
+    page: 1,
+    request: 0,
+    data: { count: 0, next: null, previous: null, results: [] },
+    loading: false,
+    error: "",
+  });
 
   const [agents, setAgents] =
     useState<SupportAgent[]>([]);
@@ -1493,24 +1524,77 @@ export function SupportCenter({
       workspaceRequestRef.current += 1;
       detailRequestRef.current += 1;
       tagsRequestRef.current += 1;
+      tagsAbortRef.current?.abort();
       handledInitialTicketIdRef.current = undefined;
     };
   }, []);
 
-  const refreshTags = useCallback(async () => {
+  const refreshTags = useCallback(async (requestedPage = tagsPageRef.current) => {
     if (!mountedRef.current) return;
     const request = ++tagsRequestRef.current;
-    const tagData = await getSupportTags();
-    if (request === tagsRequestRef.current &&
-        useAuthStore.getState().user?.id === userId) {
-      setTags(tagData);
+    tagsAbortRef.current?.abort();
+    const controller = new AbortController();
+    tagsAbortRef.current = controller;
+    tagsPageRef.current = requestedPage;
+    const session = getSessionGeneration();
+    const isCurrent = () =>
+      mountedRef.current &&
+      request === tagsRequestRef.current &&
+      isCurrentSession(session) &&
+      useAuthStore.getState().isAuthenticated &&
+      useAuthStore.getState().user?.id === userId;
+    setTagPage((current) => ({
+      ...current,
+      page: requestedPage,
+      request,
+      loading: true,
+      error: "",
+      data: { ...current.data, results: [] },
+    }));
+    try {
+      const data = await getSupportTagsPage(requestedPage, controller.signal);
+      if (isCurrent()) {
+        setTagPage({ page: requestedPage, request, data, loading: false, error: "" });
+      }
+    } catch (caughtError) {
+      if (isCurrent()) {
+        setTagPage((current) => ({
+          ...current,
+          loading: false,
+          error: getApiErrorMessage(caughtError),
+        }));
+      }
     }
   }, [userId]);
+
+  function handleTagsChanged(change: TagChange) {
+    let nextPage = tagsPageRef.current;
+    // A completed mutation refreshes the latest navigation target.
+    if (change.page === nextPage) {
+      if (change.created) nextPage = 1;
+      else if (change.removedLast) nextPage = Math.max(1, nextPage - 1);
+    }
+    return refreshTags(nextPage);
+  }
+
+  useEffect(() => {
+    if (
+      !permissionReady || !authenticated || userId === null ||
+      !bootstrapped || authLoading || !capabilities.canManageTags
+    ) return;
+    const generation = tagsRequestRef.current;
+    void Promise.resolve().then(() => {
+      if (generation === tagsRequestRef.current) return refreshTags(1);
+    });
+    return () => {
+      tagsRequestRef.current += 1;
+      tagsAbortRef.current?.abort();
+    };
+  }, [authenticated, authLoading, bootstrapped, capabilities.canManageTags, permissionReady, refreshTags, userId]);
 
   const refreshWorkspace = useCallback(async () => {
     if (!mountedRef.current) return;
     const request = ++workspaceRequestRef.current;
-    const tagRequest = ++tagsRequestRef.current;
     const isCurrent = () => request === workspaceRequestRef.current &&
       useAuthStore.getState().isAuthenticated &&
       useAuthStore.getState().user?.id === userId;
@@ -1519,15 +1603,13 @@ export function SupportCenter({
     setError("");
 
     try {
-      const [tickets, summaryData, tagData] = await Promise.all([
+      const [tickets, summaryData] = await Promise.all([
         getSupportTickets(filters, page, 20),
         getSupportSummary(filters),
-        getSupportTags(),
       ]);
       if (!isCurrent()) return;
       setTicketPage(tickets);
       setSummary(summaryData);
-      if (tagRequest === tagsRequestRef.current) setTags(tagData);
       if (capabilities.canAssign) {
         const agentData = await getSupportAgents();
         if (isCurrent()) setAgents(agentData);
@@ -1940,6 +2022,54 @@ export function SupportCenter({
         </div>
       </section>
 
+      {capabilities.canManageTags ? (
+        <nav
+          aria-label="Support tag pages"
+          className="mt-6 rounded-3xl border border-slate-200 bg-white p-5 text-sm text-slate-700"
+        >
+          <p className="font-semibold">{tagPage.data.count} support tags</p>
+          <p className="mt-1 text-slate-500">
+            This page supplies tag management and the ticket tag selector.
+          </p>
+          {tagPage.loading ? (
+            <p role="status" className="mt-2">Loading support tags...</p>
+          ) : null}
+          {tagPage.error ? (
+            <p role="alert" className="mt-2 text-red-700">{tagPage.error}</p>
+          ) : null}
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              disabled={tagPage.page <= 1}
+              onClick={() => void refreshTags(tagPage.page - 1)}
+              className="rounded-xl border border-slate-200 px-3 py-2 disabled:opacity-40"
+            >
+              Previous tag page
+            </button>
+            <span>
+              Page {tagPage.page} of {Math.max(1, Math.ceil(tagPage.data.count / 20))}
+            </span>
+            <button
+              type="button"
+              disabled={tagPage.loading || Boolean(tagPage.error) || !tagPage.data.next}
+              onClick={() => void refreshTags(tagPage.page + 1)}
+              className="rounded-xl border border-slate-200 px-3 py-2 disabled:opacity-40"
+            >
+              Next tag page
+            </button>
+            {tagPage.error ? (
+              <button
+                type="button"
+                onClick={() => void refreshTags()}
+                className="rounded-xl border border-slate-200 px-3 py-2"
+              >
+                Retry support tags
+              </button>
+            ) : null}
+          </div>
+        </nav>
+      ) : null}
+
       <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.4fr)]">
         <section className="rounded-3xl border border-slate-200 bg-white shadow-sm">
           <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
@@ -2094,7 +2224,9 @@ export function SupportCenter({
             capabilities={
               capabilities
             }
-            tags={tags}
+            tags={tagPage.data.results}
+            tagRequest={tagPage.request}
+            tagsReady={!tagPage.loading && !tagPage.error}
             agents={agents}
             onChanged={handleChanged}
             onClose={closeTicket}
@@ -2119,10 +2251,9 @@ export function SupportCenter({
       {capabilities.canManageTags ? (
         <div className="mt-6">
           <TagManager
-            tags={tags}
-            onChanged={
-              refreshTags
-            }
+            tags={tagPage.data.results}
+            page={tagPage.page}
+            onChanged={handleTagsChanged}
           />
         </div>
       ) : null}

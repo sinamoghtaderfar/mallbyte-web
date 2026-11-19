@@ -129,9 +129,10 @@ describe("shipments api", () => {
 
     mockedGet.mockResolvedValue({ data: orders });
 
-    await expect(getEligibleShipmentOrders()).resolves.toEqual(orders);
+    await expect(getEligibleShipmentOrders()).resolves.toEqual({ count: orders.length, next: null, previous: null, results: orders });
     expect(mockedGet).toHaveBeenCalledWith(
       API_ENDPOINTS.shipping.eligibleOrders,
+      { params: { page: 1, page_size: 20 }, signal: undefined },
     );
   });
 

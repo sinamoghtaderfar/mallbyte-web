@@ -117,7 +117,7 @@ describe("Seller Orders - isolated fulfillment", () => {
       seller_status_display: "Processing",
     });
 
-    mockedGetOrders.mockResolvedValue([order]);
+    mockedGetOrders.mockResolvedValue({ count: 1, next: null, previous: null, results: [order] });
 
     render(<SellerOrdersList />);
 
