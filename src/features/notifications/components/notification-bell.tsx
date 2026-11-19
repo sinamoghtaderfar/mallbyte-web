@@ -240,7 +240,7 @@ export function NotificationBell() {
         onClick={() => void handleToggle()}
         aria-label="Notifications"
         aria-expanded={isOpen}
-        className="relative flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 text-slate-700 transition hover:bg-slate-50"
+        className="relative flex size-11 items-center justify-center rounded-lg text-slate-700 transition-colors hover:bg-slate-100"
       >
         <Bell className="h-5 w-5" />
 
@@ -254,7 +254,7 @@ export function NotificationBell() {
       </button>
 
       {isOpen ? (
-        <div className="absolute right-0 top-12 z-50 w-[360px] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl">
+        <div className="fixed inset-x-4 top-[4.5rem] z-50 max-h-[calc(100dvh-6rem)] overflow-y-auto rounded-xl border border-line bg-white shadow-lg sm:absolute sm:inset-x-auto sm:right-0 sm:top-12 sm:w-[360px]">
           <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
             <div>
               <h2 className="font-semibold text-slate-950">

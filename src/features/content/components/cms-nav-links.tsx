@@ -19,6 +19,6 @@ export function CmsNavLinks({ onNavigate, mobile = false }: { onNavigate?: () =>
   const builtIns = new Set(["/", "/products", "/orders", "/support", "/faq", "/profile"]);
   return <>{items.filter((item) => mobile || !builtIns.has(item.url)).map((item) => {
     const href = safeContentUrl(item.url);
-    return href ? <Link key={item.id} href={href} onClick={onNavigate} target={item.open_in_new_tab ? "_blank" : undefined} rel={item.open_in_new_tab ? "noopener noreferrer" : undefined} className={`rounded-xl px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-950 ${mobile ? "block" : ""}`}>{item.label}</Link> : null;
+    return href ? <Link key={item.id} href={href} onClick={onNavigate} target={item.open_in_new_tab ? "_blank" : undefined} rel={item.open_in_new_tab ? "noopener noreferrer" : undefined} className={`inline-flex min-h-11 min-w-0 max-w-full items-center rounded-lg px-3 py-2 text-sm font-medium text-muted [overflow-wrap:anywhere] transition-colors hover:bg-slate-100 hover:text-foreground ${mobile ? "block" : ""}`}>{item.label}</Link> : null;
   })}</>;
 }
