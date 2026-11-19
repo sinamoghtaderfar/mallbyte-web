@@ -52,7 +52,7 @@ const mockedGetSellerProductOptions = vi.mocked(getSellerProductOptions);
 const mockedUpdateSellerProduct = vi.mocked(updateSellerProduct);
 
 const options = {
-  categories: [
+  categories: { count: 1, next: null, previous: null, results: [
     {
       id: 1,
       name: "Accessories",
@@ -65,8 +65,8 @@ const options = {
       order: 1,
       created_at: "2026-08-28T08:00:00Z",
     },
-  ],
-  brands: [
+  ] },
+  brands: { count: 1, next: null, previous: null, results: [
     {
       id: 2,
       name: "Keychron",
@@ -77,7 +77,7 @@ const options = {
       is_active: true,
       created_at: "2026-08-28T08:00:00Z",
     },
-  ],
+  ] },
 };
 
 function makeProduct(overrides: Partial<ProductDetail> = {}): ProductDetail {
@@ -271,4 +271,24 @@ describe("SellerProductEditForm", () => {
     await user.click(screen.getByRole("button", { name: /save product/i }));
     await waitFor(() => expect(mockedUpdateSellerProduct).toHaveBeenCalledWith("10", { compare_price: null }));
   });
+  it("retains off-page category and brand values when editing an unrelated field", async () => {
+    const user = userEvent.setup();
+    const product = makeProduct({ category: 21, category_name: "Later category", brand: 21, brand_name: "Later brand", labels: ["limited"] });
+    mockedGetSellerProduct.mockResolvedValue(product);
+    mockedGetSellerProductOptions.mockResolvedValue({
+      categories: { ...options.categories, count: 21, next: "?page=2" },
+      brands: { ...options.brands, count: 21, next: "?page=2" },
+    });
+    mockedUpdateSellerProduct.mockResolvedValue(product);
+    render(<SellerProductEditForm />);
+    const description = await screen.findByLabelText(/^description$/i);
+    expect(screen.getByRole("combobox", { name: "Category" })).toHaveValue("21");
+    expect(screen.getByRole("option", { name: "Later category" })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Brand" })).toHaveValue("21");
+    await user.clear(description);
+    await user.type(description, "Only description changed");
+    await user.click(screen.getByRole("button", { name: /save product/i }));
+    await waitFor(() => expect(mockedUpdateSellerProduct).toHaveBeenCalledWith("10", { description: "Only description changed" }));
+  });
+
 });

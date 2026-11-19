@@ -10,6 +10,7 @@ import type {
   ProductDetail,
   ProductListItem,
   ProductQueryParams,
+  ProductReferenceQuery,
   RecentlyViewedProduct,
 } from "./types";
 
@@ -74,16 +75,29 @@ export async function getRecentlyViewedProducts() {
   return normalizeList(response.data);
 }
 
-export async function getProductFilters() {
+export async function getProductFilters(
+  { categoryPage = 1, brandPage = 1 }: ProductReferenceQuery = {},
+  signal?: AbortSignal,
+) {
   const [categoriesResponse, brandsResponse] = await Promise.all([
     apiClient.get<ListResponse<ProductCategory>>(
       API_ENDPOINTS.products.categories,
+      { params: { page: categoryPage, page_size: 20 }, signal },
     ),
-    apiClient.get<ListResponse<ProductBrand>>(API_ENDPOINTS.products.brands),
+    apiClient.get<ListResponse<ProductBrand>>(API_ENDPOINTS.products.brands, {
+      params: { page: brandPage, page_size: 20 },
+      signal,
+    }),
   ]);
 
   return {
-    categories: normalizeList(categoriesResponse.data),
-    brands: normalizeList(brandsResponse.data),
+    categories: referencePage(categoriesResponse.data),
+    brands: referencePage(brandsResponse.data),
   };
+}
+
+export function referencePage<T>(data: ListResponse<T>): PaginatedResponse<T> {
+  return Array.isArray(data)
+    ? { count: data.length, next: null, previous: null, results: data }
+    : data;
 }

@@ -80,7 +80,7 @@ describe("AdminShipmentsList - multi-seller shipping", () => {
     vi.clearAllMocks();
 
     mockedGetShipments.mockResolvedValue([]);
-    mockedEligible.mockResolvedValue([eligibleOrder]);
+    mockedEligible.mockResolvedValue({ count: 1, next: null, previous: null, results: [eligibleOrder] });
   });
 
   it("requires seller selection and sends the selected seller", async () => {
@@ -123,7 +123,7 @@ describe("AdminShipmentsList - multi-seller shipping", () => {
   it("automatically uses the only eligible seller", async () => {
     const user = userEvent.setup();
 
-    mockedEligible.mockResolvedValue([
+    mockedEligible.mockResolvedValue({ count: 1, next: null, previous: null, results: [
       {
         ...eligibleOrder,
         eligible_sellers: [
@@ -134,7 +134,7 @@ describe("AdminShipmentsList - multi-seller shipping", () => {
           },
         ],
       },
-    ]);
+    ] });
 
     mockedCreate.mockResolvedValue({
       id: 78,
