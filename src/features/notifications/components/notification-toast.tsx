@@ -33,7 +33,7 @@ export function NotificationToast({
   return (
     <div
       role="status"
-      className="fixed bottom-6 right-6 z-[110] max-w-sm rounded-2xl bg-slate-950 px-4 py-3 text-sm font-medium text-white shadow-xl"
+      className="fixed right-4 bottom-4 left-4 z-[110] rounded-2xl bg-ink px-4 py-3 text-sm font-medium text-white shadow-xl sm:right-6 sm:bottom-6 sm:left-auto sm:max-w-sm"
     >
       {message}
     </div>

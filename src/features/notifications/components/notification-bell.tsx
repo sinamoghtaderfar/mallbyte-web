@@ -257,7 +257,7 @@ export function NotificationBell() {
         <div className="fixed inset-x-4 top-[4.5rem] z-50 max-h-[calc(100dvh-6rem)] overflow-y-auto rounded-2xl border border-line bg-white shadow-xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-13 sm:w-[380px]">
           <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
             <div>
-              <h2 className="font-semibold text-slate-950">
+              <h2 className="font-semibold text-foreground">
                 Notifications
               </h2>
 
@@ -291,7 +291,7 @@ export function NotificationBell() {
           ) : null}
 
           {!isLoading && error ? (
-            <div className="p-6 text-sm text-red-600">
+            <div className="p-6 text-sm text-danger">
               {error}
             </div>
           ) : null}
@@ -338,7 +338,7 @@ export function NotificationBell() {
                       />
 
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold text-slate-950">
+                        <p className="text-sm font-semibold text-foreground">
                           {
                             notification.title
                           }
@@ -370,7 +370,7 @@ export function NotificationBell() {
                 pageVersion.current += 1;
                 setIsOpen(false);
               }}
-              className="flex h-11 items-center justify-center rounded-xl text-sm font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-slate-950"
+              className="flex h-11 items-center justify-center rounded-xl text-sm font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-foreground"
             >
               View all notifications
             </Link>

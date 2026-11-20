@@ -2,6 +2,8 @@
 
 import {
   CheckCheck,
+  Bell,
+  BellOff,
   Mail,
   MailOpen,
   Trash2,
@@ -522,11 +524,11 @@ export function NotificationCenter() {
             Account
           </p>
 
-          <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-950">
+          <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground">
             Notifications
           </h1>
 
-          <p className="mt-2 text-sm text-slate-600">
+          <p className="mt-2 text-sm text-muted">
             Review updates about your
             orders, payments, shipments and
             returns.
@@ -543,7 +545,7 @@ export function NotificationCenter() {
           }
           className="gap-2 mb-btn mb-btn-secondary"
         >
-          <CheckCheck className="h-4 w-4" />
+          <CheckCheck className="h-4 w-4" aria-hidden="true" />
 
           {isMarkingAllRead
             ? "Updating..."
@@ -551,8 +553,8 @@ export function NotificationCenter() {
         </button>
       </div>
 
-      <div className="mt-8 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex gap-2">
+      <div className="mt-8 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-surface p-2 shadow-xs">
+        <div role="group" aria-label="Filter notifications" className="inline-flex gap-1 rounded-xl bg-slate-100/80 p-1">
           {(
             [
               "all",
@@ -567,11 +569,12 @@ export function NotificationCenter() {
                 handleFilterChange(item)
               }
               disabled={isBulkActionRunning || isMarkingAllRead}
+              aria-pressed={filter === item}
               className={[
-                "rounded-2xl px-4 py-2 text-sm font-medium capitalize transition",
+                "min-h-10 rounded-lg px-4 text-sm font-medium capitalize transition-colors disabled:opacity-50",
                 filter === item
-                  ? "bg-slate-900 text-white"
-                  : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50",
+                  ? "bg-surface text-foreground shadow-sm ring-1 ring-line"
+                  : "text-slate-600 hover:bg-slate-100 hover:text-foreground",
               ].join(" ")}
             >
               {item}
@@ -579,7 +582,7 @@ export function NotificationCenter() {
           ))}
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 pr-1">
           <button
             type="button"
             onClick={handleClearRead}
@@ -605,8 +608,8 @@ export function NotificationCenter() {
       </div>
 
       {selectedCount > 0 ? (
-        <div className="mt-5 flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-3">
-          <span className="mr-2 text-sm font-semibold text-slate-700">
+        <div className="sticky top-20 z-10 mt-4 flex flex-wrap items-center gap-2 rounded-2xl border border-ink bg-ink p-2.5 pl-4 text-white shadow-lg">
+          <span className="mr-2 text-sm font-semibold" aria-live="polite">
             {selectedCount} selected
           </span>
 
@@ -618,9 +621,9 @@ export function NotificationCenter() {
             disabled={
               isBulkActionRunning || isMarkingAllRead || isItemActionRunning || isLoading
             }
-            className="inline-flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-100 disabled:opacity-50"
+            className="inline-flex min-h-9 items-center gap-2 rounded-lg bg-white/10 px-3 text-xs font-semibold text-white transition hover:bg-white/20 disabled:opacity-50"
           >
-            <MailOpen className="h-4 w-4" />
+            <MailOpen className="h-4 w-4" aria-hidden="true" />
             Mark read
           </button>
 
@@ -632,9 +635,9 @@ export function NotificationCenter() {
             disabled={
               isBulkActionRunning || isMarkingAllRead || isItemActionRunning || isLoading
             }
-            className="inline-flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-100 disabled:opacity-50"
+            className="inline-flex min-h-9 items-center gap-2 rounded-lg bg-white/10 px-3 text-xs font-semibold text-white transition hover:bg-white/20 disabled:opacity-50"
           >
-            <Mail className="h-4 w-4" />
+            <Mail className="h-4 w-4" aria-hidden="true" />
             Mark unread
           </button>
 
@@ -644,21 +647,21 @@ export function NotificationCenter() {
             disabled={
               isBulkActionRunning || isMarkingAllRead || isItemActionRunning || isLoading
             }
-            className="inline-flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-xs font-semibold text-red-600 shadow-sm transition hover:bg-red-50 disabled:opacity-50"
+            className="inline-flex min-h-9 items-center gap-2 rounded-lg bg-white px-3 text-xs font-semibold text-rose-700 transition hover:bg-rose-50 disabled:opacity-50"
           >
-            <Trash2 className="h-4 w-4" />
+            <Trash2 className="h-4 w-4" aria-hidden="true" />
             Delete
           </button>
         </div>
       ) : null}
 
       {!isLoading && error ? (
-        <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-950">
           {error}
           <button
             type="button"
             onClick={() => handleFilterChange(filter)}
-            className="ml-3 font-semibold underline"
+            className="mb-btn mb-btn-secondary mb-btn-sm"
           >
             Retry notifications
           </button>
@@ -666,20 +669,22 @@ export function NotificationCenter() {
       ) : null}
 
       {isLoading ? (
-        <div className="mt-6 rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 text-sm text-slate-500">
-          Loading notifications...
+        <div className="mt-6 mb-card divide-y divide-line overflow-hidden" aria-busy="true">
+          <p className="sr-only">Loading notifications...</p>
+          {[0, 1, 2, 3].map((i) => <div key={i} className="flex gap-4 p-5"><div className="mb-skeleton size-9 shrink-0 rounded-xl" /><div className="grid flex-1 gap-2"><div className="mb-skeleton h-4 w-1/3" /><div className="mb-skeleton h-3 w-2/3" /></div></div>)}
         </div>
       ) : null}
 
       {!isLoading &&
       !error &&
       notifications.length === 0 ? (
-        <div className="mt-6 rounded-3xl border border-slate-200 bg-white p-5 sm:p-8">
-          <h2 className="font-semibold text-slate-950">
+        <div className="mt-6 flex flex-col items-center rounded-2xl border border-dashed border-line-strong bg-surface/60 px-6 py-14 text-center">
+          <span className="mb-5 flex size-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-600 ring-8 ring-slate-50" aria-hidden="true"><BellOff className="h-6 w-6" /></span>
+          <h2 className="text-lg font-semibold tracking-tight text-foreground">
             No notifications
           </h2>
 
-          <p className="mt-2 text-sm text-slate-500">
+          <p className="mt-2 text-sm text-muted">
             There are no notifications
             matching this filter.
           </p>
@@ -689,8 +694,8 @@ export function NotificationCenter() {
       {!isLoading &&
       !error &&
       notifications.length > 0 ? (
-        <div className="mt-6 overflow-hidden rounded-3xl border border-slate-200 bg-white">
-          <div className="flex items-center gap-3 border-b border-slate-100 bg-slate-50 px-5 py-3">
+        <div className="mt-6 mb-card overflow-hidden">
+          <div className="flex min-h-11 items-center gap-3 border-b border-line bg-sunken/60 px-5 py-2.5">
             <input
               type="checkbox"
               aria-label="Select all notifications"
@@ -699,7 +704,7 @@ export function NotificationCenter() {
               className="h-4 w-4 rounded border-slate-300"
             />
 
-            <span className="text-xs font-semibold text-slate-500">
+            <span className="text-xs font-semibold text-muted">
               Select all
             </span>
           </div>
@@ -709,10 +714,10 @@ export function NotificationCenter() {
               <div
                 key={notification.id}
                 className={[
-                  "flex gap-4 border-b border-slate-100 p-5 last:border-b-0",
+                  "group relative flex gap-3 border-b border-line px-4 py-4 last:border-b-0 sm:gap-4 sm:px-5",
                   notification.is_read
-                    ? "bg-white"
-                    : "bg-ember-50/50",
+                    ? "bg-surface"
+                    : "bg-ember-50/40 before:absolute before:inset-y-0 before:left-0 before:w-[3px] before:bg-brand",
                 ].join(" ")}
               >
                 <input
@@ -730,13 +735,17 @@ export function NotificationCenter() {
                 />
 
                 <span
+                  aria-hidden="true"
                   className={[
-                    "mt-2 h-2.5 w-2.5 shrink-0 rounded-full",
+                    "relative flex size-9 shrink-0 items-center justify-center rounded-xl",
                     notification.is_read
-                      ? "bg-slate-300"
-                      : "bg-brand",
+                      ? "bg-slate-100 text-slate-500"
+                      : "bg-surface text-brand ring-1 ring-ember-200",
                   ].join(" ")}
-                />
+                >
+                  <Bell className="h-4 w-4" />
+                  {!notification.is_read ? <span className="absolute -top-0.5 -right-0.5 size-2.5 rounded-full bg-brand ring-2 ring-surface" /> : null}
+                </span>
 
                 <button
                   type="button"
@@ -749,13 +758,14 @@ export function NotificationCenter() {
                   className="min-w-0 flex-1 text-left"
                 >
                   <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="font-semibold text-slate-950">
+                    <h2 className={notification.is_read ? "font-medium text-slate-800" : "font-semibold text-foreground"}>
                       {
                         notification.title
                       }
                     </h2>
+                    {!notification.is_read ? <span className="sr-only">(unread)</span> : null}
 
-                    <span className="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-medium capitalize text-slate-500">
+                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium capitalize text-slate-600 ring-1 ring-inset ring-slate-200">
                       {
                         notification.notification_type
                       }
@@ -765,7 +775,7 @@ export function NotificationCenter() {
                       "high" ||
                     notification.priority ===
                       "urgent" ? (
-                      <span className="rounded-full bg-red-50 px-2 py-1 text-[11px] font-medium capitalize text-red-600">
+                      <span className="rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-medium capitalize text-rose-800 ring-1 ring-inset ring-rose-200">
                         {
                           notification.priority
                         }
@@ -773,13 +783,13 @@ export function NotificationCenter() {
                     ) : null}
                   </div>
 
-                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                  <p className="mt-1.5 line-clamp-3 text-sm leading-6 text-slate-700">
                     {
                       notification.message
                     }
                   </p>
 
-                  <p className="mt-3 text-xs text-slate-400">
+                  <p className="mt-2 text-xs text-muted">
                     {formatNotificationTime(
                       notification.created_at,
                     )}
@@ -795,7 +805,7 @@ export function NotificationCenter() {
                       )
                     }
                     disabled={isItemActionRunning || isBulkActionRunning || isMarkingAllRead}
-                    className="rounded-xl px-3 py-2 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+                    className="min-h-9 rounded-lg px-3 text-xs font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-foreground disabled:opacity-50"
                   >
                     {notification.is_read
                       ? "Mark unread"
@@ -814,7 +824,7 @@ export function NotificationCenter() {
             type="button"
             onClick={() => void handleLoadMore()}
             disabled={isLoadingMore || isBulkActionRunning || isMarkingAllRead || isItemActionRunning}
-            className="bg-white mb-btn mb-btn-secondary"
+            className="mb-btn mb-btn-secondary"
           >
             {isLoadingMore
               ? "Loading..."

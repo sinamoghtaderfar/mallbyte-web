@@ -34,12 +34,12 @@ export function NotificationConfirmDialog({
       closeOnBackdrop
       labelledBy="notification-confirm-title"
       describedBy="notification-confirm-description"
-      overlayClassName="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/40 px-4"
-      className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl"
+      overlayClassName="fixed inset-0 z-[100] flex items-end justify-center bg-ink/45 backdrop-blur-[2px] sm:items-center sm:p-6"
+      className="w-full max-w-md rounded-t-3xl border border-line bg-surface p-5 shadow-2xl outline-none sm:rounded-3xl sm:p-6"
     >
       <h2
         id="notification-confirm-title"
-        className="text-xl font-semibold text-slate-950"
+        className="text-lg font-semibold tracking-tight text-foreground"
       >
         {title}
       </h2>
@@ -68,8 +68,8 @@ export function NotificationConfirmDialog({
           className={[
             "rounded-2xl px-4 py-2 text-sm font-semibold text-white disabled:opacity-50",
             danger
-              ? "bg-red-600 hover:bg-red-700"
-              : "bg-slate-900 hover:bg-slate-800",
+              ? "bg-danger hover:bg-rose-800"
+              : "bg-ink hover:bg-ink-hover",
           ].join(" ")}
         >
           {isBusy ? "Working..." : confirmLabel}

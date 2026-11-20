@@ -195,7 +195,7 @@ export function NotificationPreferencesCard() {
 
   if (!preferences && !loadError) {
     return (
-      <section className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm">
+      <section className="mb-card p-5 sm:p-6">
         <p className="text-sm text-slate-500">
           Loading notification preferences...
         </p>
@@ -205,12 +205,12 @@ export function NotificationPreferencesCard() {
 
   if (loadError) {
     return (
-      <section className="rounded-3xl border border-red-200 bg-red-50 p-5 sm:p-8">
-        <h2 className="font-semibold text-red-950">
+      <section className="rounded-2xl border border-rose-200 bg-rose-50 p-5 sm:p-6">
+        <h2 className="font-semibold text-rose-950">
           Could not load notification preferences
         </h2>
 
-        <p className="mt-2 text-sm text-red-700">
+        <p className="mt-2 text-sm text-rose-900">
           {loadError}
         </p>
       </section>
@@ -222,13 +222,13 @@ export function NotificationPreferencesCard() {
   }
 
   return (
-    <section className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm">
+    <section className="mb-card p-5 sm:p-6">
       <div>
         <p className="mb-eyebrow">
           Notifications
         </p>
 
-        <h2 className="mt-3 text-2xl font-semibold tracking-tight text-slate-950">
+        <h2 className="mt-2 text-xl font-semibold tracking-tight text-foreground">
           Notification preferences
         </h2>
 
@@ -239,11 +239,11 @@ export function NotificationPreferencesCard() {
       </div>
 
       <div className="mt-8">
-        <h3 className="text-sm font-semibold text-slate-950">
+        <h3 className="text-sm font-semibold text-foreground">
           Channels
         </h3>
 
-        <div className="mt-4 divide-y divide-slate-100 rounded-2xl border border-slate-200">
+        <div className="mt-4 divide-y divide-line overflow-hidden rounded-xl border border-line">
           {channelOptions.map((option) => {
             const enabled = isChannelEnabled(
               preferences,
@@ -276,7 +276,7 @@ export function NotificationPreferencesCard() {
                   className={[
                     "relative h-7 w-12 shrink-0 rounded-full transition",
                     enabled
-                      ? "bg-slate-900"
+                      ? "bg-ink"
                       : "bg-slate-300",
                   ].join(" ")}
                 >
@@ -294,7 +294,7 @@ export function NotificationPreferencesCard() {
       </div>
 
       <div className="mt-8">
-        <h3 className="text-sm font-semibold text-slate-950">
+        <h3 className="text-sm font-semibold text-foreground">
           Notification types
         </h3>
 
@@ -321,7 +321,7 @@ export function NotificationPreferencesCard() {
                   "rounded-2xl border p-4 text-left transition",
                   muted
                     ? "border-slate-300 bg-slate-100"
-                    : "border-slate-200 bg-white hover:bg-slate-50",
+                    : "border-line bg-surface hover:bg-slate-50",
                 ].join(" ")}
               >
                 <p className="text-sm font-semibold text-slate-900">
@@ -338,7 +338,7 @@ export function NotificationPreferencesCard() {
       </div>
 
       {saveError ? (
-        <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+        <div className="mt-6 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900">
           {saveError}
         </div>
       ) : null}
