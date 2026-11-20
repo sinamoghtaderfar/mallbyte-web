@@ -240,12 +240,12 @@ export function NotificationBell() {
         onClick={() => void handleToggle()}
         aria-label="Notifications"
         aria-expanded={isOpen}
-        className="relative flex size-11 items-center justify-center rounded-lg text-slate-700 transition-colors hover:bg-slate-100"
+        className="relative flex size-11 items-center justify-center rounded-full text-slate-700 transition-colors hover:bg-slate-100 hover:text-ink"
       >
-        <Bell className="h-5 w-5" />
+        <Bell className="h-5 w-5" strokeWidth={1.7} aria-hidden="true" />
 
         {unreadCount > 0 ? (
-          <span className="absolute -right-1 -top-1 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white">
+          <span className="absolute right-0.5 top-0.5 flex min-h-[1.15rem] min-w-[1.15rem] items-center justify-center rounded-full bg-brand px-1 text-[0.6875rem] font-semibold text-white ring-2 ring-background">
             {unreadCount > 99
               ? "99+"
               : unreadCount}
@@ -254,7 +254,7 @@ export function NotificationBell() {
       </button>
 
       {isOpen ? (
-        <div className="fixed inset-x-4 top-[4.5rem] z-50 max-h-[calc(100dvh-6rem)] overflow-y-auto rounded-xl border border-line bg-white shadow-lg sm:absolute sm:inset-x-auto sm:right-0 sm:top-12 sm:w-[360px]">
+        <div className="fixed inset-x-4 top-[4.5rem] z-50 max-h-[calc(100dvh-6rem)] overflow-y-auto rounded-2xl border border-line bg-white shadow-xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-13 sm:w-[380px]">
           <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
             <div>
               <h2 className="font-semibold text-slate-950">
@@ -275,7 +275,7 @@ export function NotificationBell() {
                 disabled={
                   isMarkingAllRead || isUpdating
                 }
-                className="text-xs font-semibold text-blue-600 transition hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="text-xs font-semibold text-ember-700 underline-offset-4 transition hover:underline disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isMarkingAllRead
                   ? "Updating..."
@@ -319,11 +319,12 @@ export function NotificationBell() {
                       )
                     }
                     disabled={isUpdating || isMarkingAllRead}
+                    data-unread={notification.is_read ? "false" : "true"}
                     className={[
                       "block w-full border-b border-slate-100 px-5 py-4 text-left transition last:border-b-0 hover:bg-slate-50",
                       notification.is_read
                         ? "bg-white"
-                        : "bg-blue-50/60",
+                        : "bg-ember-50/50",
                     ].join(" ")}
                   >
                     <div className="flex items-start gap-3">
@@ -332,7 +333,7 @@ export function NotificationBell() {
                           "mt-2 h-2 w-2 shrink-0 rounded-full",
                           notification.is_read
                             ? "bg-slate-300"
-                            : "bg-blue-600",
+                            : "bg-brand",
                         ].join(" ")}
                       />
 
@@ -369,7 +370,7 @@ export function NotificationBell() {
                 pageVersion.current += 1;
                 setIsOpen(false);
               }}
-              className="flex h-10 items-center justify-center rounded-2xl text-sm font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-slate-950"
+              className="flex h-11 items-center justify-center rounded-xl text-sm font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-slate-950"
             >
               View all notifications
             </Link>

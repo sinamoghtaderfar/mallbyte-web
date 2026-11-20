@@ -1,32 +1,152 @@
 @import "tailwindcss";
 
+/*
+ * MallByte "Ink & Ember" design tokens.
+ * Single source of truth: semantic tokens below, plus a remapped neutral and
+ * accent scale so legacy utility classes (slate-*, cyan-*) inherit the
+ * identity without per-file rewrites. See docs/design-system.md.
+ */
 :root {
-  --background: #f7f8fa;
-  --foreground: #17252f;
+  --background: #f7f5f0;
+  --foreground: #1c1b19;
   --surface: #ffffff;
-  --muted: #526171;
-  --border: #dce3e9;
-  --brand: #086b78;
-  --brand-hover: #075563;
-  --brand-soft: #edf8f9;
+  --surface-sunken: #f1efea;
+  --muted: #6b675f;
+  --border: #e4e1da;
+  --border-strong: #cfcbc2;
+  --ink: #121211;
+  --ink-hover: #2a2926;
+  --brand: #c93d0b;
+  --brand-hover: #a8340d;
+  --brand-soft: #fff4ed;
   --danger: #b42335;
-  --font-body: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --success: #12704a;
+  --warning: #8a5300;
+  --font-body: var(--font-geist), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-serif: var(--font-instrument), "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  --font-code: var(--font-geist-mono), ui-monospace, SFMono-Regular, Consolas, monospace;
   /* The application's surfaces use a light palette in both OS preferences. */
   color-scheme: light;
+}
+
+@theme {
+  /* Neutral ink scale — warm, paper-like greys. Remaps slate/gray/zinc/stone/neutral. */
+  --color-slate-50: #f8f7f4;
+  --color-slate-100: #f1efea;
+  --color-slate-200: #e4e1da;
+  --color-slate-300: #cfcbc2;
+  --color-slate-400: #8b877e;
+  --color-slate-500: #6b675f;
+  --color-slate-600: #55524b;
+  --color-slate-700: #403e39;
+  --color-slate-800: #2a2926;
+  --color-slate-900: #1c1b19;
+  --color-slate-950: #121211;
+  --color-gray-50: #f8f7f4;
+  --color-gray-100: #f1efea;
+  --color-gray-200: #e4e1da;
+  --color-gray-300: #cfcbc2;
+  --color-gray-400: #8b877e;
+  --color-gray-500: #6b675f;
+  --color-gray-600: #55524b;
+  --color-gray-700: #403e39;
+  --color-gray-800: #2a2926;
+  --color-gray-900: #1c1b19;
+  --color-gray-950: #121211;
+  --color-zinc-50: #f8f7f4;
+  --color-zinc-100: #f1efea;
+  --color-zinc-200: #e4e1da;
+  --color-zinc-300: #cfcbc2;
+  --color-zinc-400: #8b877e;
+  --color-zinc-500: #6b675f;
+  --color-zinc-600: #55524b;
+  --color-zinc-700: #403e39;
+  --color-zinc-800: #2a2926;
+  --color-zinc-900: #1c1b19;
+  --color-zinc-950: #121211;
+
+  /* Ember accent — remaps the former cyan/teal brand accents. */
+  --color-ember-50: #fff4ed;
+  --color-ember-100: #ffe6d5;
+  --color-ember-200: #fec9aa;
+  --color-ember-300: #fda47a;
+  --color-ember-400: #f97b45;
+  --color-ember-500: #ec5a20;
+  --color-ember-600: #c93d0b;
+  --color-ember-700: #a8340d;
+  --color-ember-800: #872b12;
+  --color-ember-900: #6e2512;
+  --color-ember-950: #3f1106;
+  --color-cyan-50: #fff4ed;
+  --color-cyan-100: #ffe6d5;
+  --color-cyan-200: #fec9aa;
+  --color-cyan-300: #fda47a;
+  --color-cyan-400: #f97b45;
+  --color-cyan-500: #ec5a20;
+  --color-cyan-600: #c93d0b;
+  --color-cyan-700: #a8340d;
+  --color-cyan-800: #872b12;
+  --color-cyan-900: #6e2512;
+  --color-cyan-950: #3f1106;
+  --color-teal-50: #fff4ed;
+  --color-teal-100: #ffe6d5;
+  --color-teal-200: #fec9aa;
+  --color-teal-300: #fda47a;
+  --color-teal-400: #f97b45;
+  --color-teal-500: #ec5a20;
+  --color-teal-600: #c93d0b;
+  --color-teal-700: #a8340d;
+  --color-teal-800: #872b12;
+  --color-teal-900: #6e2512;
+  --color-teal-950: #3f1106;
+
+  /* Calmer geometry: large surfaces stay soft but less bubbly. */
+  --radius-xl: 0.75rem;
+  --radius-2xl: 0.875rem;
+  --radius-3xl: 1.125rem;
+
+  /* Layered, low-contrast elevation. */
+  --shadow-xs: 0 1px 1px rgb(18 18 17 / 0.04);
+  --shadow-sm: 0 1px 2px rgb(18 18 17 / 0.04), 0 1px 1px rgb(18 18 17 / 0.03);
+  --shadow-md: 0 1px 2px rgb(18 18 17 / 0.05), 0 6px 16px -6px rgb(18 18 17 / 0.10);
+  --shadow-lg: 0 2px 4px rgb(18 18 17 / 0.04), 0 18px 40px -16px rgb(18 18 17 / 0.18);
+  --shadow-xl: 0 4px 8px rgb(18 18 17 / 0.05), 0 28px 60px -24px rgb(18 18 17 / 0.26);
+  --shadow-2xl: 0 40px 80px -32px rgb(18 18 17 / 0.35);
+
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  --animate-shimmer: mb-shimmer 1.6s linear infinite;
+  --animate-rise: mb-rise 0.5s var(--ease-out-soft) both;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-surface: var(--surface);
+  --color-sunken: var(--surface-sunken);
   --color-muted: var(--muted);
   --color-line: var(--border);
+  --color-line-strong: var(--border-strong);
+  --color-ink: var(--ink);
+  --color-ink-hover: var(--ink-hover);
   --color-brand: var(--brand);
   --color-brand-hover: var(--brand-hover);
   --color-brand-soft: var(--brand-soft);
   --color-danger: var(--danger);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
   --font-sans: var(--font-body);
-  --font-mono: ui-monospace, SFMono-Regular, Consolas, monospace;
+  --font-display: var(--font-serif);
+  --font-mono: var(--font-code);
+}
+
+@keyframes mb-shimmer {
+  from { background-position: 150% 0; }
+  to { background-position: -50% 0; }
+}
+
+@keyframes mb-rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
 }
 
 @layer components {
@@ -35,24 +155,103 @@
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
+    white-space: nowrap;
   }
+
+  .mb-container {
+    width: 100%;
+    max-width: 88rem;
+    margin-inline: auto;
+    padding-inline: 1rem;
+  }
+  @media (min-width: 640px) { .mb-container { padding-inline: 1.5rem; } }
+  @media (min-width: 1024px) { .mb-container { padding-inline: 2rem; } }
+
+  .mb-eyebrow {
+    font-size: 0.75rem;
+    line-height: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .mb-display {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    letter-spacing: -0.015em;
+    line-height: 1.02;
+  }
+
+  .mb-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-2xl);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .mb-skeleton {
+    background: linear-gradient(90deg, #efede8 0%, #f7f6f2 40%, #efede8 80%);
+    background-size: 200% 100%;
+    animation: var(--animate-shimmer);
+    border-radius: 0.5rem;
+  }
+
+  .mb-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.875rem;
+  }
+  .mb-table th {
+    text-align: left;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border);
+    background: #faf9f6;
+    white-space: nowrap;
+  }
+  .mb-table td {
+    padding: 0.875rem 1rem;
+    border-bottom: 1px solid #efede8;
+    vertical-align: middle;
+  }
+  .mb-table tbody tr:hover td { background: #fbfaf8; }
+  .mb-table tbody tr:last-child td { border-bottom: 0; }
+
+  .mb-scrollbar-none { scrollbar-width: none; }
+  .mb-scrollbar-none::-webkit-scrollbar { display: none; }
 }
 
 html {
   scroll-padding-top: 10rem;
+  text-rendering: optimizeLegibility;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-body);
+  font-feature-settings: "ss01", "cv11";
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4 {
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
 }
 
 ::selection {
-  background: #cdecef;
-  color: #12383e;
+  background: #fde0cc;
+  color: #3f1106;
 }
 
 /* Keep keyboard focus visible even on legacy controls using outline-none. */
@@ -62,7 +261,12 @@ body {
 }
 
 :where(input, select, textarea) {
-  accent-color: var(--brand);
+  accent-color: var(--ink);
+}
+
+/* Legacy panels and tables: tabular figures make numbers scan cleanly. */
+:where(table, [data-numeric]) {
+  font-variant-numeric: tabular-nums;
 }
 
 button:not(:disabled), summary {
@@ -76,4 +280,20 @@ button:not(:disabled), summary {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* Page frames: legacy pages own a padded <main>; inside a workspace or account frame the frame owns spacing. */
+.workspace-content main,
+.account-content main {
+  min-height: 0;
+  padding-inline: 0;
+  padding-block: 0;
+  background: transparent;
+}
+.account-content main { padding: 1.75rem 1rem 3rem; }
+@media (min-width: 640px) { .account-content main { padding-inline: 1.5rem; } }
+@media (min-width: 1024px) { .account-content main { padding: 2.5rem 0 4rem; } }
+.workspace-content main > :is(.max-w-5xl, .max-w-6xl, .max-w-7xl),
+.account-content main > :is(.max-w-5xl, .max-w-6xl, .max-w-7xl) {
+  max-width: none;
 }

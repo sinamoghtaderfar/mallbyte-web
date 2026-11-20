@@ -40,12 +40,12 @@ export function CartLink() {
   return (
     <Link
       href="/cart"
-      className="relative inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-lg px-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100"
+      className="relative inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-full px-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 hover:text-ink"
     >
-      <ShoppingBag size={20} strokeWidth={1.8} aria-hidden="true" />
+      <ShoppingBag size={20} strokeWidth={1.7} aria-hidden="true" />
       <span className="sr-only xl:not-sr-only">Cart</span>
       {totalItems > 0 ? (
-        <span className="rounded-full bg-brand px-1.5 py-0.5 text-xs font-semibold text-white">
+        <span className="absolute right-0.5 top-0.5 flex min-w-[1.15rem] items-center justify-center rounded-full bg-brand px-1 text-[0.6875rem] font-semibold leading-[1.15rem] text-white ring-2 ring-background xl:static xl:ring-0">
           {totalItems}
         </span>
       ) : null}

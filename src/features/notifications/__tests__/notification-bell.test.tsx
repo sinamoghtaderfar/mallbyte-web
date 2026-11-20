@@ -334,7 +334,7 @@ describe("NotificationBell", () => {
     mockedGetUnreadCount.mockClear();
     await user.click(screen.getByRole("button", { name: "Mark all read" }));
     expect(await screen.findByText("0 unread")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Other unread/ })).toHaveClass("bg-blue-50/60");
+    expect(screen.getByRole("button", { name: /Other unread/ })).toHaveAttribute("data-unread", "true");
     expect(mockedGetUnreadCount).toHaveBeenCalledOnce();
     expect(mockedGetNotificationsPage).toHaveBeenCalledTimes(2);
     expect(mockedGetNotificationsPage).toHaveBeenLastCalledWith({}, 1, 6);
