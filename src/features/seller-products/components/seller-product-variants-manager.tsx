@@ -201,7 +201,7 @@ export function SellerProductVariantsManager({
   return (
     <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-6">
       <div>
-        <p className="text-sm font-medium uppercase tracking-[0.2em] text-slate-500">
+        <p className="mb-eyebrow">
           Product variants
         </p>
 
@@ -232,7 +232,7 @@ export function SellerProductVariantsManager({
             onChange={handleChange}
             required
             placeholder="Red Switch"
-            className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-slate-400"
+            className="mt-2 w-full mb-control"
           />
         </label>
 
@@ -244,7 +244,7 @@ export function SellerProductVariantsManager({
             onChange={handleChange}
             required
             placeholder="KB-RED-001"
-            className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-slate-400"
+            className="mt-2 w-full mb-control"
           />
         </label>
 
@@ -257,7 +257,7 @@ export function SellerProductVariantsManager({
             value={form.price}
             onChange={handleChange}
             required
-            className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-slate-400"
+            className="mt-2 w-full mb-control"
           />
         </label>
 
@@ -271,7 +271,7 @@ export function SellerProductVariantsManager({
             min="0"
             value={form.compare_price}
             onChange={handleChange}
-            className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-slate-400"
+            className="mt-2 w-full mb-control"
           />
         </label>
 
@@ -284,7 +284,7 @@ export function SellerProductVariantsManager({
             value={form.stock}
             onChange={handleChange}
             required
-            className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-slate-400"
+            className="mt-2 w-full mb-control"
           />
         </label>
 
@@ -303,7 +303,7 @@ export function SellerProductVariantsManager({
           <button
             type="submit"
             disabled={isSubmitting}
-            className="h-11 rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+            className="mb-btn mb-btn-primary"
           >
             {isSubmitting
               ? "Saving..."
@@ -316,7 +316,7 @@ export function SellerProductVariantsManager({
             <button
               type="button"
               onClick={handleCancelEdit}
-              className="h-11 rounded-2xl border border-slate-200 px-5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+              className="mb-btn mb-btn-secondary"
             >
               Cancel edit
             </button>
@@ -342,7 +342,7 @@ export function SellerProductVariantsManager({
 
         {variants.length ? (
           <div className="overflow-hidden rounded-3xl border border-slate-200">
-            <div className="grid grid-cols-[1fr_120px_100px_160px] gap-4 border-b border-slate-200 bg-slate-50 px-5 py-3 text-xs font-medium uppercase tracking-[0.2em] text-slate-500">
+            <div className="grid grid-cols-[1fr_120px_100px_160px] gap-4 border-b border-slate-200 bg-slate-50 px-5 py-3 mb-eyebrow">
               <span>Variant</span>
               <span>Price</span>
               <span>Stock</span>
@@ -383,7 +383,7 @@ export function SellerProductVariantsManager({
                     <button
                       type="button"
                       onClick={() => handleEditVariant(variant)}
-                      className="h-9 rounded-2xl border border-slate-200 px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                      className="mb-btn mb-btn-secondary mb-btn-sm"
                     >
                       Edit
                     </button>
@@ -392,7 +392,7 @@ export function SellerProductVariantsManager({
                       type="button"
                       onClick={() => void handleDeleteVariant(variant.id)}
                       disabled={deletingVariantId === variant.id}
-                      className="h-9 rounded-2xl border border-red-200 px-3 text-sm font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="mb-btn mb-btn-secondary text-rose-700 hover:bg-rose-50 mb-btn-sm"
                     >
                       {deletingVariantId === variant.id
                         ? "Deleting..."

@@ -131,7 +131,7 @@ export function OtpLoginForm() {
   const isFactorStep = step === "setup-code" || step === "mfa-code" || step === "recovery";
 
   return (
-    <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+    <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm">
       <div className="mb-7 text-center">
         <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-900 text-white">
           {isEmailStep ? <Mail size={24} /> : isFactorStep ? <KeyRound size={24} /> : <ShieldCheck size={24} />}
@@ -163,7 +163,7 @@ export function OtpLoginForm() {
         <form onSubmit={handleEmail} className="space-y-4">
           <label className="block text-sm font-medium text-slate-700" htmlFor="login-email">Email address</label>
           <input id="login-email" type="email" autoComplete="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" className="h-12 w-full rounded-xl border px-4" />
-          <button disabled={isSubmitting} type="submit" className="h-12 w-full rounded-xl bg-slate-900 text-white disabled:opacity-50">{isSubmitting ? "Sending..." : "Send code"}</button>
+          <button disabled={isSubmitting} type="submit" className="w-full mb-btn mb-btn-primary">{isSubmitting ? "Sending..." : "Send code"}</button>
         </form>
       )}
 
@@ -171,7 +171,7 @@ export function OtpLoginForm() {
         <form onSubmit={handleEmailCode} className="space-y-4">
           <label htmlFor="email-code" className="block text-sm font-medium">Email verification code</label>
           <input id="email-code" inputMode="numeric" autoComplete="one-time-code" required maxLength={6} value={emailCode} onChange={e => setEmailCode(e.target.value)} className="h-12 w-full rounded-xl border px-4 text-center tracking-widest" />
-          <button disabled={isSubmitting} type="submit" className="h-12 w-full rounded-xl bg-slate-900 text-white disabled:opacity-50">{isSubmitting ? "Checking..." : "Verify email"}</button>
+          <button disabled={isSubmitting} type="submit" className="w-full mb-btn mb-btn-primary">{isSubmitting ? "Checking..." : "Verify email"}</button>
         </form>
       )}
 
@@ -179,7 +179,7 @@ export function OtpLoginForm() {
         <form onSubmit={handleSetup} className="space-y-4">
           <label htmlFor="admin-password" className="block text-sm font-medium">Existing admin password</label>
           <input id="admin-password" type="password" autoComplete="current-password" required value={password} onChange={e => setPassword(e.target.value)} className="h-12 w-full rounded-xl border px-4" />
-          <button disabled={isSubmitting} type="submit" className="h-12 w-full rounded-xl bg-slate-900 text-white disabled:opacity-50">{isSubmitting ? "Verifying..." : "Set up authenticator"}</button>
+          <button disabled={isSubmitting} type="submit" className="w-full mb-btn mb-btn-primary">{isSubmitting ? "Verifying..." : "Set up authenticator"}</button>
         </form>
       )}
 
@@ -196,7 +196,7 @@ export function OtpLoginForm() {
         <form onSubmit={handleFactor} className="space-y-4">
           <label htmlFor="factor-code" className="block text-sm font-medium">{step === "recovery" ? "Recovery code" : "Authenticator code"}</label>
           <input id="factor-code" autoComplete="one-time-code" inputMode={step === "recovery" ? "text" : "numeric"} required maxLength={step === "recovery" ? 14 : 6} value={factorCode} onChange={e => setFactorCode(e.target.value)} className="h-12 w-full rounded-xl border px-4 text-center font-mono tracking-widest" />
-          <button disabled={isSubmitting} type="submit" className="h-12 w-full rounded-xl bg-slate-900 text-white disabled:opacity-50">{isSubmitting ? "Verifying..." : step === "setup-code" ? "Enable MFA and sign in" : "Verify and sign in"}</button>
+          <button disabled={isSubmitting} type="submit" className="w-full mb-btn mb-btn-primary">{isSubmitting ? "Verifying..." : step === "setup-code" ? "Enable MFA and sign in" : "Verify and sign in"}</button>
           {step === "mfa-code" && <button type="button" onClick={() => { setFactorCode(""); setStep("recovery"); }} className="w-full text-sm text-slate-600 underline">Use a recovery code</button>}
           {step === "recovery" && <button type="button" onClick={() => { setFactorCode(""); setStep("mfa-code"); }} className="w-full text-sm text-slate-600 underline">Use authenticator instead</button>}
         </form>
@@ -213,7 +213,7 @@ export function OtpLoginForm() {
             setSavedUser(null);
             setUser(savedUser);
             router.push(savedUser.is_superuser ? "/admin/super" : savedUser.is_staff ? "/admin" : "/");
-          }} className="h-12 w-full rounded-xl bg-slate-900 text-white">I saved my recovery codes</button>
+          }} className="w-full mb-btn mb-btn-primary">I saved my recovery codes</button>
         </div>
       )}
 

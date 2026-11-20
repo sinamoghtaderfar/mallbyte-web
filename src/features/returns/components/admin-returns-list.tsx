@@ -124,7 +124,7 @@ export function AdminReturnsList() {
       <div className="mx-auto max-w-6xl">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+            <p className="mb-eyebrow">
               Admin
             </p>
             <h1 className="mt-2 text-3xl font-semibold text-slate-950">
@@ -138,7 +138,7 @@ export function AdminReturnsList() {
 
           <Link
             href="/returns"
-            className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 px-5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            className="mb-btn mb-btn-secondary"
           >
             Customer returns
           </Link>
@@ -177,7 +177,7 @@ export function AdminReturnsList() {
               onChange={(event) =>
                 setStatusFilter(event.target.value as "all" | AdminReturnStatus)
               }
-              className="h-11 rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-slate-400"
+              className="mb-control mb-select"
             >
               <option value="all">All statuses</option>
               {Object.entries(statusLabels).map(([value, label]) => (
@@ -211,7 +211,7 @@ export function AdminReturnsList() {
             </p>
           ) : (
             <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200">
-              <div className="hidden grid-cols-[1.2fr_1fr_1fr_1fr_1fr_auto] gap-4 bg-slate-50 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 md:grid">
+              <div className="hidden grid-cols-[1.2fr_1fr_1fr_1fr_1fr_auto] gap-4 bg-slate-50 px-4 py-3 md:grid mb-eyebrow">
                 <span>Request</span>
                 <span>Customer</span>
                 <span>Status</span>
@@ -256,7 +256,7 @@ export function AdminReturnsList() {
 
                     <Link
                       href={`/admin/returns/${returnRequest.id}`}
-                      className="inline-flex h-10 items-center justify-center rounded-2xl bg-slate-900 px-4 text-sm font-medium text-white transition hover:bg-slate-800"
+                      className="mb-btn mb-btn-primary mb-btn-sm"
                     >
                       Review
                     </Link>

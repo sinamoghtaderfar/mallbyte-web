@@ -99,7 +99,7 @@ export function ReturnDetail() {
 
   if (isLoading) {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-white p-8 text-sm text-slate-600 shadow-sm">
+      <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 text-sm text-slate-600 shadow-sm">
         Loading return request...
       </div>
     );
@@ -107,7 +107,7 @@ export function ReturnDetail() {
 
   if (error) {
     return (
-      <div className="rounded-3xl border border-red-200 bg-red-50 p-8 text-sm text-red-700">
+      <div className="rounded-3xl border border-red-200 bg-red-50 p-5 sm:p-8 text-sm text-red-700">
         {error}
       </div>
     );
@@ -115,7 +115,7 @@ export function ReturnDetail() {
 
   if (!returnRequest) {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-white p-8 text-sm text-slate-600 shadow-sm">
+      <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 text-sm text-slate-600 shadow-sm">
         Return request not found.
       </div>
     );
@@ -154,7 +154,7 @@ export function ReturnDetail() {
             type="button"
             onClick={handleCancel}
             disabled={isCancelling}
-            className="inline-flex h-11 items-center justify-center rounded-2xl border border-red-200 bg-white px-5 text-sm font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+            className="bg-white mb-btn mb-btn-secondary text-rose-700 hover:bg-rose-50"
           >
             {isCancelling ? "Cancelling..." : "Cancel return"}
           </button>

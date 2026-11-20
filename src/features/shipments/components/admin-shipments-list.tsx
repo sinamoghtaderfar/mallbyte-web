@@ -189,7 +189,7 @@ export function AdminShipmentsList() {
     <main className="mx-auto max-w-6xl px-4 py-10">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+          <p className="mb-eyebrow">
             Admin
           </p>
           <h1 className="mt-2 text-3xl font-semibold text-slate-950">
@@ -203,7 +203,7 @@ export function AdminShipmentsList() {
 
         <Link
           href="/admin"
-          className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 px-5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+          className="mb-btn mb-btn-secondary"
         >
           Admin dashboard
         </Link>
@@ -270,7 +270,7 @@ export function AdminShipmentsList() {
               onChange={(event) =>
                 setCarrier(event.target.value as ShipmentCarrier)
               }
-              className="h-11 w-full rounded-2xl border border-slate-200 px-4 outline-none focus:border-slate-400"
+              className="w-full mb-control mb-select"
             >
               {Object.entries(SHIPMENT_CARRIER_LABELS).map(([value, label]) => (
                 <option key={value} value={value}>
@@ -307,7 +307,7 @@ export function AdminShipmentsList() {
           </div>
         ) : (
           <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200">
-            <div className="hidden grid-cols-[1.2fr_1.2fr_1fr_1fr_1fr_auto] gap-4 bg-slate-50 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 md:grid">
+            <div className="hidden grid-cols-[1.2fr_1.2fr_1fr_1fr_1fr_auto] gap-4 bg-slate-50 px-4 py-3 md:grid mb-eyebrow">
               <span>Order</span>
               <span>Customer</span>
               <span>Total</span>
@@ -395,7 +395,7 @@ export function AdminShipmentsList() {
                       type="button"
                       disabled={creatingOrderId !== null || !sellerChosen}
                       onClick={() => void handleCreateShipment(order)}
-                      className="inline-flex h-10 items-center justify-center rounded-2xl bg-slate-900 px-4 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="mb-btn mb-btn-primary mb-btn-sm"
                     >
                       {isCreating
                         ? "Creating..."
@@ -418,7 +418,7 @@ export function AdminShipmentsList() {
             onChange={(event) =>
               setStatusFilter(event.target.value as "all" | ShipmentStatus)
             }
-            className="h-11 rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-slate-400"
+            className="mb-control mb-select"
           >
             <option value="all">All statuses</option>
             {statuses.map((status) => (
@@ -435,7 +435,7 @@ export function AdminShipmentsList() {
           <p className="mt-6 text-sm text-slate-500">No shipments found.</p>
         ) : (
           <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200">
-            <div className="hidden grid-cols-[1.2fr_1fr_1fr_1fr_1fr_auto] gap-4 bg-slate-50 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 md:grid">
+            <div className="hidden grid-cols-[1.2fr_1fr_1fr_1fr_1fr_auto] gap-4 bg-slate-50 px-4 py-3 md:grid mb-eyebrow">
               <span>Shipment</span>
               <span>Order</span>
               <span>Status</span>
@@ -490,7 +490,7 @@ export function AdminShipmentsList() {
 
                   <Link
                     href={`/admin/shipments/${shipment.id}`}
-                    className="inline-flex h-10 items-center justify-center rounded-2xl bg-slate-900 px-4 text-sm font-medium text-white transition hover:bg-slate-800"
+                    className="mb-btn mb-btn-primary mb-btn-sm"
                   >
                     Manage
                   </Link>

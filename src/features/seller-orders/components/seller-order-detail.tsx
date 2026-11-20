@@ -118,7 +118,7 @@ export function SellerOrderDetail() {
 
   if (isLoading) {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-white p-8 text-sm text-slate-600 shadow-sm">
+      <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 text-sm text-slate-600 shadow-sm">
         Loading seller order...
       </div>
     );
@@ -126,7 +126,7 @@ export function SellerOrderDetail() {
 
   if (error) {
     return (
-      <div className="rounded-3xl border border-red-200 bg-red-50 p-8 text-sm text-red-700">
+      <div className="rounded-3xl border border-red-200 bg-red-50 p-5 sm:p-8 text-sm text-red-700">
         {error}
       </div>
     );
@@ -134,7 +134,7 @@ export function SellerOrderDetail() {
 
   if (!order) {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-white p-8 text-sm text-slate-600 shadow-sm">
+      <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 text-sm text-slate-600 shadow-sm">
         Order not found.
       </div>
     );
@@ -186,7 +186,7 @@ export function SellerOrderDetail() {
             type="button"
             onClick={() => handleUpdateStatus(nextStatus)}
             disabled={isUpdating}
-            className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-950 px-5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+            className="mb-btn mb-btn-primary"
           >
             {isUpdating ? "Updating..." : "Mark as processing"}
           </button>

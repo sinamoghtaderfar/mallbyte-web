@@ -126,7 +126,7 @@ export function CartPanel() {
 
   if (isLoading) {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+      <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm">
         <p className="text-sm text-slate-500">Loading cart...</p>
       </div>
     );
@@ -134,7 +134,7 @@ export function CartPanel() {
 
   if (error && !cart) {
     return (
-      <div className="rounded-3xl border border-red-200 bg-red-50 p-8 shadow-sm">
+      <div className="rounded-3xl border border-red-200 bg-red-50 p-5 sm:p-8 shadow-sm">
         <h1 className="text-xl font-semibold text-red-800">
           Could not load cart
         </h1>
@@ -152,7 +152,7 @@ export function CartPanel() {
 
   if (!cart || cart.items.length === 0) {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+      <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm">
         <h1 className="text-2xl font-semibold text-slate-950">
           Your cart is empty
         </h1>
@@ -163,7 +163,7 @@ export function CartPanel() {
 
         <Link
           href="/products"
-          className="mt-6 inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800"
+          className="mt-6 mb-btn mb-btn-primary"
         >
           Browse products
         </Link>
@@ -188,7 +188,7 @@ export function CartPanel() {
             type="button"
             onClick={handleClearCart}
             disabled={isClearing}
-            className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            className="mb-btn mb-btn-secondary"
           >
             {isClearing ? "Clearing…" : "Clear cart"}
           </button>
@@ -304,14 +304,14 @@ export function CartPanel() {
           onClick={(event) => {
             if (pendingMutations > 0 || needsReload) event.preventDefault();
           }}
-          className="mt-6 inline-flex h-12 w-full items-center justify-center rounded-2xl bg-slate-900 text-sm font-medium text-white transition hover:bg-slate-800"
+          className="mt-6 w-full mb-btn mb-btn-primary"
         >
           Continue to checkout
         </Link>
 
         <Link
           href="/products"
-          className="mt-3 inline-flex h-11 w-full items-center justify-center rounded-2xl border border-slate-200 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+          className="mt-3 w-full mb-btn mb-btn-secondary"
         >
           Continue shopping
         </Link>

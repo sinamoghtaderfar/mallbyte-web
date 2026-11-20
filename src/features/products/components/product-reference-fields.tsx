@@ -1,6 +1,8 @@
 "use client";
 
 import { ChangeEvent, useEffect, useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { controlStyles } from "@/components/ui/input";
 import { getApiErrorMessage } from "@/lib/api/errors";
 import type { PaginatedResponse } from "@/types/api";
 import type { ProductReferenceQuery } from "../types";
@@ -166,7 +168,7 @@ export function ProductReferenceFields({
                   }));
                   onChange(event);
                 }}
-                className="mt-2 h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm outline-none transition focus:border-slate-400 disabled:opacity-60"
+                className={`mt-1.5 ${controlStyles} mb-select pr-10 disabled:opacity-60`}
               >
                 <option value="">{field.blank}</option>
                 {field.value &&
@@ -187,7 +189,8 @@ export function ProductReferenceFields({
             </label>
             <nav
               aria-label={`${field.title} pages`}
-              className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-600"
+              hidden={!loading && !error && field.page === 1 && !field.data.next}
+              className="mt-1.5 flex items-center gap-1 text-xs text-slate-500"
             >
               <button
                 type="button"
@@ -198,11 +201,12 @@ export function ProductReferenceFields({
                     [field.key]: field.page - 1,
                   }))
                 }
-                className="rounded-lg border px-2 py-1 disabled:opacity-40"
+                className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-line text-slate-600 transition-colors hover:border-slate-400 hover:text-ink disabled:opacity-35"
               >
-                Previous {field.title.toLowerCase()} options
+                <ChevronLeft size={14} aria-hidden="true" />
+                <span className="sr-only">Previous {field.title.toLowerCase()} options</span>
               </button>
-              <span>
+              <span className="min-w-0 flex-1 truncate text-center">
                 {loading
                   ? "Loading options…"
                   : error
@@ -220,9 +224,10 @@ export function ProductReferenceFields({
                     [field.key]: field.page + 1,
                   }))
                 }
-                className="rounded-lg border px-2 py-1 disabled:opacity-40"
+                className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-line text-slate-600 transition-colors hover:border-slate-400 hover:text-ink disabled:opacity-35"
               >
-                Next {field.title.toLowerCase()} options
+                <ChevronRight size={14} aria-hidden="true" />
+                <span className="sr-only">Next {field.title.toLowerCase()} options</span>
               </button>
             </nav>
           </div>

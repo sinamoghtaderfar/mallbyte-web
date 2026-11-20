@@ -335,7 +335,7 @@ export function CheckoutForm() {
 
   if (isLoading) {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+      <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm">
         <p className="text-sm text-slate-500">Loading checkout...</p>
       </div>
     );
@@ -343,7 +343,7 @@ export function CheckoutForm() {
 
   if (error && !cart) {
     return (
-      <div className="rounded-3xl border border-red-200 bg-red-50 p-8 shadow-sm">
+      <div className="rounded-3xl border border-red-200 bg-red-50 p-5 sm:p-8 shadow-sm">
         <h1 className="text-xl font-semibold text-red-800">
           Could not load checkout
         </h1>
@@ -354,7 +354,7 @@ export function CheckoutForm() {
 
   if (!cart || cart.items.length === 0) {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+      <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm">
         <h1 className="text-2xl font-semibold text-slate-950">
           Your cart is empty
         </h1>
@@ -364,7 +364,7 @@ export function CheckoutForm() {
 
         <Link
           href="/products"
-          className="mt-6 inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800"
+          className="mt-6 mb-btn mb-btn-primary"
         >
           Browse products
         </Link>
@@ -376,10 +376,10 @@ export function CheckoutForm() {
     <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
       <form
         onSubmit={handleSubmit}
-        className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm"
+        className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm"
       >
         <div>
-          <p className="text-sm font-medium uppercase tracking-[0.2em] text-slate-500">
+          <p className="mb-eyebrow">
             Checkout
           </p>
 
@@ -416,7 +416,7 @@ export function CheckoutForm() {
               value={selectedAddressId}
               onChange={handleAddressSelect}
               disabled={addressesLoading || isSubmitting}
-              className="mt-2 h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm outline-none transition focus:border-slate-400"
+              className="mt-2 w-full mb-control mb-select"
             >
               <option value="">Enter address manually</option>
               {selectedAddress &&
@@ -516,7 +516,7 @@ export function CheckoutForm() {
               value={form.receiver_name}
               onChange={handleChange}
               required
-              className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-slate-400"
+              className="mt-2 w-full mb-control"
             />
           </label>
 
@@ -530,7 +530,7 @@ export function CheckoutForm() {
               onChange={handleChange}
               required
               placeholder="09123456789"
-              className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-slate-400"
+              className="mt-2 w-full mb-control"
             />
           </label>
 
@@ -545,7 +545,7 @@ export function CheckoutForm() {
               maxLength={100}
               pattern="[^0-9]*"
               title="Use letters only. Numbers are not allowed."
-              className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-slate-400"
+              className="mt-2 w-full mb-control"
             />
           </label>
 
@@ -560,7 +560,7 @@ export function CheckoutForm() {
               maxLength={100}
               pattern="[^0-9]*"
               title="Use letters only. Numbers are not allowed."
-              className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-slate-400"
+              className="mt-2 w-full mb-control"
             />
           </label>
 
@@ -575,7 +575,7 @@ export function CheckoutForm() {
               required
               inputMode="numeric"
               pattern="[0-9]{4,10}"
-              className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-slate-400"
+              className="mt-2 w-full mb-control"
             />
           </label>
 
@@ -590,7 +590,7 @@ export function CheckoutForm() {
                 value={form.discount_code}
                 onChange={handleChange}
                 placeholder="SAVE10"
-                className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm uppercase outline-none transition focus:border-slate-400"
+                className="mt-2 w-full uppercase mb-control"
               />
             </label>
 
@@ -599,7 +599,7 @@ export function CheckoutForm() {
                 type="button"
                 onClick={() => void handleValidateDiscount()}
                 disabled={isValidatingDiscount || isSubmitting}
-                className="h-10 rounded-2xl bg-slate-900 px-4 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                className="mb-btn mb-btn-primary mb-btn-sm"
               >
                 {isValidatingDiscount ? "Checking..." : "Apply code"}
               </button>
@@ -609,7 +609,7 @@ export function CheckoutForm() {
                   type="button"
                   onClick={handleRemoveDiscount}
                   disabled={isSubmitting}
-                  className="h-10 rounded-2xl border border-slate-200 px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                  className="mb-btn mb-btn-secondary mb-btn-sm"
                 >
                   Remove
                 </button>
@@ -638,7 +638,7 @@ export function CheckoutForm() {
               onChange={handleChange}
               required
               rows={4}
-              className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+              className="mt-2 w-full mb-control"
             />
           </label>
 
@@ -651,7 +651,7 @@ export function CheckoutForm() {
               value={form.customer_note}
               onChange={handleChange}
               rows={3}
-              className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+              className="mt-2 w-full mb-control"
             />
           </label>
         </div>
@@ -660,14 +660,14 @@ export function CheckoutForm() {
           <button
             type="submit"
             disabled={isSubmitting || pendingMutations > 0 || needsReload}
-            className="h-12 rounded-2xl bg-slate-900 px-6 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+            className="mb-btn mb-btn-primary"
           >
             {isSubmitting ? "Creating order..." : "Place order"}
           </button>
 
           <Link
             href="/cart"
-            className="inline-flex h-12 items-center justify-center rounded-2xl border border-slate-200 px-6 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            className="mb-btn mb-btn-secondary"
           >
             Back to cart
           </Link>

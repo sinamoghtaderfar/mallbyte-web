@@ -101,3 +101,12 @@ export function referencePage<T>(data: ListResponse<T>): PaginatedResponse<T> {
     ? { count: data.length, next: null, previous: null, results: data }
     : data;
 }
+
+/** Root storefront categories for discovery surfaces (one bounded page). */
+export async function getStorefrontCategories(signal?: AbortSignal) {
+  const response = await apiClient.get<ListResponse<ProductCategory>>(
+    API_ENDPOINTS.products.categories,
+    { params: { page: 1, page_size: 12 }, signal },
+  );
+  return referencePage(response.data).results.filter((category) => category.is_active !== false && category.parent === null);
+}

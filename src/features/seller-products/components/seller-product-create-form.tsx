@@ -112,10 +112,10 @@ export function SellerProductCreateForm() {
     <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
       <form
         onSubmit={handleSubmit}
-        className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm"
+        className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm"
       >
         <div>
-          <p className="text-sm font-medium uppercase tracking-[0.2em] text-slate-500">
+          <p className="mb-eyebrow">
             New seller product
           </p>
 
@@ -145,7 +145,7 @@ export function SellerProductCreateForm() {
               onChange={handleChange}
               required
               maxLength={255}
-              className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-slate-400"
+              className="mt-2 w-full mb-control"
             />
           </label>
 
@@ -159,7 +159,7 @@ export function SellerProductCreateForm() {
               onChange={handleChange}
               required
               rows={4}
-              className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+              className="mt-2 w-full mb-control"
             />
           </label>
 
@@ -173,7 +173,7 @@ export function SellerProductCreateForm() {
               onChange={handleChange}
               rows={3}
               maxLength={500}
-              className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+              className="mt-2 w-full mb-control"
             />
           </label>
 
@@ -195,7 +195,7 @@ export function SellerProductCreateForm() {
               value={form.price}
               onChange={handleChange}
               required
-              className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-slate-400"
+              className="mt-2 w-full mb-control"
             />
           </label>
 
@@ -209,7 +209,7 @@ export function SellerProductCreateForm() {
               min="0"
               value={form.compare_price}
               onChange={handleChange}
-              className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-slate-400"
+              className="mt-2 w-full mb-control"
             />
           </label>
 
@@ -221,7 +221,7 @@ export function SellerProductCreateForm() {
               onChange={handleChange}
               required
               maxLength={100}
-              className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-slate-400"
+              className="mt-2 w-full mb-control"
             />
           </label>
 
@@ -236,7 +236,7 @@ export function SellerProductCreateForm() {
               value={form.low_stock_threshold}
               onChange={handleChange}
               required
-              className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-slate-400"
+              className="mt-2 w-full mb-control"
             />
           </label>
         </div>
@@ -245,14 +245,14 @@ export function SellerProductCreateForm() {
           <button
             type="submit"
             disabled={isSubmitting || !form.category}
-            className="h-12 rounded-2xl bg-slate-900 px-6 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+            className="mb-btn mb-btn-primary"
           >
             {isSubmitting ? "Creating..." : "Create product"}
           </button>
 
           <Link
             href="/seller/products"
-            className="inline-flex h-12 items-center justify-center rounded-2xl border border-slate-200 px-6 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            className="mb-btn mb-btn-secondary"
           >
             Back to products
           </Link>

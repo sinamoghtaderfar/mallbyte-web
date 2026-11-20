@@ -11,8 +11,8 @@ export function AccessDenied({
 }: AccessDeniedProps) {
   return (
     <main className="mx-auto flex min-h-[70vh] max-w-3xl items-center justify-center px-4 py-10">
-      <div className="rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-        <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+      <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 text-center shadow-sm">
+        <p className="mb-eyebrow">
           Permission required
         </p>
         <h1 className="mt-3 text-2xl font-semibold text-slate-950">{title}</h1>
@@ -21,13 +21,13 @@ export function AccessDenied({
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
           <Link
             href="/"
-            className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800"
+            className="mb-btn mb-btn-primary"
           >
             Back home
           </Link>
           <Link
             href="/profile"
-            className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 px-5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            className="mb-btn mb-btn-secondary"
           >
             View profile
           </Link>

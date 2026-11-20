@@ -3,6 +3,11 @@
 import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { ThumbsDown, ThumbsUp, BadgeCheck, MessageSquareText } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { Rating } from "@/components/ui/price";
+import { Notice } from "@/components/ui/states";
 import { useAuthStore } from "@/features/auth/auth-store";
 import { getApiErrorMessage } from "@/lib/api/errors";
 import type { PaginatedResponse } from "@/types/api";
@@ -56,23 +61,23 @@ function buildFilters(filters: typeof emptyFilters): ProductReviewFilters {
 }
 
 function formatDate(value: string) {
-  return new Date(value).toLocaleString();
+  return new Intl.DateTimeFormat("en", { dateStyle: "medium" }).format(new Date(value));
 }
 
 function getStatusBadgeClass(status: string) {
   if (status === "approved") {
-    return "bg-green-100 text-green-700";
+    return "bg-emerald-50 text-emerald-800 ring-1 ring-inset ring-emerald-200";
   }
 
   if (status === "rejected") {
-    return "bg-red-100 text-red-700";
+    return "bg-rose-50 text-rose-800 ring-1 ring-inset ring-rose-200";
   }
 
   if (status === "hidden") {
-    return "bg-slate-100 text-slate-700";
+    return "bg-slate-100 text-slate-700 ring-1 ring-inset ring-slate-200";
   }
 
-  return "bg-yellow-100 text-yellow-700";
+  return "bg-amber-50 text-amber-900 ring-1 ring-inset ring-amber-200";
 }
 
 function updateReviewInList(
@@ -241,94 +246,171 @@ function ProductReviews({ productId }: ProductReviewsSectionProps) {
     }
   }
 
+  const label = "text-sm font-medium text-slate-800";
+  const totalForBars = summary ? Math.max(1, ...Object.values(summary.rating_breakdown)) : 1;
   return (
-    <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm lg:col-span-2">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="text-sm font-medium uppercase tracking-[0.2em] text-slate-500">
-            Reviews
-          </p>
+    <section aria-labelledby="customer-reviews-heading" className="grid gap-10 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] lg:gap-16">
+      <div className="min-w-0 lg:sticky lg:top-36 lg:self-start">
+        <p className="mb-eyebrow">
+          Reviews
+        </p>
 
-          <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
-            Customer reviews
-          </h2>
+        <h2 id="customer-reviews-heading" className="mb-display mt-3 text-[2.25rem] text-ink">
+          Customer reviews
+        </h2>
 
-          <p className="mt-2 text-sm leading-6 text-slate-500">
-            Read customer feedback, filter reviews, and leave your own review
-            after a delivered order.
-          </p>
-        </div>
+        <p className="mt-2 text-sm leading-6 text-muted">
+          Read customer feedback, filter reviews, and leave your own review
+          after a delivered order.
+        </p>
 
         {summary ? (
-          <div className="rounded-2xl bg-slate-50 px-5 py-4 text-right">
-            <p className="text-3xl font-semibold text-slate-950">
-              {summary.average_rating}
-            </p>
-            <p className="mt-1 text-sm text-slate-500">
-              {summary.reviews_count} approved review
-              {summary.reviews_count === 1 ? "" : "s"}
-            </p>
+          <div className="mt-6 rounded-2xl border border-line bg-surface p-5 shadow-sm">
+            <div className="flex items-end gap-4">
+              <p data-numeric className="text-5xl font-semibold leading-none tracking-tight text-ink">
+                {summary.average_rating}
+              </p>
+              <div className="pb-0.5">
+                <Rating value={summary.average_rating} size={15} />
+                <p className="mt-1 text-sm text-muted">
+                  {summary.reviews_count} approved review
+                  {summary.reviews_count === 1 ? "" : "s"}
+                </p>
+              </div>
+            </div>
+            <ul className="mt-5 space-y-2" aria-label="Rating breakdown">
+              {(["5", "4", "3", "2", "1"] as const).map((rating) => (
+                <li key={rating} className="grid grid-cols-[3.25rem_1fr_2rem] items-center gap-3 text-sm">
+                  <span className="text-slate-700">{rating} star</span>
+                  <span className="h-2 overflow-hidden rounded-full bg-slate-100" aria-hidden="true">
+                    <span className="block h-full rounded-full bg-ink" style={{ width: `${(summary.rating_breakdown[rating] / totalForBars) * 100}%` }} />
+                  </span>
+                  <span data-numeric className="text-right font-medium text-slate-900">{summary.rating_breakdown[rating]}</span>
+                </li>
+              ))}
+            </ul>
           </div>
+        ) : null}
+
+        {!isLoading && !error ? (
+          <form
+            onSubmit={handleSubmitReview}
+            className="mt-6 rounded-2xl border border-line bg-surface p-5 shadow-sm"
+          >
+            <h3 className="flex items-center gap-2 text-base font-semibold text-slate-950">
+              <MessageSquareText size={17} aria-hidden="true" />Write a review
+            </h3>
+
+            <p className="mt-1.5 text-xs leading-5 text-muted">
+              Reviews are submitted for moderation. The backend only accepts
+              reviews for delivered orders.
+            </p>
+
+            {formError ? (
+              <Notice tone="danger" className="mt-4">{formError}</Notice>
+            ) : null}
+
+            {successMessage ? (
+              <Notice tone="success" className="mt-4">{successMessage}</Notice>
+            ) : null}
+
+            <div className="mt-4 grid gap-3.5">
+              <label className="block">
+                <span className={label}>
+                  Review rating
+                </span>
+                <select
+                  name="rating"
+                  value={form.rating}
+                  onChange={handleFormChange}
+                  className="mt-1.5 mb-control mb-select"
+                >
+                  <option value="5">5 stars</option>
+                  <option value="4">4 stars</option>
+                  <option value="3">3 stars</option>
+                  <option value="2">2 stars</option>
+                  <option value="1">1 star</option>
+                </select>
+              </label>
+
+              <label className="block">
+                <span className={label}>
+                  Review title
+                </span>
+                <input
+                  name="title"
+                  value={form.title}
+                  onChange={handleFormChange}
+                  required
+                  maxLength={120}
+                  className="mt-1.5 mb-control"
+                />
+              </label>
+
+              <label className="block">
+                <span className={label}>
+                  Review comment
+                </span>
+                <textarea
+                  name="comment"
+                  value={form.comment}
+                  onChange={handleFormChange}
+                  required
+                  rows={4}
+                  className="mt-1.5 mb-control"
+                />
+              </label>
+            </div>
+
+            <Button type="submit" loading={isSubmitting} className="mt-4 w-full">
+              {isSubmitting ? "Submitting..." : "Submit review"}
+            </Button>
+          </form>
         ) : null}
       </div>
 
-      {isLoading ? (
-        <p className="mt-6 text-sm text-slate-500">Loading reviews...</p>
-      ) : null}
+      <div className="min-w-0">
+        {isLoading ? (
+          <div role="status" className="space-y-4">
+            <span className="sr-only">Loading reviews...</span>
+            {[0, 1, 2].map((i) => <div key={i} aria-hidden="true" className="mb-skeleton h-36 rounded-2xl" />)}
+          </div>
+        ) : null}
 
-      {!isLoading && error ? (
-        <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error}
-          <button
-            type="button"
-            onClick={() => setReload((value) => value + 1)}
-            className="ml-3 font-semibold underline"
-          >
-            Retry reviews
-          </button>
-          {page > 1 && (
+        {!isLoading && error ? (
+          <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+            {error}
             <button
               type="button"
-              onClick={() => setPage((value) => value - 1)}
+              onClick={() => setReload((value) => value + 1)}
               className="ml-3 font-semibold underline"
             >
-              Previous review page
+              Retry reviews
             </button>
-          )}
-        </div>
-      ) : null}
+            {page > 1 && (
+              <button
+                type="button"
+                onClick={() => setPage((value) => value - 1)}
+                className="ml-3 font-semibold underline"
+              >
+                Previous review page
+              </button>
+            )}
+          </div>
+        ) : null}
 
-      {!isLoading && !error ? (
-        <>
-          {summary ? (
-            <div className="mt-8 grid gap-3 sm:grid-cols-5">
-              {(["5", "4", "3", "2", "1"] as const).map((rating) => (
-                <div
-                  key={rating}
-                  className="rounded-2xl border border-slate-200 p-4"
-                >
-                  <p className="text-sm font-semibold text-slate-950">
-                    {rating} star
-                  </p>
-                  <p className="mt-2 text-2xl font-semibold text-slate-950">
-                    {summary.rating_breakdown[rating]}
-                  </p>
-                </div>
-              ))}
-            </div>
-          ) : null}
-
-          <div className="mt-8 rounded-3xl border border-slate-200 p-5">
-            <div className="grid gap-4 sm:grid-cols-[1fr_1fr_auto_auto] sm:items-end">
-              <label className="block">
-                <span className="text-sm font-medium text-slate-700">
+        {!isLoading && !error ? (
+          <>
+            <div className="flex flex-col gap-3 border-b border-line pb-5 sm:flex-row sm:items-end">
+              <label className="block flex-1">
+                <span className={label}>
                   Rating filter
                 </span>
                 <select
                   name="rating"
                   value={draftFilters.rating}
                   onChange={handleFilterChange}
-                  className="mt-2 h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm outline-none transition focus:border-slate-400"
+                  className="mt-1.5 mb-control mb-select"
                 >
                   <option value="">All ratings</option>
                   <option value="5">5 stars</option>
@@ -339,15 +421,15 @@ function ProductReviews({ productId }: ProductReviewsSectionProps) {
                 </select>
               </label>
 
-              <label className="block">
-                <span className="text-sm font-medium text-slate-700">
+              <label className="block flex-1">
+                <span className={label}>
                   Verified filter
                 </span>
                 <select
                   name="is_verified_purchase"
                   value={draftFilters.is_verified_purchase}
                   onChange={handleFilterChange}
-                  className="mt-2 h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm outline-none transition focus:border-slate-400"
+                  className="mt-1.5 mb-control mb-select"
                 >
                   <option value="">All reviews</option>
                   <option value="true">Verified purchases</option>
@@ -355,182 +437,90 @@ function ProductReviews({ productId }: ProductReviewsSectionProps) {
                 </select>
               </label>
 
-              <button
-                type="button"
-                onClick={handleApplyFilters}
-                className="h-11 rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800"
-              >
-                Apply filters
-              </button>
+              <div className="flex gap-2">
+                <Button onClick={handleApplyFilters}>
+                  Apply filters
+                </Button>
 
-              <button
-                type="button"
-                onClick={handleClearFilters}
-                className="h-11 rounded-2xl border border-slate-200 px-5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-              >
-                Clear
-              </button>
-            </div>
-          </div>
-
-          <form
-            onSubmit={handleSubmitReview}
-            className="mt-8 rounded-3xl border border-slate-200 p-5"
-          >
-            <h3 className="text-lg font-semibold text-slate-950">
-              Write a review
-            </h3>
-
-            <p className="mt-2 text-sm text-slate-500">
-              Reviews are submitted for moderation. The backend only accepts
-              reviews for delivered orders.
-            </p>
-
-            {formError ? (
-              <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                {formError}
+                <Button variant="secondary" onClick={handleClearFilters}>
+                  Clear
+                </Button>
               </div>
-            ) : null}
-
-            {successMessage ? (
-              <div className="mt-5 rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
-                {successMessage}
-              </div>
-            ) : null}
-
-            <div className="mt-5 grid gap-4 sm:grid-cols-2">
-              <label className="block">
-                <span className="text-sm font-medium text-slate-700">
-                  Review rating
-                </span>
-                <select
-                  name="rating"
-                  value={form.rating}
-                  onChange={handleFormChange}
-                  className="mt-2 h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm outline-none transition focus:border-slate-400"
-                >
-                  <option value="5">5 stars</option>
-                  <option value="4">4 stars</option>
-                  <option value="3">3 stars</option>
-                  <option value="2">2 stars</option>
-                  <option value="1">1 star</option>
-                </select>
-              </label>
-
-              <label className="block">
-                <span className="text-sm font-medium text-slate-700">
-                  Review title
-                </span>
-                <input
-                  name="title"
-                  value={form.title}
-                  onChange={handleFormChange}
-                  required
-                  maxLength={120}
-                  className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-slate-400"
-                />
-              </label>
-
-              <label className="block sm:col-span-2">
-                <span className="text-sm font-medium text-slate-700">
-                  Review comment
-                </span>
-                <textarea
-                  name="comment"
-                  value={form.comment}
-                  onChange={handleFormChange}
-                  required
-                  rows={4}
-                  className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-slate-400"
-                />
-              </label>
             </div>
 
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="mt-5 h-11 rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {isSubmitting ? "Submitting..." : "Submit review"}
-            </button>
-          </form>
-
-          <div className="mt-8">
-            <p className="mb-4 text-sm text-slate-600">
+            <p className="mt-5 text-sm text-muted">
               {reviewPage.count} matching review
               {reviewPage.count === 1 ? "" : "s"} · {reviews.length} on this
               page. Ratings above reflect all approved reviews.
             </p>
             {!reviews.length ? (
-              <div className="rounded-3xl border border-dashed border-slate-300 p-6">
+              <div className="mt-5 rounded-2xl border border-dashed border-line-strong px-6 py-12 text-center">
                 <h3 className="text-lg font-semibold text-slate-950">
                   {Object.keys(activeFilters).length
                     ? "No reviews match your filters"
                     : "No reviews yet"}
                 </h3>
-                <p className="mt-2 text-sm text-slate-500">
+                <p className="mt-2 text-sm text-muted">
                   Reviews will appear here after customers submit feedback.
                 </p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="mt-2 divide-y divide-line">
                 {reviews.map((review) => (
-                  <article
-                    key={review.id}
-                    className="rounded-3xl border border-slate-200 p-5"
-                  >
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                      <div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="text-base font-semibold text-slate-950">
-                            {review.title}
-                          </h3>
-
-                          <span
-                            className={[
-                              "rounded-full px-3 py-1 text-xs font-medium capitalize",
-                              getStatusBadgeClass(review.status),
-                            ].join(" ")}
-                          >
-                            {review.status}
-                          </span>
-
-                          {review.is_verified_purchase ? (
-                            <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700">
-                              Verified purchase
-                            </span>
-                          ) : null}
+                  <article key={review.id} className="py-6">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-slate-200 text-sm font-semibold uppercase text-slate-700" aria-hidden="true">
+                          {(review.customer_display || "M").slice(0, 1)}
+                        </span>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium text-slate-900">{review.customer_display || "MallByte customer"}</p>
+                          <p className="text-xs text-muted">{formatDate(review.created_at)}</p>
                         </div>
-
-                        <p className="mt-2 text-sm text-slate-500">
-                          {review.rating} / 5 by{" "}
-                          {review.customer_display || "MallByte customer"}
-                        </p>
                       </div>
-
-                      <p className="text-xs text-slate-500">
-                        {formatDate(review.created_at)}
-                      </p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        {review.is_verified_purchase ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-800 ring-1 ring-inset ring-emerald-200">
+                            <BadgeCheck size={13} aria-hidden="true" />Verified purchase
+                          </span>
+                        ) : null}
+                        <span
+                          className={[
+                            "rounded-full px-2.5 py-0.5 text-xs font-medium capitalize",
+                            getStatusBadgeClass(review.status),
+                          ].join(" ")}
+                        >
+                          {review.status}
+                        </span>
+                      </div>
                     </div>
 
-                    <p className="mt-4 text-sm leading-6 text-slate-600">
+                    <div className="mt-4 flex items-center gap-2">
+                      <Rating value={review.rating} />
+                      <span className="sr-only">{review.rating} / 5 by {review.customer_display || "MallByte customer"}</span>
+                    </div>
+                    <h3 className="mt-2 text-base font-semibold text-slate-950">
+                      {review.title}
+                    </h3>
+                    <p className="mt-1.5 max-w-prose text-[0.9375rem] leading-7 text-slate-600">
                       {review.comment}
                     </p>
 
                     {review.rejected_reason ? (
-                      <p className="mt-3 text-sm text-red-600">
+                      <p className="mt-3 text-sm text-rose-700">
                         Rejection reason: {review.rejected_reason}
                       </p>
                     ) : null}
 
-                    <div className="mt-5 flex flex-wrap gap-3">
+                    <div className="mt-4 flex flex-wrap items-center gap-2 text-sm text-muted">
+                      <span className="mr-1">Was this helpful?</span>
                       <button
                         type="button"
                         onClick={() => void handleVote(review.id, "helpful")}
                         disabled={votingReviewId === review.id}
-                        className="h-10 rounded-2xl border border-slate-200 px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="mb-btn mb-btn-secondary mb-btn-sm rounded-full"
                       >
-                        Helpful ({review.helpful_count})
+                        <ThumbsUp size={14} aria-hidden="true" />Helpful ({review.helpful_count})
                       </button>
 
                       <button
@@ -539,9 +529,9 @@ function ProductReviews({ productId }: ProductReviewsSectionProps) {
                           void handleVote(review.id, "not_helpful")
                         }
                         disabled={votingReviewId === review.id}
-                        className="h-10 rounded-2xl border border-slate-200 px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="mb-btn mb-btn-secondary mb-btn-sm rounded-full"
                       >
-                        Not helpful ({review.not_helpful_count})
+                        <ThumbsDown size={14} aria-hidden="true" />Not helpful ({review.not_helpful_count})
                       </button>
                     </div>
                   </article>
@@ -550,31 +540,31 @@ function ProductReviews({ productId }: ProductReviewsSectionProps) {
             )}
             <nav
               aria-label="Review pages"
-              className="mt-6 flex items-center justify-between gap-3 border-t border-slate-200 pt-5"
+              className="mt-4 flex items-center justify-between gap-3 border-t border-line pt-5"
             >
               <button
                 type="button"
                 disabled={!reviewPage.previous}
                 onClick={() => setPage((value) => Math.max(1, value - 1))}
-                className="rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-700 disabled:opacity-40"
+                className="mb-btn mb-btn-secondary mb-btn-sm"
               >
                 Previous reviews
               </button>
-              <p className="text-sm text-slate-600">
+              <p className="text-sm text-muted">
                 Page {page} of {Math.max(1, Math.ceil(reviewPage.count / 20))}
               </p>
               <button
                 type="button"
                 disabled={!reviewPage.next}
                 onClick={() => setPage((value) => value + 1)}
-                className="rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-700 disabled:opacity-40"
+                className="mb-btn mb-btn-secondary mb-btn-sm"
               >
                 Next reviews
               </button>
             </nav>
-          </div>
-        </>
-      ) : null}
+          </>
+        ) : null}
+      </div>
     </section>
   );
 }

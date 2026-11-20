@@ -26,8 +26,8 @@ export function ProfileCard() {
   }
 
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-      <p className="text-sm font-medium uppercase tracking-[0.2em] text-slate-500">
+    <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm">
+      <p className="mb-eyebrow">
         Profile
       </p>
 
@@ -37,7 +37,7 @@ export function ProfileCard() {
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
         <div className="rounded-2xl border border-slate-200 p-4">
-          <p className="text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
+          <p className="mb-eyebrow">
             Email
           </p>
           <p className="mt-2 text-sm font-medium text-slate-900">
@@ -46,7 +46,7 @@ export function ProfileCard() {
         </div>
 
         <div className="rounded-2xl border border-slate-200 p-4">
-          <p className="text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
+          <p className="mb-eyebrow">
             Phone
           </p>
           <p className="mt-2 text-sm font-medium text-slate-900">
@@ -55,7 +55,7 @@ export function ProfileCard() {
         </div>
 
         <div className="rounded-2xl border border-slate-200 p-4">
-          <p className="text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
+          <p className="mb-eyebrow">
             Email verified
           </p>
           <p className="mt-2 text-sm font-medium text-slate-900">
@@ -64,7 +64,7 @@ export function ProfileCard() {
         </div>
 
         <div className="rounded-2xl border border-slate-200 p-4">
-          <p className="text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
+          <p className="mb-eyebrow">
             Account type
           </p>
           <p className="mt-2 text-sm font-medium text-slate-900">

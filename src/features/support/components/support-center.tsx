@@ -188,7 +188,7 @@ function CreateTicketForm({
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+          className="mb-btn mb-btn-secondary mb-btn-sm"
         >
           Cancel
         </button>
@@ -215,7 +215,7 @@ function CreateTicketForm({
             onChange={(event) =>
               setSubject(event.target.value)
             }
-            className="mt-1.5 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+            className="mt-1.5 w-full mb-control"
             placeholder="Example: Payment succeeded but order is missing"
           />
         </label>
@@ -233,7 +233,7 @@ function CreateTicketForm({
                 event.target.value as SupportTicketCategory,
               )
             }
-            className="mt-1.5 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-slate-400"
+            className="mt-1.5 w-full mb-control mb-select"
           >
             {SUPPORT_CATEGORY_OPTIONS.map((option) => (
               <option
@@ -311,7 +311,7 @@ function CreateTicketForm({
               setMessage(event.target.value)
             }
             rows={6}
-            className="mt-1.5 w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+            className="mt-1.5 w-full resize-y mb-control"
             placeholder="What happened, what did you expect, and what have you already tried?"
           />
         </label>
@@ -321,7 +321,7 @@ function CreateTicketForm({
         <button
           type="submit"
           disabled={submitting}
-          className="rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+          className="mb-btn mb-btn-primary"
         >
           {submitting ? "Creating..." : "Create ticket"}
         </button>
@@ -461,7 +461,7 @@ function TagManager({
         <button
           type="submit"
           disabled={busyId === "new"}
-          className="rounded-2xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+          className="mb-btn mb-btn-primary"
         >
           Add tag
         </button>
@@ -700,7 +700,7 @@ function TicketDetail({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+            className="mb-btn mb-btn-secondary mb-btn-sm"
           >
             Close panel
           </button>
@@ -796,7 +796,7 @@ function TicketDetail({
         <div className="grid gap-4 border-b border-slate-200 p-6 md:grid-cols-2 xl:grid-cols-4">
           {capabilities.canAssign ? (
             <div>
-              <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <label className="mb-eyebrow">
                 Assign ticket
 
                 <select
@@ -841,7 +841,7 @@ function TicketDetail({
                       ),
                   )
                 }
-                className="mt-2 w-full rounded-2xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                className="mt-2 w-full mb-btn mb-btn-primary mb-btn-sm"
               >
                 Save assignee
               </button>
@@ -850,7 +850,7 @@ function TicketDetail({
 
           {capabilities.canChangePriority ? (
             <div>
-              <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <label className="mb-eyebrow">
                 Priority
 
                 <select
@@ -903,7 +903,7 @@ function TicketDetail({
 
           {capabilities.canManageTags ? (
             <div>
-              <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <label className="mb-eyebrow">
                 Add tag
 
                 <select
@@ -960,7 +960,7 @@ function TicketDetail({
           ) : null}
 
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <p className="mb-eyebrow">
               Lifecycle
             </p>
 
@@ -1075,7 +1075,7 @@ function TicketDetail({
       ) : null}
 
       <div className="p-6">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+        <h3 className="mb-eyebrow">
           Conversation
         </h3>
 
@@ -1166,7 +1166,7 @@ function TicketDetail({
                   ? "Write an internal note..."
                   : "Write a reply..."
               }
-              className="w-full resize-y rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-400"
+              className="w-full resize-y mb-control"
             />
 
             <div className="mt-3 flex justify-end">
@@ -1176,7 +1176,7 @@ function TicketDetail({
                   !reply.trim() ||
                   busy === "reply"
                 }
-                className="rounded-2xl bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+                className="mb-btn mb-btn-primary"
               >
                 {internalNote
                   ? "Add note"
@@ -1749,7 +1749,7 @@ export function SupportCenter({
     <main className="mx-auto max-w-7xl px-4 py-10">
       <div className="flex flex-wrap items-end justify-between gap-5">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+          <p className="mb-eyebrow">
             {capabilities.isSupportStaff
               ? "Support operations"
               : "Help center"}
@@ -1777,7 +1777,7 @@ export function SupportCenter({
                   !current,
               )
             }
-            className="rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800"
+            className="mb-btn mb-btn-primary"
           >
             {showCreate
               ? "Hide form"
@@ -1856,7 +1856,7 @@ export function SupportCenter({
       <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="grid gap-3 md:grid-cols-4">
           <label>
-            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <span className="mb-eyebrow">
               Status
             </span>
 
@@ -1896,7 +1896,7 @@ export function SupportCenter({
           {capabilities.isSupportStaff ? (
             <>
               <label>
-                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <span className="mb-eyebrow">
                   Priority
                 </span>
 
@@ -1941,7 +1941,7 @@ export function SupportCenter({
               </label>
 
               <label>
-                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <span className="mb-eyebrow">
                   Category
                 </span>
 
@@ -1986,7 +1986,7 @@ export function SupportCenter({
               </label>
 
               <label>
-                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <span className="mb-eyebrow">
                   Assignment
                 </span>
 
@@ -2232,7 +2232,7 @@ export function SupportCenter({
             onClose={closeTicket}
           />
         ) : (
-          <section className="flex min-h-80 items-center justify-center rounded-3xl border border-dashed border-slate-300 bg-white p-8 text-center">
+          <section className="flex min-h-80 items-center justify-center rounded-3xl border border-dashed border-slate-300 bg-white p-5 sm:p-8 text-center">
             <div>
               <p role={detailLoading ? "status" : undefined} className="font-semibold text-slate-800">
                 {detailLoading ? "Loading conversation..." : "Select a ticket"}

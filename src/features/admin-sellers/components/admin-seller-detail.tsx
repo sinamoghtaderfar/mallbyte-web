@@ -184,7 +184,7 @@ export function AdminSellerDetail() {
 
       <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+          <p className="mb-eyebrow">
             Seller application
           </p>
           <h1 className="mt-2 text-3xl font-semibold text-slate-950">
@@ -291,7 +291,7 @@ export function AdminSellerDetail() {
                 type="button"
                 onClick={handleVerify}
                 disabled={isWorking}
-                className="mt-5 flex h-11 w-full items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                className="mt-5 flex w-full mb-btn mb-btn-primary"
               >
                 Approve seller
               </button>
@@ -306,7 +306,7 @@ export function AdminSellerDetail() {
                   disabled={isWorking}
                   rows={4}
                   placeholder="Explain why this seller application is rejected."
-                  className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-slate-400"
+                  className="w-full mb-control"
                 />
               </label>
 
@@ -314,7 +314,7 @@ export function AdminSellerDetail() {
                 type="button"
                 onClick={handleReject}
                 disabled={isWorking}
-                className="mt-3 flex h-11 w-full items-center justify-center rounded-2xl border border-red-200 px-5 text-sm font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                className="mt-3 flex w-full mb-btn mb-btn-secondary text-rose-700 hover:bg-rose-50"
               >
                 Reject seller
               </button>

@@ -135,7 +135,7 @@ export function StockAdjustmentModal({
     >
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+            <p className="mb-eyebrow">
               Inventory
             </p>
 
@@ -159,7 +159,7 @@ export function StockAdjustmentModal({
             type="button"
             onClick={onClose}
             disabled={isSubmitting}
-            className="inline-flex h-10 items-center justify-center rounded-2xl border border-slate-200 px-4 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+            className="mb-btn mb-btn-secondary mb-btn-sm"
           >
             Close
           </button>
@@ -211,7 +211,7 @@ export function StockAdjustmentModal({
               onChange={(event) =>
                 setMovementType(event.target.value as AdjustableMovementType)
               }
-              className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-slate-400"
+              className="mt-2 w-full mb-control mb-select"
             >
               {MOVEMENT_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -232,7 +232,7 @@ export function StockAdjustmentModal({
                 onChange={(event) =>
                   setDirection(event.target.value as AdjustmentDirection)
                 }
-                className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-slate-400"
+                className="mt-2 w-full mb-control mb-select"
               >
                 <option value="increase">Increase stock</option>
                 <option value="decrease">Decrease stock</option>
@@ -249,7 +249,7 @@ export function StockAdjustmentModal({
               step="1"
               value={quantity}
               onChange={(event) => setQuantity(event.target.value)}
-              className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-slate-400"
+              className="mt-2 w-full mb-control"
               required
             />
           </label>
@@ -293,7 +293,7 @@ export function StockAdjustmentModal({
               value={referenceId}
               onChange={(event) => setReferenceId(event.target.value)}
               placeholder="Example: PO-2026-001"
-              className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-slate-400"
+              className="mt-2 w-full mb-control"
             />
 
             <span className="mt-1 block text-xs text-slate-500">
@@ -309,7 +309,7 @@ export function StockAdjustmentModal({
               onChange={(event) => setReason(event.target.value)}
               rows={3}
               placeholder="Why is this stock changing?"
-              className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-400"
+              className="mt-2 w-full mb-control"
               required
             />
           </label>
@@ -322,7 +322,7 @@ export function StockAdjustmentModal({
               onChange={(event) => setNotes(event.target.value)}
               rows={3}
               placeholder="Optional internal notes"
-              className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-400"
+              className="mt-2 w-full mb-control"
             />
           </label>
 
@@ -331,7 +331,7 @@ export function StockAdjustmentModal({
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 px-5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              className="mb-btn mb-btn-secondary"
             >
               Cancel
             </button>
@@ -339,7 +339,7 @@ export function StockAdjustmentModal({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+              className="mb-btn mb-btn-primary"
             >
               {isSubmitting ? "Saving adjustment..." : "Save adjustment"}
             </button>

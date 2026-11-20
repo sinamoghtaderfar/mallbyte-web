@@ -124,7 +124,7 @@ export function Notice({ children, variant = "info" }: {
 export function RetryButton({ onClick, disabled }: { onClick: () => void; disabled?: boolean }) {
   return (
     <button type="button" onClick={onClick} disabled={disabled}
-      className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50">
+      className="gap-2 bg-white mb-btn mb-btn-secondary">
       <RefreshCw size={15} className={disabled ? "animate-spin" : ""} /> Refresh
     </button>
   );

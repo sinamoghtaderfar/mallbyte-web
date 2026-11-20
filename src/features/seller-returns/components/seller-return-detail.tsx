@@ -180,7 +180,7 @@ export function SellerReturnDetail() {
 
       <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+          <p className="mb-eyebrow">
             Seller return view
           </p>
           <h1 className="mt-2 text-3xl font-semibold text-slate-950">

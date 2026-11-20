@@ -129,7 +129,7 @@ export function SellerProductImagesManager({
   return (
     <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-6">
       <div>
-        <p className="text-sm font-medium uppercase tracking-[0.2em] text-slate-500">
+        <p className="mb-eyebrow">
           Product images
         </p>
 
@@ -165,7 +165,7 @@ export function SellerProductImagesManager({
             value={altText}
             onChange={(event) => setAltText(event.target.value)}
             placeholder="Keyboard front view"
-            className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-slate-400"
+            className="mt-2 w-full mb-control"
           />
         </label>
 
@@ -176,7 +176,7 @@ export function SellerProductImagesManager({
             min="0"
             value={order}
             onChange={(event) => setOrder(event.target.value)}
-            className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-slate-400"
+            className="mt-2 w-full mb-control"
           />
         </label>
 
@@ -194,7 +194,7 @@ export function SellerProductImagesManager({
           <button
             type="submit"
             disabled={isSubmitting}
-            className="h-11 rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+            className="mb-btn mb-btn-primary"
           >
             {isSubmitting ? "Uploading..." : "Upload image"}
           </button>
@@ -262,7 +262,7 @@ export function SellerProductImagesManager({
                       type="button"
                       onClick={() => void handleDeleteImage(image.id)}
                       disabled={deletingImageId === image.id}
-                      className="mt-4 h-10 rounded-2xl border border-red-200 px-4 text-sm font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="mt-4 mb-btn mb-btn-secondary text-rose-700 hover:bg-rose-50 mb-btn-sm"
                     >
                       {deletingImageId === image.id ? "Deleting..." : "Delete"}
                     </button>

@@ -344,7 +344,7 @@ function StockTransfersPanelContent({
                 setMessage("");
                 setShowCreateModal(true);
               }}
-              className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white hover:bg-slate-800"
+              className="mb-btn mb-btn-primary"
             >
               New transfer
             </button>
@@ -387,14 +387,14 @@ function StockTransfersPanelContent({
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search product, warehouse, requester..."
-            className="h-11 rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-slate-400"
+            className="mb-control"
           />
 
           <select
             aria-label="Filter transfer status"
             value={statusFilter}
             onChange={(event) => setStatusFilter(event.target.value)}
-            className="h-11 rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-slate-400"
+            className="mb-control mb-select"
           >
             <option value="all">All statuses</option>
 
@@ -581,7 +581,7 @@ function StockTransfersPanelContent({
                               aria-label={`Cancel transfer ${transfer.id}`}
                               disabled={isBusy}
                               onClick={() => void handleCancel(transfer)}
-                              className="rounded-xl border border-red-200 px-3 py-2 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
+                              className="mb-btn mb-btn-secondary text-rose-700 hover:bg-rose-50 mb-btn-sm"
                             >
                               Cancel
                             </button>
@@ -596,7 +596,7 @@ function StockTransfersPanelContent({
                                 setShippingTransfer(transfer);
                                 setTrackingNumber(transfer.tracking_number);
                               }}
-                              className="rounded-xl bg-slate-900 px-3 py-2 text-xs font-medium text-white hover:bg-slate-800 disabled:opacity-50"
+                              className="mb-btn mb-btn-primary mb-btn-sm"
                             >
                               Ship
                             </button>
@@ -682,7 +682,7 @@ function StockTransfersPanelContent({
                 onChange={(event) => setTrackingNumber(event.target.value)}
                 maxLength={100}
                 placeholder="Tracking number"
-                className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-slate-400"
+                className="mt-2 w-full mb-control"
               />
             </label>
 
@@ -703,7 +703,7 @@ function StockTransfersPanelContent({
                 type="button"
                 disabled={actionId === shippingTransfer.id}
                 onClick={() => void handleShip()}
-                className="h-11 rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white disabled:opacity-50"
+                className="mb-btn mb-btn-primary"
               >
                 {actionId === shippingTransfer.id
                   ? "Shipping..."

@@ -223,7 +223,7 @@ export function OrderReturnStatusCard({
     <div className="mt-6 rounded-3xl border border-slate-200 bg-slate-50 p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+          <p className="mb-eyebrow">
             Return status
           </p>
 
@@ -242,7 +242,7 @@ export function OrderReturnStatusCard({
 
         <Link
           href={`/returns/${returnRequest.id}`}
-          className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800"
+          className="mb-btn mb-btn-primary"
         >
           View return
         </Link>
@@ -321,7 +321,7 @@ export function OrderReturnActionButton({
   return (
     <Link
       href={`/orders/${orderId}/return`}
-      className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 px-5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+      className="mb-btn mb-btn-secondary"
     >
       Request return
     </Link>

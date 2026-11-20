@@ -208,7 +208,7 @@ export function PaymentSimulator() {
 
   if (isLoading) {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+      <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm">
         <p className="text-sm text-slate-500">Loading payment...</p>
       </div>
     );
@@ -216,7 +216,7 @@ export function PaymentSimulator() {
 
   if (loadError) {
     return (
-      <div className="rounded-3xl border border-red-200 bg-red-50 p-8 shadow-sm">
+      <div className="rounded-3xl border border-red-200 bg-red-50 p-5 sm:p-8 shadow-sm">
         <h1 className="text-xl font-semibold text-red-800">
           Could not load payment page
         </h1>
@@ -227,7 +227,7 @@ export function PaymentSimulator() {
 
   if (!order) {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+      <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm">
         <h1 className="text-xl font-semibold text-slate-950">
           Order not found
         </h1>
@@ -250,9 +250,9 @@ export function PaymentSimulator() {
 
   return (
     <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
-      <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+      <section className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm">
         <div>
-          <p className="text-sm font-medium uppercase tracking-[0.2em] text-slate-500">
+          <p className="mb-eyebrow">
             Mock payment
           </p>
 
@@ -354,7 +354,7 @@ export function PaymentSimulator() {
                 type="button"
                 onClick={() => void handleCreatePayment()}
                 disabled={isCreating}
-                className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                className="mb-btn mb-btn-primary"
               >
                 {isCreating ? "Creating..." : "Create mock payment"}
               </button>
@@ -366,7 +366,7 @@ export function PaymentSimulator() {
                   type="button"
                   onClick={() => void handleMarkSuccess()}
                   disabled={isProcessing}
-                  className="inline-flex h-11 items-center justify-center rounded-2xl bg-green-600 px-5 text-sm font-medium text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="mb-btn mb-btn-success"
                 >
                   {isProcessing ? "Processing..." : "Mark as paid"}
                 </button>
@@ -375,7 +375,7 @@ export function PaymentSimulator() {
                   type="button"
                   onClick={() => void handleMarkFailed()}
                   disabled={isProcessing}
-                  className="inline-flex h-11 items-center justify-center rounded-2xl border border-red-200 px-5 text-sm font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="mb-btn mb-btn-secondary text-rose-700 hover:bg-rose-50"
                 >
                   Mark as failed
                 </button>
@@ -384,7 +384,7 @@ export function PaymentSimulator() {
                   type="button"
                   onClick={() => void handleCancelPayment()}
                   disabled={isProcessing}
-                  className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 px-5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="mb-btn mb-btn-secondary"
                 >
                   Cancel payment
                 </button>
@@ -429,14 +429,14 @@ export function PaymentSimulator() {
         <div className="mt-8 flex flex-wrap gap-3">
           <Link
             href={`/orders/${order.id}`}
-            className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800"
+            className="mb-btn mb-btn-primary"
           >
             Back to order
           </Link>
 
           <Link
             href="/orders"
-            className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 px-5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            className="mb-btn mb-btn-secondary"
           >
             Back to orders
           </Link>

@@ -79,13 +79,13 @@ export function StockMovementHistory({
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder="Search product, SKU, reference, or reason..."
-          className="h-11 rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-slate-400"
+          className="mb-control"
         />
 
         <select
           value={typeFilter}
           onChange={(event) => setTypeFilter(event.target.value)}
-          className="h-11 rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-slate-400"
+          className="mb-control mb-select"
         >
           <option value="all">All movement types</option>
 
@@ -99,7 +99,7 @@ export function StockMovementHistory({
         <select
           value={warehouseFilter}
           onChange={(event) => setWarehouseFilter(event.target.value)}
-          className="h-11 rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-slate-400"
+          className="mb-control mb-select"
         >
           <option value="all">All warehouses</option>
 
@@ -128,7 +128,7 @@ export function StockMovementHistory({
       ) : (
         <div className="mt-6 overflow-x-auto rounded-2xl border border-slate-200">
           <div className="min-w-[1200px]">
-            <div className="grid grid-cols-[1.5fr_1.1fr_1fr_0.7fr_0.9fr_1.4fr_1fr] gap-4 bg-slate-50 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <div className="grid grid-cols-[1.5fr_1.1fr_1fr_0.7fr_0.9fr_1.4fr_1fr] gap-4 bg-slate-50 px-4 py-3 mb-eyebrow">
               <span>Product</span>
               <span>Warehouse</span>
               <span>Type</span>

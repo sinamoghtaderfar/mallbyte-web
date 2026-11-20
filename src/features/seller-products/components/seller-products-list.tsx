@@ -89,7 +89,7 @@ export function SellerProductsList() {
 
   if (isLoading) {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+      <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm">
         <p className="text-sm text-slate-500">Loading seller products...</p>
         {pager}
       </div>
@@ -98,7 +98,7 @@ export function SellerProductsList() {
 
   if (error) {
     return (
-      <div className="rounded-3xl border border-red-200 bg-red-50 p-8 shadow-sm">
+      <div className="rounded-3xl border border-red-200 bg-red-50 p-5 sm:p-8 shadow-sm">
         <h1 className="text-xl font-semibold text-red-800">
           Could not load seller products
         </h1>
@@ -108,7 +108,7 @@ export function SellerProductsList() {
 
         <Link
           href="/seller/dashboard"
-          className="mt-6 inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800"
+          className="mt-6 mb-btn mb-btn-primary"
         >
           Back to dashboard
         </Link>
@@ -117,10 +117,10 @@ export function SellerProductsList() {
   }
 
   return (
-    <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+    <section className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-sm font-medium uppercase tracking-[0.2em] text-slate-500">
+          <p className="mb-eyebrow">
             Seller products
           </p>
 
@@ -135,7 +135,7 @@ export function SellerProductsList() {
 
         <Link
           href="/seller/products/new"
-          className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800"
+          className="mb-btn mb-btn-primary"
         >
           New product
         </Link>
@@ -144,7 +144,7 @@ export function SellerProductsList() {
       {pager}
 
       {!products.length ? (
-        <div className="mt-8 rounded-3xl border border-dashed border-slate-300 p-8">
+        <div className="mt-8 rounded-3xl border border-dashed border-slate-300 p-5 sm:p-8">
           <h2 className="text-xl font-semibold text-slate-950">
             No products yet
           </h2>
@@ -154,7 +154,7 @@ export function SellerProductsList() {
         </div>
       ) : (
         <div className="mt-8 overflow-hidden rounded-3xl border border-slate-200">
-          <div className="grid grid-cols-[1fr_140px_120px] gap-4 border-b border-slate-200 bg-slate-50 px-5 py-3 text-xs font-medium uppercase tracking-[0.2em] text-slate-500">
+          <div className="grid grid-cols-[1fr_140px_120px] gap-4 border-b border-slate-200 bg-slate-50 px-5 py-3 mb-eyebrow">
             <span>Product</span>
             <span>Price</span>
             <span>Stock</span>
@@ -195,7 +195,7 @@ export function SellerProductsList() {
       <div className="mt-8">
         <Link
           href="/seller/dashboard"
-          className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 px-5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+          className="mb-btn mb-btn-secondary"
         >
           Back to dashboard
         </Link>

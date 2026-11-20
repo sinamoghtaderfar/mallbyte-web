@@ -182,7 +182,7 @@ export function ReturnRequestForm() {
 
   if (isLoading) {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-white p-8 text-sm text-slate-600 shadow-sm">
+      <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 text-sm text-slate-600 shadow-sm">
         Loading return form...
       </div>
     );
@@ -190,7 +190,7 @@ export function ReturnRequestForm() {
 
   if (error) {
     return (
-      <div className="rounded-3xl border border-red-200 bg-red-50 p-8 text-sm text-red-700">
+      <div className="rounded-3xl border border-red-200 bg-red-50 p-5 sm:p-8 text-sm text-red-700">
         {error}
       </div>
     );
@@ -198,7 +198,7 @@ export function ReturnRequestForm() {
 
   if (!order) {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-white p-8 text-sm text-slate-600 shadow-sm">
+      <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 text-sm text-slate-600 shadow-sm">
         Order not found.
       </div>
     );
@@ -206,7 +206,7 @@ export function ReturnRequestForm() {
 
   if (!Object.values(items).some((item) => item.maxQuantity > 0)) {
     return (
-      <section className="rounded-3xl border border-amber-200 bg-amber-50 p-8">
+      <section className="rounded-3xl border border-amber-200 bg-amber-50 p-5 sm:p-8">
         <h1 className="text-2xl font-bold text-amber-950">
           This order is not returnable yet
         </h1>
@@ -310,7 +310,7 @@ export function ReturnRequestForm() {
                                 quantity: Number(event.target.value),
                               })
                             }
-                            className="h-11 w-full rounded-2xl border border-slate-200 px-4 outline-none focus:border-slate-400"
+                            className="w-full mb-control"
                           />
                           <span className="block text-xs text-slate-500">
                             Max: {itemState.maxQuantity}
@@ -339,7 +339,7 @@ export function ReturnRequestForm() {
                                 .value as ReturnItemCondition,
                             })
                           }
-                          className="h-11 w-full rounded-2xl border border-slate-200 px-4 outline-none focus:border-slate-400"
+                          className="w-full mb-control mb-select"
                         >
                           {conditionOptions.map((option) => (
                             <option key={option.value} value={option.value}>
@@ -360,7 +360,7 @@ export function ReturnRequestForm() {
                               reason: event.target.value as ReturnReason,
                             })
                           }
-                          className="h-11 w-full rounded-2xl border border-slate-200 px-4 outline-none focus:border-slate-400"
+                          className="w-full mb-control mb-select"
                         >
                           {reasonOptions.map((option) => (
                             <option key={option.value} value={option.value}>
@@ -382,7 +382,7 @@ export function ReturnRequestForm() {
                             })
                           }
                           rows={3}
-                          className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-slate-400"
+                          className="w-full mb-control"
                           placeholder="Example: The item arrived damaged, is missing parts, or does not work as expected."
                         />
                       </label>
@@ -412,7 +412,7 @@ export function ReturnRequestForm() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="mt-6 inline-flex h-11 w-full items-center justify-center rounded-2xl bg-slate-950 px-5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+              className="mt-6 w-full mb-btn mb-btn-primary"
             >
               {isSubmitting ? "Submitting..." : "Submit return request"}
             </button>

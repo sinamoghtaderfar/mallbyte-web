@@ -70,7 +70,7 @@ export function SellerDashboardCard() {
 
   if (isLoading) {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+      <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm">
         <p className="text-sm text-slate-500">Loading seller dashboard...</p>
       </div>
     );
@@ -78,7 +78,7 @@ export function SellerDashboardCard() {
 
   if (error) {
     return (
-      <div className="rounded-3xl border border-red-200 bg-red-50 p-8 shadow-sm">
+      <div className="rounded-3xl border border-red-200 bg-red-50 p-5 sm:p-8 shadow-sm">
         <h1 className="text-xl font-semibold text-red-800">
           Seller dashboard is not available
         </h1>
@@ -88,21 +88,21 @@ export function SellerDashboardCard() {
         <div className="mt-6 flex flex-wrap gap-3">
           <Link
             href="/seller/returns"
-            className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 px-5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            className="mb-btn mb-btn-secondary"
           >
             View returns
           </Link>
 
           <Link
             href="/seller/status"
-            className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800"
+            className="mb-btn mb-btn-primary"
           >
             Check seller status
           </Link>
 
           <Link
             href="/seller/apply"
-            className="inline-flex h-11 items-center justify-center rounded-2xl border border-red-200 px-5 text-sm font-medium text-red-700 transition hover:bg-red-100"
+            className="mb-btn mb-btn-secondary text-rose-700 hover:bg-rose-50"
           >
             Apply as seller
           </Link>
@@ -113,7 +113,7 @@ export function SellerDashboardCard() {
 
   if (!seller) {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+      <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm">
         <h1 className="text-xl font-semibold text-slate-950">
           Seller profile not found
         </h1>
@@ -123,10 +123,10 @@ export function SellerDashboardCard() {
 
   return (
     <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
-      <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+      <section className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <p className="text-sm font-medium uppercase tracking-[0.2em] text-slate-500">
+            <p className="mb-eyebrow">
               Seller dashboard
             </p>
 
@@ -146,7 +146,7 @@ export function SellerDashboardCard() {
 
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-2xl border border-slate-200 p-5">
-            <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">
+            <p className="mb-eyebrow">
               Total sales
             </p>
             <p className="mt-3 text-2xl font-semibold text-slate-950">
@@ -155,7 +155,7 @@ export function SellerDashboardCard() {
           </div>
 
           <div className="rounded-2xl border border-slate-200 p-5">
-            <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">
+            <p className="mb-eyebrow">
               Orders
             </p>
             <p className="mt-3 text-2xl font-semibold text-slate-950">
@@ -164,7 +164,7 @@ export function SellerDashboardCard() {
           </div>
 
           <div className="rounded-2xl border border-slate-200 p-5">
-            <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">
+            <p className="mb-eyebrow">
               Balance
             </p>
             <p className="mt-3 text-2xl font-semibold text-slate-950">
@@ -173,7 +173,7 @@ export function SellerDashboardCard() {
           </div>
 
           <div className="rounded-2xl border border-slate-200 p-5">
-            <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">
+            <p className="mb-eyebrow">
               Commission
             </p>
             <p className="mt-3 text-2xl font-semibold text-slate-950">
@@ -184,7 +184,7 @@ export function SellerDashboardCard() {
 
         <div className="mt-8 grid gap-4 sm:grid-cols-2">
           <div className="rounded-2xl border border-slate-200 p-5">
-            <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">
+            <p className="mb-eyebrow">
               Business email
             </p>
             <p className="mt-2 text-sm font-medium text-slate-950">
@@ -193,7 +193,7 @@ export function SellerDashboardCard() {
           </div>
 
           <div className="rounded-2xl border border-slate-200 p-5">
-            <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">
+            <p className="mb-eyebrow">
               Verified at
             </p>
             <p className="mt-2 text-sm font-medium text-slate-950">
@@ -205,35 +205,35 @@ export function SellerDashboardCard() {
         <div className="mt-8 flex flex-wrap gap-3">
           <Link
             href="/seller/products"
-            className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800"
+            className="mb-btn mb-btn-primary"
           >
             Manage products
           </Link>
 
           <Link
             href="/seller/orders"
-            className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 px-5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            className="mb-btn mb-btn-secondary"
           >
             View orders
           </Link>
 
           <Link
             href="/seller/returns"
-            className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 px-5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            className="mb-btn mb-btn-secondary"
           >
             View returns
           </Link>
 
           <Link
             href="/seller/store"
-            className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 px-5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            className="mb-btn mb-btn-secondary"
           >
             Edit store settings
           </Link>
 
           <Link
             href="/seller/status"
-            className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 px-5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            className="mb-btn mb-btn-secondary"
           >
             View status
           </Link>

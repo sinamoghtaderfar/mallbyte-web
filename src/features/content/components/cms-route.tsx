@@ -51,7 +51,7 @@ export function CmsRoute({ children }: { children: ReactNode }) {
     return <AccessDenied title="Sign in required" description="Sign in to open the content workspace." />;
   }
   if (networkError) {
-    return <main role="alert" className="mx-auto max-w-2xl p-10"><h1 className="text-xl font-semibold">Could not check CMS access</h1><p className="mt-2 text-slate-600">The permission service is unavailable. Nothing was changed.</p><button className="mt-4 rounded-xl bg-slate-950 px-4 py-2 text-white" onClick={() => { setNetworkError(false); setAttempt((v) => v + 1); }}>Retry</button></main>;
+    return <main role="alert" className="mx-auto max-w-2xl p-10"><h1 className="text-xl font-semibold">Could not check CMS access</h1><p className="mt-2 text-slate-600">The permission service is unavailable. Nothing was changed.</p><button className="mt-4 mb-btn mb-btn-primary" onClick={() => { setNetworkError(false); setAttempt((v) => v + 1); }}>Retry</button></main>;
   }
   if (gate?.userId !== userId) {
     return <p role="status" className="mx-auto max-w-6xl p-10 text-slate-500">Loading CMS permissions…</p>;

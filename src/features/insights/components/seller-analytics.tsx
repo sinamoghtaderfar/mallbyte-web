@@ -95,7 +95,7 @@ export function SellerAnalytics() {
               <Panel title="Merchandise trend" subtitle="Daily gross and refunded merchandise for the selected currency.">
                 <FinancialAreaChart points={points} currency={currency} primaryName="Gross merchandise" secondaryName="Verified refunds" />
                 {points.length > 0 && <button type="button" onClick={() => downloadChartCsv(points, currency, "Gross merchandise", "Verified refunds", "seller-merchandise")}
-                  className="mt-4 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">Download displayed chart CSV</button>}
+                  className="mt-4 mb-btn mb-btn-secondary mb-btn-sm">Download displayed chart CSV</button>}
               </Panel>
               <Panel title="Top-selling products" subtitle="Ranked by gross merchandise value.">
                 {bestProducts.length ? (
@@ -122,8 +122,8 @@ export function SellerAnalytics() {
               Seller metrics use checkout ownership snapshots where available, with legacy fallback for older orders. Net merchandise accounts for checkout discounts and verified merchandise refunds, but is NOT profit or seller payout. For confirmed ledger balances and eligibility, use the finance page.
             </Notice>
             <div className="flex flex-wrap gap-3">
-              <Link href="/seller/finance" className="rounded-xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800">View financial statement</Link>
-              <Link href="/seller/products" className="rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-100">Manage products</Link>
+              <Link href="/seller/finance" className="mb-btn mb-btn-primary">View financial statement</Link>
+              <Link href="/seller/products" className="bg-white mb-btn mb-btn-secondary">Manage products</Link>
             </div>
           </>
         )}

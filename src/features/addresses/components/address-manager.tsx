@@ -169,7 +169,7 @@ export function AddressManager() {
               onChange={handleChange}
               required
               placeholder="Home"
-              className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-slate-400"
+              className="mt-2 w-full mb-control"
             />
           </label>
 
@@ -187,7 +187,7 @@ export function AddressManager() {
                 maxLength={100}
                 pattern="[^0-9]*"
                 title="Use letters only. Numbers are not allowed."
-                className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-slate-400"
+                className="mt-2 w-full mb-control"
               />
             </label>
 
@@ -204,7 +204,7 @@ export function AddressManager() {
                 maxLength={100}
                 pattern="[^0-9]*"
                 title="Use letters only. Numbers are not allowed."
-                className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-slate-400"
+                className="mt-2 w-full mb-control"
               />
             </label>
           </div>
@@ -218,7 +218,7 @@ export function AddressManager() {
               value={form.street}
               onChange={handleChange}
               required
-              className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-slate-400"
+              className="mt-2 w-full mb-control"
             />
           </label>
 
@@ -229,7 +229,7 @@ export function AddressManager() {
                 name="alley"
                 value={form.alley}
                 onChange={handleChange}
-                className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-slate-400"
+                className="mt-2 w-full mb-control"
               />
             </label>
 
@@ -242,7 +242,7 @@ export function AddressManager() {
                 value={form.building_number}
                 onChange={handleChange}
                 required
-                className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-slate-400"
+                className="mt-2 w-full mb-control"
               />
             </label>
           </div>
@@ -254,7 +254,7 @@ export function AddressManager() {
                 name="floor"
                 value={form.floor}
                 onChange={handleChange}
-                className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-slate-400"
+                className="mt-2 w-full mb-control"
               />
             </label>
 
@@ -264,7 +264,7 @@ export function AddressManager() {
                 name="unit"
                 value={form.unit}
                 onChange={handleChange}
-                className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-slate-400"
+                className="mt-2 w-full mb-control"
               />
             </label>
           </div>
@@ -281,7 +281,7 @@ export function AddressManager() {
               inputMode="numeric"
               pattern="[0-9]{4,10}"
               placeholder="1234567890"
-              className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-slate-400"
+              className="mt-2 w-full mb-control"
             />
           </label>
 
@@ -295,7 +295,7 @@ export function AddressManager() {
                 value={form.receiver_name}
                 onChange={handleChange}
                 required
-                className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-slate-400"
+                className="mt-2 w-full mb-control"
               />
             </label>
 
@@ -309,7 +309,7 @@ export function AddressManager() {
                 onChange={handleChange}
                 required
                 placeholder="09123456789"
-                className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-slate-400"
+                className="mt-2 w-full mb-control"
               />
             </label>
           </div>
@@ -331,7 +331,7 @@ export function AddressManager() {
         <button
           type="submit"
           disabled={isSubmitting || activeAddressId !== null}
-          className="mt-6 h-11 w-full rounded-2xl bg-slate-900 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+          className="mt-6 w-full mb-btn mb-btn-primary"
         >
           {isSubmitting ? "Saving..." : "Save address"}
         </button>
@@ -364,7 +364,7 @@ export function AddressManager() {
         ) : null}
 
         {!isLoading && !loadError && !addresses.length ? (
-          <div className="mt-8 rounded-3xl border border-dashed border-slate-200 p-8 text-center">
+          <div className="mt-8 rounded-3xl border border-dashed border-slate-200 p-5 sm:p-8 text-center">
             <h3 className="text-lg font-semibold text-slate-950">
               No saved addresses
             </h3>
@@ -421,7 +421,7 @@ export function AddressManager() {
                           type="button"
                           onClick={() => handleSetDefault(address.id)}
                           disabled={activeAddressId !== null || isSubmitting}
-                          className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                          className="mb-btn mb-btn-secondary"
                         >
                           Set default
                         </button>

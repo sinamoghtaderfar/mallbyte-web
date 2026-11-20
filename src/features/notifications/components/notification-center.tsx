@@ -518,7 +518,7 @@ export function NotificationCenter() {
     <section>
       <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+          <p className="mb-eyebrow">
             Account
           </p>
 
@@ -541,7 +541,7 @@ export function NotificationCenter() {
           disabled={
             isMarkingAllRead || isBulkActionRunning || isItemActionRunning || isLoading
           }
-          className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+          className="gap-2 mb-btn mb-btn-secondary"
         >
           <CheckCheck className="h-4 w-4" />
 
@@ -586,7 +586,7 @@ export function NotificationCenter() {
             disabled={
               isBulkActionRunning || isMarkingAllRead || isItemActionRunning || isLoading
             }
-            className="rounded-2xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
+            className="mb-btn mb-btn-secondary mb-btn-sm"
           >
             Clear read
           </button>
@@ -597,7 +597,7 @@ export function NotificationCenter() {
             disabled={
               isBulkActionRunning || isMarkingAllRead || isItemActionRunning || isLoading
             }
-            className="rounded-2xl border border-red-200 px-3 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+            className="mb-btn mb-btn-secondary text-rose-700 hover:bg-rose-50 mb-btn-sm"
           >
             Clear all
           </button>
@@ -666,7 +666,7 @@ export function NotificationCenter() {
       ) : null}
 
       {isLoading ? (
-        <div className="mt-6 rounded-3xl border border-slate-200 bg-white p-8 text-sm text-slate-500">
+        <div className="mt-6 rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 text-sm text-slate-500">
           Loading notifications...
         </div>
       ) : null}
@@ -674,7 +674,7 @@ export function NotificationCenter() {
       {!isLoading &&
       !error &&
       notifications.length === 0 ? (
-        <div className="mt-6 rounded-3xl border border-slate-200 bg-white p-8">
+        <div className="mt-6 rounded-3xl border border-slate-200 bg-white p-5 sm:p-8">
           <h2 className="font-semibold text-slate-950">
             No notifications
           </h2>
@@ -814,7 +814,7 @@ export function NotificationCenter() {
             type="button"
             onClick={() => void handleLoadMore()}
             disabled={isLoadingMore || isBulkActionRunning || isMarkingAllRead || isItemActionRunning}
-            className="rounded-2xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+            className="bg-white mb-btn mb-btn-secondary"
           >
             {isLoadingMore
               ? "Loading..."

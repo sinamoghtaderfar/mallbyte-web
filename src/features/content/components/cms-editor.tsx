@@ -128,7 +128,7 @@ export function CmsEditor({ resource, definition, initial, onClose, onSaved, can
                 ) : (
                   <><label htmlFor={id} className="block text-sm font-semibold text-slate-700">{field.label}{field.required && <span className="ml-1 text-rose-600">*</span>}</label>
                   {field.type === "textarea" ? (
-                    <textarea id={id} required={field.required} rows={field.name === "content" || field.name === "answer" ? 8 : 3} value={String(value ?? "")} onChange={(e) => setValue(field.name, e.target.value)} className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:border-cyan-600 focus:outline-none" />
+                    <textarea id={id} required={field.required} rows={field.name === "content" || field.name === "answer" ? 8 : 3} value={String(value ?? "")} onChange={(e) => setValue(field.name, e.target.value)} className="w-full focus:border-cyan-600 mb-control" />
                   ) : field.type === "select" ? (
                     <select id={id} required={field.required} value={String(value ?? field.choices?.[0] ?? "")} onChange={(e) => setValue(field.name, e.target.value)} className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm">{field.choices?.map((opt) => <option key={opt} value={opt}>{opt.replaceAll("_", " ")}</option>)}</select>
                   ) : field.type === "relation" ? (
@@ -141,7 +141,7 @@ export function CmsEditor({ resource, definition, initial, onClose, onSaved, can
                     }} className="block w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" />
                     {initial && typeof initial[field.name] === "string" && <p className="truncate text-xs text-slate-500">Existing: {String(initial[field.name])}</p>}</div>
                   ) : (
-                    <input id={id} type={field.type === "datetime" ? "datetime-local" : field.type === "number" ? "number" : "text"} required={field.required} min={field.type === "number" ? 0 : undefined} value={String(value ?? "")} onChange={(e) => setValue(field.name, field.type === "number" ? Number(e.target.value) : e.target.value)} className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:border-cyan-600 focus:outline-none" />
+                    <input id={id} type={field.type === "datetime" ? "datetime-local" : field.type === "number" ? "number" : "text"} required={field.required} min={field.type === "number" ? 0 : undefined} value={String(value ?? "")} onChange={(e) => setValue(field.name, field.type === "number" ? Number(e.target.value) : e.target.value)} className="w-full focus:border-cyan-600 mb-control" />
                   )}</>
                 )}
                 {field.help && <p className="text-xs leading-5 text-slate-500">{field.help}</p>}
@@ -151,7 +151,7 @@ export function CmsEditor({ resource, definition, initial, onClose, onSaved, can
           </div>
           <div className="flex items-center justify-end gap-3 border-t border-slate-200 bg-white px-5 py-4 sm:px-7">
             <button type="button" onClick={onClose} disabled={busy} className="rounded-xl border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700">Cancel</button>
-            <button type="submit" disabled={busy} className="inline-flex items-center gap-2 rounded-xl bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50"><Save size={17} />{busy ? "Saving…" : "Save changes"}</button>
+            <button type="submit" disabled={busy} className="gap-2 mb-btn mb-btn-primary"><Save size={17} />{busy ? "Saving…" : "Save changes"}</button>
           </div>
         </form>
     </AccessibleDialog>

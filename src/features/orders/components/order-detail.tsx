@@ -164,7 +164,7 @@ function OrderDetailContent() {
 
   if (isLoading) {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+      <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm">
         <p className="text-sm text-slate-500">Loading order...</p>
       </div>
     );
@@ -172,7 +172,7 @@ function OrderDetailContent() {
 
   if (loadError) {
     return (
-      <div className="rounded-3xl border border-red-200 bg-red-50 p-8 shadow-sm">
+      <div className="rounded-3xl border border-red-200 bg-red-50 p-5 sm:p-8 shadow-sm">
         <h1 className="text-xl font-semibold text-red-800">
           Could not load order
         </h1>
@@ -183,7 +183,7 @@ function OrderDetailContent() {
 
   if (!order) {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+      <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm">
         <h1 className="text-xl font-semibold text-slate-950">
           Order not found
         </h1>
@@ -193,10 +193,10 @@ function OrderDetailContent() {
 
   return (
     <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
-      <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+      <section className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <p className="text-sm font-medium uppercase tracking-[0.2em] text-slate-500">
+            <p className="mb-eyebrow">
               Order
             </p>
 
@@ -321,7 +321,7 @@ function OrderDetailContent() {
           <div className="mt-8 grid gap-4 sm:grid-cols-2">
             {order.customer_note ? (
               <div className="rounded-2xl border border-slate-200 p-5">
-                <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">
+                <p className="mb-eyebrow">
                   Customer note
                 </p>
                 <p className="mt-3 text-sm leading-6 text-slate-600">
@@ -332,7 +332,7 @@ function OrderDetailContent() {
 
             {order.admin_note ? (
               <div className="rounded-2xl border border-slate-200 p-5">
-                <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">
+                <p className="mb-eyebrow">
                   Admin note
                 </p>
                 <p className="mt-3 text-sm leading-6 text-slate-600">
@@ -390,14 +390,14 @@ function OrderDetailContent() {
         <div className="mt-8 flex flex-wrap gap-3">
           <Link
             href="/orders"
-            className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800"
+            className="mb-btn mb-btn-primary"
           >
             Back to orders
           </Link>
 
           <Link
             href="/products"
-            className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 px-5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            className="mb-btn mb-btn-secondary"
           >
             Continue shopping
           </Link>
@@ -405,7 +405,7 @@ function OrderDetailContent() {
           {canPay ? (
             <Link
               href={`/orders/${order.id}/payment`}
-              className="inline-flex h-11 items-center justify-center rounded-2xl bg-green-600 px-5 text-sm font-medium text-white transition hover:bg-green-700"
+              className="mb-btn mb-btn-success"
             >
               Pay now
             </Link>
@@ -423,7 +423,7 @@ function OrderDetailContent() {
               type="button"
               onClick={handleCancelOrder}
               disabled={isCancelling}
-              className="inline-flex h-11 items-center justify-center rounded-2xl bg-red-600 px-5 text-sm font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className="mb-btn mb-btn-danger"
             >
               {isCancelling ? "Cancelling..." : "Cancel order"}
             </button>

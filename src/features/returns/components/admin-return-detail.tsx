@@ -191,7 +191,7 @@ export function AdminReturnDetail() {
 
         <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+            <p className="mb-eyebrow">
               Return request
             </p>
             <h1 className="mt-2 text-3xl font-semibold text-slate-950">
@@ -384,7 +384,7 @@ export function AdminReturnDetail() {
                   onChange={(event) => setNote(event.target.value)}
                   rows={4}
                   placeholder="Add a short note for this decision."
-                  className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-slate-400"
+                  className="w-full mb-control"
                 />
               </label>
 
@@ -397,7 +397,7 @@ export function AdminReturnDetail() {
                     value={approvedAmount}
                     onChange={(event) => setApprovedAmount(event.target.value)}
                     inputMode="numeric"
-                    className="h-11 w-full rounded-2xl border border-slate-200 px-4 outline-none focus:border-slate-400"
+                    className="w-full mb-control"
                   />
                 </label>
               ) : null}
@@ -409,7 +409,7 @@ export function AdminReturnDetail() {
                       type="button"
                       disabled={isWorking}
                       onClick={() => void runAction("approve")}
-                      className="flex h-11 w-full items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="flex w-full mb-btn mb-btn-primary"
                     >
                       Approve return
                     </button>
@@ -418,7 +418,7 @@ export function AdminReturnDetail() {
                       type="button"
                       disabled={isWorking}
                       onClick={() => void runAction("reject")}
-                      className="flex h-11 w-full items-center justify-center rounded-2xl border border-red-200 px-5 text-sm font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="flex w-full mb-btn mb-btn-secondary text-rose-700 hover:bg-rose-50"
                     >
                       Reject return
                     </button>
@@ -430,7 +430,7 @@ export function AdminReturnDetail() {
                     type="button"
                     disabled={isWorking}
                     onClick={() => void runAction("received")}
-                    className="flex h-11 w-full items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="flex w-full mb-btn mb-btn-primary"
                   >
                     Mark item received
                   </button>
@@ -441,7 +441,7 @@ export function AdminReturnDetail() {
                     type="button"
                     disabled={isWorking}
                     onClick={() => void runAction("refunded")}
-                    className="flex h-11 w-full items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="flex w-full mb-btn mb-btn-primary"
                   >
                     Mark refunded
                   </button>

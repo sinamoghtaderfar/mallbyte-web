@@ -2,6 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { ShoppingBag } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
 
 import { useAuthStore } from "@/features/auth/auth-store";
 import { getApiErrorMessage } from "@/lib/api/errors";
@@ -47,17 +50,19 @@ export function AddToCartButton({ productId, disabled }: AddToCartButtonProps) {
   }
 
   return (
-    <div>
-      <button
-        type="button"
+    <div className="min-w-0">
+      <Button
+        size="large"
         onClick={handleAddToCart}
-        disabled={disabled || isAdding}
-        className="h-12 rounded-2xl bg-slate-900 px-6 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+        disabled={disabled}
+        loading={isAdding}
+        className="w-full rounded-full"
       >
+        {!isAdding && <ShoppingBag size={18} aria-hidden="true" />}
         {isAdding ? "Adding..." : "Add to cart"}
-      </button>
+      </Button>
 
-      {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
+      {error ? <p role="alert" className="mt-3 text-sm text-danger">{error}</p> : null}
     </div>
   );
 }

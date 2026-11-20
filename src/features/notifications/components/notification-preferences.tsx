@@ -195,7 +195,7 @@ export function NotificationPreferencesCard() {
 
   if (!preferences && !loadError) {
     return (
-      <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+      <section className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm">
         <p className="text-sm text-slate-500">
           Loading notification preferences...
         </p>
@@ -205,7 +205,7 @@ export function NotificationPreferencesCard() {
 
   if (loadError) {
     return (
-      <section className="rounded-3xl border border-red-200 bg-red-50 p-8">
+      <section className="rounded-3xl border border-red-200 bg-red-50 p-5 sm:p-8">
         <h2 className="font-semibold text-red-950">
           Could not load notification preferences
         </h2>
@@ -222,9 +222,9 @@ export function NotificationPreferencesCard() {
   }
 
   return (
-    <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+    <section className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm">
       <div>
-        <p className="text-sm font-medium uppercase tracking-[0.2em] text-slate-500">
+        <p className="mb-eyebrow">
           Notifications
         </p>
 
@@ -354,7 +354,7 @@ export function NotificationPreferencesCard() {
           type="button"
           onClick={() => void handleSave()}
           disabled={isSaving}
-          className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+          className="mb-btn mb-btn-primary"
         >
           {isSaving ? "Saving..." : "Save preferences"}
         </button>

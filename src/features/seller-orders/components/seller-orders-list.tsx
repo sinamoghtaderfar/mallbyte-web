@@ -93,7 +93,7 @@ export function SellerOrdersList() {
 
   if (isLoading) {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-white p-8 text-sm text-slate-600 shadow-sm">
+      <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 text-sm text-slate-600 shadow-sm">
         Loading seller orders...
         {pager}
       </div>
@@ -102,7 +102,7 @@ export function SellerOrdersList() {
 
   if (error) {
     return (
-      <div className="rounded-3xl border border-red-200 bg-red-50 p-8 text-sm text-red-700">
+      <div className="rounded-3xl border border-red-200 bg-red-50 p-5 sm:p-8 text-sm text-red-700">
         {error}
         <button type="button" onClick={retryPage} className="ml-3 font-semibold underline">Retry seller orders</button>
         {pager}
@@ -128,12 +128,12 @@ export function SellerOrdersList() {
       {pager}
 
       {orders.length === 0 ? (
-        <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-600">
+        <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-5 sm:p-8 text-center text-sm text-slate-600">
           No seller orders yet.
         </div>
       ) : (
         <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-          <div className="grid grid-cols-6 gap-4 border-b border-slate-100 bg-slate-50 px-5 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <div className="grid grid-cols-6 gap-4 border-b border-slate-100 bg-slate-50 px-5 py-3 mb-eyebrow">
             <span className="col-span-2">Order</span>
             <span>Status</span>
             <span>Payment</span>
@@ -174,7 +174,7 @@ export function SellerOrdersList() {
                 <div className="md:text-right">
                   <Link
                     href={`/seller/orders/${order.id}`}
-                    className="inline-flex h-10 items-center justify-center rounded-2xl bg-slate-950 px-4 text-sm font-medium text-white transition hover:bg-slate-800"
+                    className="mb-btn mb-btn-primary mb-btn-sm"
                   >
                     View details
                   </Link>

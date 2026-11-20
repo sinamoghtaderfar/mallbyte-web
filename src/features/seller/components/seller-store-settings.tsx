@@ -127,7 +127,7 @@ export function SellerStoreSettings() {
 
   if (isLoading) {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+      <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm">
         <p className="text-sm text-slate-500">Loading store settings...</p>
       </div>
     );
@@ -135,7 +135,7 @@ export function SellerStoreSettings() {
 
   if (error && !form.business_email) {
     return (
-      <div className="rounded-3xl border border-red-200 bg-red-50 p-8 shadow-sm">
+      <div className="rounded-3xl border border-red-200 bg-red-50 p-5 sm:p-8 shadow-sm">
         <h1 className="text-xl font-semibold text-red-800">
           Store settings are not available
         </h1>
@@ -144,7 +144,7 @@ export function SellerStoreSettings() {
 
         <Link
           href="/seller/status"
-          className="mt-6 inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800"
+          className="mt-6 mb-btn mb-btn-primary"
         >
           Check seller status
         </Link>
@@ -156,10 +156,10 @@ export function SellerStoreSettings() {
     <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
       <form
         onSubmit={handleSubmit}
-        className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm"
+        className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm"
       >
         <div>
-          <p className="text-sm font-medium uppercase tracking-[0.2em] text-slate-500">
+          <p className="mb-eyebrow">
             Store settings
           </p>
 
@@ -195,7 +195,7 @@ export function SellerStoreSettings() {
               onChange={handleChange}
               rows={4}
               maxLength={500}
-              className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+              className="mt-2 w-full mb-control"
             />
           </label>
 
@@ -209,7 +209,7 @@ export function SellerStoreSettings() {
               onChange={handleChange}
               required
               maxLength={15}
-              className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-slate-400"
+              className="mt-2 w-full mb-control"
             />
           </label>
 
@@ -223,7 +223,7 @@ export function SellerStoreSettings() {
               value={form.business_email}
               onChange={handleChange}
               required
-              className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-slate-400"
+              className="mt-2 w-full mb-control"
             />
           </label>
 
@@ -235,7 +235,7 @@ export function SellerStoreSettings() {
               value={form.website}
               onChange={handleChange}
               placeholder="https://example.com"
-              className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-slate-400"
+              className="mt-2 w-full mb-control"
             />
           </label>
 
@@ -248,7 +248,7 @@ export function SellerStoreSettings() {
               value={form.bank_info.account_holder}
               onChange={handleBankInfoChange}
               required
-              className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-slate-400"
+              className="mt-2 w-full mb-control"
             />
           </label>
 
@@ -259,7 +259,7 @@ export function SellerStoreSettings() {
               value={form.bank_info.iban}
               onChange={handleBankInfoChange}
               required
-              className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-slate-400"
+              className="mt-2 w-full mb-control"
             />
           </label>
         </div>
@@ -268,14 +268,14 @@ export function SellerStoreSettings() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="h-12 rounded-2xl bg-slate-900 px-6 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+            className="mb-btn mb-btn-primary"
           >
             {isSubmitting ? "Saving..." : "Save store settings"}
           </button>
 
           <Link
             href="/seller/dashboard"
-            className="inline-flex h-12 items-center justify-center rounded-2xl border border-slate-200 px-6 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            className="mb-btn mb-btn-secondary"
           >
             Back to dashboard
           </Link>

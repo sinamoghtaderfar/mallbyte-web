@@ -82,10 +82,10 @@ export function SellerApplicationForm() {
     <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
       <form
         onSubmit={handleSubmit}
-        className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm"
+        className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm"
       >
         <div>
-          <p className="text-sm font-medium uppercase tracking-[0.2em] text-slate-500">
+          <p className="mb-eyebrow">
             Seller application
           </p>
 
@@ -117,7 +117,7 @@ export function SellerApplicationForm() {
               required
               maxLength={100}
               placeholder="MallByte Demo Store"
-              className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-slate-400"
+              className="mt-2 w-full mb-control"
             />
           </label>
 
@@ -132,7 +132,7 @@ export function SellerApplicationForm() {
               rows={4}
               maxLength={500}
               placeholder="Tell us what this store sells."
-              className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-slate-400"
+              className="mt-2 w-full mb-control"
             />
           </label>
 
@@ -147,7 +147,7 @@ export function SellerApplicationForm() {
               required
               maxLength={15}
               placeholder="+4917612345678"
-              className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-slate-400"
+              className="mt-2 w-full mb-control"
             />
           </label>
 
@@ -162,7 +162,7 @@ export function SellerApplicationForm() {
               onChange={handleChange}
               required
               placeholder="store@example.com"
-              className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-slate-400"
+              className="mt-2 w-full mb-control"
             />
           </label>
 
@@ -174,7 +174,7 @@ export function SellerApplicationForm() {
               value={form.website}
               onChange={handleChange}
               placeholder="https://example.com"
-              className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-slate-400"
+              className="mt-2 w-full mb-control"
             />
           </label>
 
@@ -188,7 +188,7 @@ export function SellerApplicationForm() {
               onChange={handleBankInfoChange}
               required
               placeholder="Sina Moghtader Far"
-              className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-slate-400"
+              className="mt-2 w-full mb-control"
             />
           </label>
 
@@ -200,7 +200,7 @@ export function SellerApplicationForm() {
               onChange={handleBankInfoChange}
               required
               placeholder="DE..."
-              className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-slate-400"
+              className="mt-2 w-full mb-control"
             />
           </label>
         </div>
@@ -209,14 +209,14 @@ export function SellerApplicationForm() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="h-12 rounded-2xl bg-slate-900 px-6 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+            className="mb-btn mb-btn-primary"
           >
             {isSubmitting ? "Submitting..." : "Submit application"}
           </button>
 
           <Link
             href="/seller/status"
-            className="inline-flex h-12 items-center justify-center rounded-2xl border border-slate-200 px-6 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            className="mb-btn mb-btn-secondary"
           >
             Check status
           </Link>

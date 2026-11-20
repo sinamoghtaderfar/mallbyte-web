@@ -110,7 +110,7 @@ export function SellerProductDetail() {
 
   if (isLoading) {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+      <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm">
         <p className="text-sm text-slate-500">Loading seller product...</p>
       </div>
     );
@@ -118,7 +118,7 @@ export function SellerProductDetail() {
 
   if (error) {
     return (
-      <div className="rounded-3xl border border-red-200 bg-red-50 p-8 shadow-sm">
+      <div className="rounded-3xl border border-red-200 bg-red-50 p-5 sm:p-8 shadow-sm">
         <h1 className="text-xl font-semibold text-red-800">
           Could not load seller product
         </h1>
@@ -126,7 +126,7 @@ export function SellerProductDetail() {
 
         <Link
           href="/seller/products"
-          className="mt-6 inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800"
+          className="mt-6 mb-btn mb-btn-primary"
         >
           Back to products
         </Link>
@@ -136,7 +136,7 @@ export function SellerProductDetail() {
 
   if (!product) {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+      <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm">
         <h1 className="text-xl font-semibold text-slate-950">
           Product not found
         </h1>
@@ -146,10 +146,10 @@ export function SellerProductDetail() {
 
   return (
     <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
-      <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+      <section className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <p className="text-sm font-medium uppercase tracking-[0.2em] text-slate-500">
+            <p className="mb-eyebrow">
               Seller product
             </p>
 
@@ -180,7 +180,7 @@ export function SellerProductDetail() {
 
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-2xl border border-slate-200 p-5">
-            <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">
+            <p className="mb-eyebrow">
               Price
             </p>
             <p className="mt-3 text-2xl font-semibold text-slate-950">
@@ -189,7 +189,7 @@ export function SellerProductDetail() {
           </div>
 
           <div className="rounded-2xl border border-slate-200 p-5">
-            <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">
+            <p className="mb-eyebrow">
               Available
             </p>
             <p className="mt-3 text-2xl font-semibold text-slate-950">
@@ -198,7 +198,7 @@ export function SellerProductDetail() {
           </div>
 
           <div className="rounded-2xl border border-slate-200 p-5">
-            <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">
+            <p className="mb-eyebrow">
               Reserved
             </p>
             <p className="mt-3 text-2xl font-semibold text-slate-950">
@@ -207,7 +207,7 @@ export function SellerProductDetail() {
           </div>
 
           <div className="rounded-2xl border border-slate-200 p-5">
-            <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">
+            <p className="mb-eyebrow">
               Views
             </p>
             <p className="mt-3 text-2xl font-semibold text-slate-950">
@@ -218,7 +218,7 @@ export function SellerProductDetail() {
 
         <div className="mt-8 grid gap-4 sm:grid-cols-2">
           <div className="rounded-2xl border border-slate-200 p-5">
-            <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">
+            <p className="mb-eyebrow">
               SKU
             </p>
             <p className="mt-2 text-sm font-medium text-slate-950">
@@ -227,7 +227,7 @@ export function SellerProductDetail() {
           </div>
 
           <div className="rounded-2xl border border-slate-200 p-5">
-            <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">
+            <p className="mb-eyebrow">
               Category
             </p>
             <p className="mt-2 text-sm font-medium text-slate-950">
@@ -236,7 +236,7 @@ export function SellerProductDetail() {
           </div>
 
           <div className="rounded-2xl border border-slate-200 p-5">
-            <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">
+            <p className="mb-eyebrow">
               Brand
             </p>
             <p className="mt-2 text-sm font-medium text-slate-950">
@@ -245,7 +245,7 @@ export function SellerProductDetail() {
           </div>
 
           <div className="rounded-2xl border border-slate-200 p-5">
-            <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">
+            <p className="mb-eyebrow">
               Barcode
             </p>
             <p className="mt-2 text-sm font-medium text-slate-950">
@@ -255,7 +255,7 @@ export function SellerProductDetail() {
         </div>
 
         <div className="mt-8 rounded-2xl border border-slate-200 p-5">
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">
+          <p className="mb-eyebrow">
             Description
           </p>
           <p className="mt-3 text-sm leading-6 text-slate-600">
@@ -270,7 +270,7 @@ export function SellerProductDetail() {
         <div className="mt-8 flex flex-wrap gap-3">
           <Link
             href={`/seller/products/${product.id}/edit`}
-            className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800"
+            className="mb-btn mb-btn-primary"
           >
             Edit product
           </Link>
@@ -279,14 +279,14 @@ export function SellerProductDetail() {
             type="button"
             onClick={handleDeleteProduct}
             disabled={isDeleting}
-            className="inline-flex h-11 items-center justify-center rounded-2xl border border-red-200 px-5 text-sm font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+            className="mb-btn mb-btn-secondary text-rose-700 hover:bg-rose-50"
           >
             {isDeleting ? "Deleting..." : "Delete product"}
           </button>
 
           <Link
             href="/seller/products"
-            className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 px-5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            className="mb-btn mb-btn-secondary"
           >
             Back to products
           </Link>

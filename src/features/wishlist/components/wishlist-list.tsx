@@ -99,7 +99,7 @@ export function WishlistList() {
 
   if (isLoading) {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+      <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm">
         <p className="text-sm text-slate-500">Loading wishlist...</p>
       </div>
     );
@@ -107,7 +107,7 @@ export function WishlistList() {
 
   if (error && !items.length) {
     return (
-      <div className="rounded-3xl border border-red-200 bg-red-50 p-8 shadow-sm">
+      <div className="rounded-3xl border border-red-200 bg-red-50 p-5 sm:p-8 shadow-sm">
         <h1 className="text-xl font-semibold text-red-800">
           Could not load wishlist
         </h1>
@@ -124,9 +124,9 @@ export function WishlistList() {
   }
 
   return (
-    <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+    <section className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm">
       <div>
-        <p className="text-sm font-medium uppercase tracking-[0.2em] text-slate-500">
+        <p className="mb-eyebrow">
           Wishlist
         </p>
 
@@ -160,7 +160,7 @@ export function WishlistList() {
       ) : null}
 
       {!error && !items.length ? (
-        <div className="mt-8 rounded-3xl border border-dashed border-slate-300 p-8">
+        <div className="mt-8 rounded-3xl border border-dashed border-slate-300 p-5 sm:p-8">
           <h2 className="text-xl font-semibold text-slate-950">
             Your wishlist is empty
           </h2>
@@ -170,7 +170,7 @@ export function WishlistList() {
 
           <Link
             href="/products"
-            className="mt-6 inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800"
+            className="mt-6 mb-btn mb-btn-primary"
           >
             Browse products
           </Link>
@@ -215,7 +215,7 @@ export function WishlistList() {
                   type="button"
                   onClick={() => void handleRemoveItem(item.id)}
                   disabled={removingItemId !== null}
-                  className="h-11 rounded-2xl border border-red-200 px-5 text-sm font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="mb-btn mb-btn-secondary text-rose-700 hover:bg-rose-50"
                 >
                   {removingItemId === item.id ? "Removing..." : "Remove"}
                 </button>

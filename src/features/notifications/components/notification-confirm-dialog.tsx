@@ -56,7 +56,7 @@ export function NotificationConfirmDialog({
           type="button"
           onClick={onCancel}
           disabled={isBusy}
-          className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+          className="mb-btn mb-btn-secondary"
         >
           Cancel
         </button>

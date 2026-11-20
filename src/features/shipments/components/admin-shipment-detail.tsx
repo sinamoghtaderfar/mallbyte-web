@@ -164,7 +164,7 @@ export function AdminShipmentDetail() {
 
       <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+          <p className="mb-eyebrow">
             Shipment
           </p>
           <h1 className="mt-2 text-3xl font-semibold text-slate-950">
@@ -350,7 +350,7 @@ export function AdminShipmentDetail() {
                 onChange={(event) => setNote(event.target.value)}
                 rows={3}
                 placeholder="Add a short shipment note."
-                className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-slate-400"
+                className="w-full mb-control"
               />
             </label>
 
@@ -363,7 +363,7 @@ export function AdminShipmentDetail() {
                   <input
                     value={trackingNumber}
                     onChange={(event) => setTrackingNumber(event.target.value)}
-                    className="h-11 w-full rounded-2xl border border-slate-200 px-4 outline-none focus:border-slate-400"
+                    className="w-full mb-control"
                   />
                 </label>
 
@@ -376,7 +376,7 @@ export function AdminShipmentDetail() {
                     value={trackingUrl}
                     onChange={(event) => setTrackingUrl(event.target.value)}
                     placeholder="https://..."
-                    className="h-11 w-full rounded-2xl border border-slate-200 px-4 outline-none focus:border-slate-400"
+                    className="w-full mb-control"
                   />
                 </label>
               </div>
@@ -388,7 +388,7 @@ export function AdminShipmentDetail() {
                   type="button"
                   disabled={isWorking}
                   onClick={() => void runAction("ready")}
-                  className="flex h-11 w-full items-center justify-center rounded-2xl border border-slate-200 px-5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex w-full mb-btn mb-btn-secondary"
                 >
                   Mark ready
                 </button>
@@ -399,7 +399,7 @@ export function AdminShipmentDetail() {
                   type="button"
                   disabled={isWorking}
                   onClick={() => void runAction("shipped")}
-                  className="flex h-11 w-full items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex w-full mb-btn mb-btn-primary"
                 >
                   Mark shipped
                 </button>
@@ -410,7 +410,7 @@ export function AdminShipmentDetail() {
                   type="button"
                   disabled={isWorking}
                   onClick={() => void runAction("delivered")}
-                  className="flex h-11 w-full items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex w-full mb-btn mb-btn-primary"
                 >
                   Mark delivered
                 </button>
@@ -421,7 +421,7 @@ export function AdminShipmentDetail() {
                   type="button"
                   disabled={isWorking}
                   onClick={() => void runAction("cancel")}
-                  className="flex h-11 w-full items-center justify-center rounded-2xl border border-red-200 px-5 text-sm font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex w-full mb-btn mb-btn-secondary text-rose-700 hover:bg-rose-50"
                 >
                   Cancel shipment
                 </button>

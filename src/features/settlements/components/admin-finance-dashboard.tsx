@@ -130,7 +130,7 @@ export function AdminFinanceDashboard() {
             <button type="button" disabled={reportLoading} onClick={refreshReport}
               className="rounded-xl border border-slate-300 px-4 py-2 text-sm disabled:opacity-50">Refresh</button>
             <button type="button" disabled={!report || exporting !== null} onClick={() => void exportCsv("reconciliation")}
-              className="rounded-xl bg-slate-950 px-4 py-2 text-sm font-medium text-white disabled:opacity-50">
+              className="mb-btn mb-btn-primary">
               {exporting === "reconciliation" ? "Exporting..." : "Export CSV"}
             </button>
           </div>
@@ -166,7 +166,7 @@ export function AdminFinanceDashboard() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-xl font-semibold text-slate-950">Seller ledger balances</h2>
           <button type="button" disabled={exporting !== null} onClick={() => void exportCsv("balances")}
-            className="rounded-xl bg-slate-950 px-4 py-2 text-sm font-medium text-white disabled:opacity-50">
+            className="mb-btn mb-btn-primary">
             {exporting === "balances" ? "Exporting..." : "Export balances CSV"}
           </button>
         </div>

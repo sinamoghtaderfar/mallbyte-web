@@ -57,7 +57,7 @@ describe("ProductCard", () => {
     expect(screen.getByText("Featured")).toBeInTheDocument();
     expect(screen.getByText("New arrival")).toBeInTheDocument();
     expect(screen.getByText("1,900,000")).toBeInTheDocument();
-    expect(screen.getByText("Stock: 8")).toBeInTheDocument();
+    expect(screen.getByText("In stock")).toBeInTheDocument();
   });
 
   it("falls back to labels when label_display is empty", () => {

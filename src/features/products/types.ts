@@ -138,6 +138,8 @@ export type ProductQueryParams = {
   has_discount?: string;
   label?: string;
   ordering?: string;
+  /** Backend ProductFilter supports exact is_featured filtering. */
+  is_featured?: string;
 };
 
 export type RecentlyViewedProduct = {

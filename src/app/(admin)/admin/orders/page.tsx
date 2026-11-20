@@ -50,7 +50,7 @@ export default function AdminOrdersPage() {
   return (
     <main className="mx-auto max-w-6xl px-4 py-10">
       <div>
-        <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+        <p className="mb-eyebrow">
           Admin
         </p>
 
@@ -67,7 +67,7 @@ export default function AdminOrdersPage() {
       <div className="mt-6 flex flex-wrap gap-3">
         <Link
           href="/admin/shipments"
-          className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white"
+          className="mb-btn mb-btn-primary"
         >
           Manage shipments
         </Link>

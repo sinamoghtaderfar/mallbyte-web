@@ -4,10 +4,8 @@ import { ProductDetail } from "@/features/products/components/product-detail";
 export default function ProductDetailPage() {
   return (
     <SiteShell>
-      <main className="px-4 py-12">
-        <div className="mx-auto w-full max-w-6xl">
-          <ProductDetail />
-        </div>
+      <main className="mb-container pb-24 pt-8 sm:pt-10">
+        <ProductDetail />
       </main>
     </SiteShell>
   );

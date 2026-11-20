@@ -2,11 +2,16 @@
 
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 
+import { ArrowLeft, ArrowRight, PackageSearch, SlidersHorizontal, X } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { controlStyles, Select } from "@/components/ui/input";
+import { Notice } from "@/components/ui/states";
 import { getApiErrorMessage } from "@/lib/api/errors";
 
 import { getProductFilters, getProducts } from "../api";
 import type { ProductListItem, ProductQueryParams } from "../types";
-import { ProductCard } from "./product-card";
+import { ProductCard, ProductCardSkeleton } from "./product-card";
 import { ProductReferenceFields } from "./product-reference-fields";
 import { getCatalogUrlSnapshot, getServerCatalogUrlSnapshot, navigateCatalog, parseCatalogUrlState, subscribeCatalogUrl } from "../url-state";
 
@@ -100,6 +105,7 @@ export function ProductList() {
   const [hasNextPage, setHasNextPage] = useState(false);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   const [error, setError] = useState("");
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -171,229 +177,250 @@ export function ProductList() {
   }
 
   const hasAppliedFilters = Object.keys(appliedFilters).length > 0;
+  const totalPages = resultCount !== null ? Math.max(1, Math.ceil(resultCount / pageSize)) : 1;
+  const filterLabels: Record<string, string> = {
+    search: "Search", category: "Category", brand: "Brand", min_price: "Min price", max_price: "Max price",
+    in_stock: "In stock", has_discount: "On sale", label: "Label", ordering: "Sort",
+  };
+  function describeFilter(key: keyof ProductQueryParams, value: string) {
+    if (key === "in_stock" || key === "has_discount" || key === "category" || key === "brand") return filterLabels[key];
+    if (key === "ordering") return `Sort: ${orderingOptions.find((o) => o.value === value)?.label ?? value}`;
+    if (key === "label") return `Label: ${productLabels.find((l) => l.value === value)?.label ?? value}`;
+    return `${filterLabels[key] ?? key}: ${value}`;
+  }
+  function removeFilter(key: keyof ProductQueryParams) {
+    const next = { ...appliedFilters };
+    delete next[key];
+    navigateCatalog({ filters: next, page: 1, pageSize });
+    setEditedFilters(null);
+  }
+  function handleSortChange(event: ChangeEvent<HTMLSelectElement>) {
+    const next = { ...draftFilters, ordering: event.target.value };
+    if (next.min_price && next.max_price && Number(next.min_price) > Number(next.max_price)) {
+      setEditedFilters(next);
+      return;
+    }
+    navigateCatalog({ filters: buildProductQueryParams(next), page: 1, pageSize });
+    setEditedFilters(null);
+  }
+  const fieldLabel = "text-sm font-medium text-slate-800";
+  const checkRow = "flex min-h-11 cursor-pointer items-center justify-between gap-3 rounded-xl px-3 text-sm font-medium text-slate-800 transition-colors hover:bg-slate-100";
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[320px_1fr]">
-      <aside className="h-fit rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div>
-          <p className="text-sm font-medium uppercase tracking-[0.2em] text-slate-500">
-            Filters
-          </p>
-
-          <h2 className="mt-3 text-2xl font-semibold tracking-tight text-slate-950">
-            Find products
-          </h2>
-
-          <p className="mt-2 text-sm leading-6 text-slate-500">
-            Search and filter the catalog by category, brand, price, stock, and
-            labels.
+    <div>
+      <header className="border-b border-line pb-8">
+        <div className="max-w-2xl">
+          <p className="mb-eyebrow">The marketplace</p>
+          <h1 className="mb-display mt-3 text-[2.75rem] text-foreground sm:text-[3.75rem]">
+            {appliedFilters.search ? <>Results for <span className="italic">“{appliedFilters.search}”</span></> : "Products"}
+          </h1>
+          <p className="mt-3 text-[0.9375rem] leading-7 text-muted">
+            Considered goods from independent sellers. Filter by category, brand, price and availability.
           </p>
         </div>
+      </header>
 
-        <form onSubmit={handleFilterSubmit} className="mt-6 space-y-4">
-          <label className="block">
-            <span className="text-sm font-medium text-slate-700">
-              Search products
-            </span>
-            <input
-              name="search"
-              value={draftFilters.search}
-              onChange={handleFilterChange}
-              placeholder="Keyboard, mouse, ..."
-              className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-slate-400"
-            />
-          </label>
-
-          <ProductReferenceFields
-            category={draftFilters.category}
-            brand={draftFilters.brand}
-            onChange={handleFilterChange}
-            loadOptions={getProductFilters}
-          />
-
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-            <label className="block">
-              <span className="text-sm font-medium text-slate-700">
-                Min price
-              </span>
-              <input
-                name="min_price"
-                type="number"
-                min="0"
-                value={draftFilters.min_price}
-                onChange={handleFilterChange}
-                className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-slate-400"
-              />
-            </label>
-
-            <label className="block">
-              <span className="text-sm font-medium text-slate-700">
-                Max price
-              </span>
-              <input
-                name="max_price"
-                type="number"
-                min="0"
-                value={draftFilters.max_price}
-                onChange={handleFilterChange}
-                className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-slate-400"
-              />
-            </label>
-          </div>
-
-          <label className="block">
-            <span className="text-sm font-medium text-slate-700">Label</span>
-            <select
-              name="label"
-              value={draftFilters.label}
-              onChange={handleFilterChange}
-              className="mt-2 h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm outline-none transition focus:border-slate-400"
-            >
-              <option value="">Any label</option>
-
-              {productLabels.map((label) => (
-                <option key={label.value} value={label.value}>
-                  {label.label}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="block">
-            <span className="text-sm font-medium text-slate-700">Sort by</span>
-            <select
-              name="ordering"
-              value={draftFilters.ordering}
-              onChange={handleFilterChange}
-              className="mt-2 h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm outline-none transition focus:border-slate-400"
-            >
-              {orderingOptions.map((option) => (
-                <option key={option.label} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <div className="space-y-3 rounded-2xl border border-slate-200 p-4">
-            <label className="flex items-center gap-3 text-sm font-medium text-slate-700">
-              <input
-                name="in_stock"
-                type="checkbox"
-                checked={draftFilters.in_stock}
-                onChange={handleFilterChange}
-                className="h-4 w-4 rounded border-slate-300"
-              />
-              In stock only
-            </label>
-
-            <label className="flex items-center gap-3 text-sm font-medium text-slate-700">
-              <input
-                name="has_discount"
-                type="checkbox"
-                checked={draftFilters.has_discount}
-                onChange={handleFilterChange}
-                className="h-4 w-4 rounded border-slate-300"
-              />
-              Has discount
-            </label>
-          </div>
-
-          <div className="flex flex-wrap gap-3">
-            <button
-              type="submit"
-              className="h-11 rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800"
-            >
-              Apply filters
-            </button>
-
-            <button
-              type="button"
-              onClick={handleClearFilters}
-              className="h-11 rounded-2xl border border-slate-200 px-5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-            >
-              Clear
-            </button>
-          </div>
-        </form>
-      </aside>
-
-      <section>
-        <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-sm font-medium uppercase tracking-[0.2em] text-slate-500">
-              Catalog
-            </p>
-
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
-              Products
-            </h1>
-          </div>
-
-          {resultCount !== null ? (
-            <p className="text-sm text-slate-500">
-              {resultCount} product{resultCount === 1 ? "" : "s"} found
-            </p>
-          ) : null}
-        </div>
-
-        {hasAppliedFilters ? (
-          <div className="mb-5 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-            Filters are active. Use Clear to reset the catalog.
-          </div>
+      <div className="mt-6 flex flex-wrap items-center gap-3">
+        <Button variant="secondary" className="rounded-full lg:hidden" aria-expanded={filtersOpen} aria-controls="catalog-filter-panel" onClick={() => setFiltersOpen((v) => !v)}>
+          <SlidersHorizontal size={16} aria-hidden="true" />{filtersOpen ? "Hide filters" : "Filters"}
+          {hasAppliedFilters ? <span className="rounded-full bg-ink px-1.5 text-xs leading-5 text-white">{Object.keys(appliedFilters).length}</span> : null}
+        </Button>
+        {resultCount !== null ? (
+          <p className="order-last w-full text-sm text-muted sm:order-none sm:w-auto" aria-live="polite">
+            {resultCount} product{resultCount === 1 ? "" : "s"} found
+          </p>
         ) : null}
-
-        {isLoadingProducts ? (
-          <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-            <p className="text-sm text-slate-500">Loading products...</p>
-          </div>
-        ) : null}
-
-        {!isLoadingProducts && error ? (
-          <div className="rounded-3xl border border-red-200 bg-red-50 p-8 shadow-sm">
-            <h2 className="text-lg font-semibold text-red-800">
-              Could not load products
-            </h2>
-            <p className="mt-2 text-sm text-red-700">{error}</p>
-          </div>
-        ) : null}
-
-        {!isLoadingProducts && !error && !products.length ? (
-          <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-            <h2 className="text-lg font-semibold text-slate-950">
-              {hasAppliedFilters
-                ? "No products match your filters"
-                : "No products yet"}
-            </h2>
-            <p className="mt-2 text-sm text-slate-500">
-              {hasAppliedFilters
-                ? "Try changing or clearing the current filters."
-                : "Products will appear here once they are available from the backend."}
-            </p>
-          </div>
-        ) : null}
-
-        {!isLoadingProducts && !error && products.length ? (
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {products.map((product) => (
-              <ProductCard key={product.id} product={product} />
+        <div className="ml-auto flex items-center gap-3">
+          <label htmlFor="catalog-sort" className="sr-only sm:not-sr-only sm:whitespace-nowrap sm:text-sm sm:text-muted">Sort by</label>
+          <Select id="catalog-sort" name="ordering" form="catalog-filters" value={draftFilters.ordering} onChange={handleSortChange} className="w-44 rounded-full bg-surface sm:w-52">
+            {orderingOptions.map((option) => (
+              <option key={option.label} value={option.value}>
+                {option.label}
+              </option>
             ))}
-          </div>
-        ) : null}
-        {!error && resultCount !== null && resultCount > 0 ? (
-          <nav aria-label="Product pagination" className="mt-8 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4">
-            <span className="text-sm text-slate-600">Page {page} of {Math.max(1, Math.ceil(resultCount / pageSize))} · {resultCount} products</span>
-            <div className="flex items-center gap-2">
-              <label htmlFor="catalog-page-size" className="text-sm">Per page</label>
-              <select id="catalog-page-size" value={pageSize} onChange={(event) => navigateCatalog({ filters: appliedFilters, page: 1, pageSize: Number(event.target.value) as 12 | 20 | 40 })} className="rounded-xl border p-2 text-sm">
-                <option value={12}>12</option><option value={20}>20</option><option value={40}>40</option>
-              </select>
-              <button type="button" disabled={isLoadingProducts || page <= 1} onClick={() => navigateCatalog({ filters: appliedFilters, page: Math.max(1, page - 1), pageSize })} className="rounded-xl border px-3 py-2 text-sm disabled:opacity-40">Previous</button>
-              <button type="button" disabled={isLoadingProducts || !hasNextPage} onClick={() => navigateCatalog({ filters: appliedFilters, page: page + 1, pageSize })} className="rounded-xl bg-slate-900 px-3 py-2 text-sm text-white disabled:opacity-40">Next</button>
+          </Select>
+        </div>
+      </div>
+
+      {hasAppliedFilters ? (
+        <div className="mt-4 flex flex-wrap items-center gap-2 text-sm text-muted">
+          <span>Filters are active:</span>
+          {(Object.entries(appliedFilters) as [keyof ProductQueryParams, string][]).map(([key, value]) => (
+            <span key={key} className="inline-flex min-h-8 items-center gap-1 rounded-full border border-line-strong/80 bg-surface py-0.5 pl-3 pr-1 text-[0.8125rem] font-medium text-slate-800">
+              {describeFilter(key, value)}
+              <button type="button" onClick={() => removeFilter(key)} aria-label={`Remove ${describeFilter(key, value)} filter`} className="flex size-6 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 hover:text-ink">
+                <X size={13} aria-hidden="true" />
+              </button>
+            </span>
+          ))}
+        </div>
+      ) : null}
+
+      <div className="mt-6 grid gap-8 lg:mt-8 lg:grid-cols-[16.5rem_minmax(0,1fr)] lg:gap-12">
+        <aside id="catalog-filter-panel" className={`${filtersOpen ? "block" : "hidden"} lg:block`}>
+          <form id="catalog-filters" onSubmit={handleFilterSubmit} className="space-y-6 rounded-2xl border border-line bg-surface p-5 shadow-sm lg:sticky lg:top-36 lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none">
+            <h2 className="sr-only">Filter products</h2>
+            <label className="block">
+              <span className={fieldLabel}>Search products</span>
+              <input
+                name="search"
+                value={draftFilters.search}
+                onChange={handleFilterChange}
+                placeholder="Lamp, backpack, …"
+                className={`mt-1.5 ${controlStyles}`}
+              />
+            </label>
+
+            <div className="space-y-5 border-t border-line pt-5">
+              <ProductReferenceFields
+                category={draftFilters.category}
+                brand={draftFilters.brand}
+                onChange={handleFilterChange}
+                loadOptions={getProductFilters}
+              />
             </div>
-          </nav>
-        ) : null}
-      </section>
+
+            <div role="group" aria-labelledby="catalog-price-range" className="border-t border-line pt-5">
+              <p id="catalog-price-range" className={`${fieldLabel} mb-1.5`}>Price range</p>
+              <div className="grid grid-cols-2 gap-2.5">
+                <label className="block">
+                  <span className="text-xs text-muted">Min price</span>
+                  <input
+                    name="min_price"
+                    type="number"
+                    min="0"
+                    inputMode="numeric"
+                    value={draftFilters.min_price}
+                    onChange={handleFilterChange}
+                    placeholder="0"
+                    className={`mt-1 ${controlStyles}`}
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-xs text-muted">Max price</span>
+                  <input
+                    name="max_price"
+                    type="number"
+                    min="0"
+                    inputMode="numeric"
+                    value={draftFilters.max_price}
+                    onChange={handleFilterChange}
+                    placeholder="Any"
+                    className={`mt-1 ${controlStyles}`}
+                  />
+                </label>
+              </div>
+            </div>
+
+            <label className="block border-t border-line pt-5">
+              <span className={fieldLabel}>Label</span>
+              <Select
+                name="label"
+                value={draftFilters.label}
+                onChange={handleFilterChange}
+                className="mt-1.5"
+              >
+                <option value="">Any label</option>
+
+                {productLabels.map((label) => (
+                  <option key={label.value} value={label.value}>
+                    {label.label}
+                  </option>
+                ))}
+              </Select>
+            </label>
+
+            <div className="-mx-3 space-y-0.5 border-t border-line pt-4">
+              <label className={checkRow}>
+                In stock only
+                <input
+                  name="in_stock"
+                  type="checkbox"
+                  checked={draftFilters.in_stock}
+                  onChange={handleFilterChange}
+                  className="size-4.5 rounded border-slate-300"
+                />
+              </label>
+
+              <label className={checkRow}>
+                Has discount
+                <input
+                  name="has_discount"
+                  type="checkbox"
+                  checked={draftFilters.has_discount}
+                  onChange={handleFilterChange}
+                  className="size-4.5 rounded border-slate-300"
+                />
+              </label>
+            </div>
+
+            <div className="flex gap-2 border-t border-line pt-5">
+              <Button type="submit" className="flex-1">
+                Apply filters
+              </Button>
+
+              <Button variant="secondary" onClick={handleClearFilters}>
+                Clear
+              </Button>
+            </div>
+          </form>
+        </aside>
+
+        <section aria-label="Product results" className="min-w-0">
+
+          {isLoadingProducts ? (
+            <div role="status">
+              <span className="sr-only">Loading products...</span>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-10 sm:gap-x-6 md:grid-cols-3 2xl:grid-cols-4">
+                {Array.from({ length: Math.min(pageSize, 9) }, (_, index) => <ProductCardSkeleton key={index} />)}
+              </div>
+            </div>
+          ) : null}
+
+          {!isLoadingProducts && error ? (
+            <Notice tone="danger" title="Could not load products" className="p-5">
+              <p>{error}</p>
+            </Notice>
+          ) : null}
+
+          {!isLoadingProducts && !error && !products.length ? (
+            <div className="flex flex-col items-center rounded-3xl border border-dashed border-line-strong px-6 py-20 text-center">
+              <span className="flex size-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-600" aria-hidden="true"><PackageSearch size={24} strokeWidth={1.6} /></span>
+              <h2 className="mt-5 text-lg font-semibold tracking-tight text-slate-950">
+                {hasAppliedFilters
+                  ? "No products match your filters"
+                  : "No products yet"}
+              </h2>
+              <p className="mt-2 max-w-sm text-sm leading-6 text-slate-500">
+                {hasAppliedFilters
+                  ? "Try changing or clearing the current filters."
+                  : "Products will appear here once they are available from the backend."}
+              </p>
+            </div>
+          ) : null}
+
+          {!isLoadingProducts && !error && products.length ? (
+            <div className="grid grid-cols-2 gap-x-4 gap-y-10 sm:gap-x-6 md:grid-cols-3 2xl:grid-cols-4">
+              {products.map((product, index) => (
+                <ProductCard key={product.id} product={product} priority={index < 3} />
+              ))}
+            </div>
+          ) : null}
+          {!error && resultCount !== null && resultCount > 0 ? (
+            <nav aria-label="Product pagination" className="mt-14 flex flex-col items-center gap-4 border-t border-line pt-8 sm:flex-row sm:justify-between">
+              <span className="text-sm text-muted">Page {page} of {totalPages} · {resultCount} products</span>
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <label htmlFor="catalog-page-size" className="text-sm text-muted">Per page</label>
+                <Select id="catalog-page-size" value={pageSize} onChange={(event) => navigateCatalog({ filters: appliedFilters, page: 1, pageSize: Number(event.target.value) as 12 | 20 | 40 })} className="w-20 rounded-full">
+                  <option value={12}>12</option><option value={20}>20</option><option value={40}>40</option>
+                </Select>
+                <Button variant="secondary" className="rounded-full" disabled={isLoadingProducts || page <= 1} onClick={() => navigateCatalog({ filters: appliedFilters, page: Math.max(1, page - 1), pageSize })}><ArrowLeft size={16} aria-hidden="true" />Previous</Button>
+                <Button className="rounded-full" disabled={isLoadingProducts || !hasNextPage} onClick={() => navigateCatalog({ filters: appliedFilters, page: page + 1, pageSize })}>Next<ArrowRight size={16} aria-hidden="true" /></Button>
+              </div>
+            </nav>
+          ) : null}
+        </section>
+      </div>
     </div>
   );
 }

@@ -103,7 +103,7 @@ export function AdminAnalytics() {
                 </div>
                 <FinancialAreaChart points={points} currency={currency} primaryName="Captured" secondaryName="Refunded" />
                 {points.length > 0 && <button type="button" onClick={() => downloadChartCsv(points, currency, "Captured", "Refunded", "admin-cashflow")}
-                  className="mt-4 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">Download displayed chart CSV</button>}
+                  className="mt-4 mb-btn mb-btn-secondary mb-btn-sm">Download displayed chart CSV</button>}
               </Panel>
               <Panel title="Cash-flow composition" subtitle="Selected currency only; amounts are not combined across currencies.">
                 {bucket ? (
@@ -136,8 +136,8 @@ export function AdminAnalytics() {
               <Notice variant="warning">Financial data quality checks found possible missing event dates, duplicate captures or order mismatches. Review the internal reconciliation report before using these figures.</Notice>}
             <Notice variant="info">This view uses the Backend&apos;s financial cash-flow contract. Values are grouped by currency and are not platform profit, seller payout, or independent bank reconciliation.</Notice>
             <div className="flex flex-wrap gap-3">
-              <Link href="/admin/monitoring" className="rounded-xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800">Financial monitoring</Link>
-              <Link href="/admin/finance" className="rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-100">Reconciliation and balances</Link>
+              <Link href="/admin/monitoring" className="mb-btn mb-btn-primary">Financial monitoring</Link>
+              <Link href="/admin/finance" className="bg-white mb-btn mb-btn-secondary">Reconciliation and balances</Link>
             </div>
           </>
         )}

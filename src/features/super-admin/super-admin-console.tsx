@@ -39,7 +39,7 @@ const integrations = [
 function message(error:unknown){if(typeof error==="object"&&error!==null&&"response" in error){const response=(error as {response?:{data?:{detail?:string;error?:string}}}).response;return response?.data?.detail || response?.data?.error || "Request failed."}return error instanceof Error?error.message:"Request failed."}
 function unwrap<T>(data:T[]|Paginated<T>):T[]{return Array.isArray(data)?data:data.results}
 function fmt(value:number){return new Intl.NumberFormat("en-US").format(value)}
-function Card({title,number,href}:{title:string;number:number;href?:string}){return <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><div className="text-xs font-semibold uppercase tracking-wide text-slate-500">{title}</div><div className="mt-3 text-3xl font-semibold text-slate-950">{fmt(number)}</div>{href&&<Link href={href} className="mt-3 inline-block text-sm font-medium text-cyan-700">Open workspace →</Link>}</div>}
+function Card({title,number,href}:{title:string;number:number;href?:string}){return <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><div className="mb-eyebrow">{title}</div><div className="mt-3 text-3xl font-semibold text-slate-950">{fmt(number)}</div>{href&&<Link href={href} className="mt-3 inline-block text-sm font-medium text-cyan-700">Open workspace →</Link>}</div>}
 const button = "rounded-xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50";
 const field = "rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950";
 

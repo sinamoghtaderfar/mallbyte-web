@@ -113,7 +113,7 @@ export function SellerFinanceDashboard() {
           <button type="button" onClick={refresh} disabled={loading}
             className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium disabled:opacity-50">Refresh</button>
           <button type="button" onClick={() => void exportCsv()} disabled={exporting || !statement}
-            className="rounded-xl bg-slate-950 px-4 py-2 text-sm font-medium text-white disabled:opacity-50">
+            className="mb-btn mb-btn-primary">
             {exporting ? "Exporting..." : "Export CSV"}
           </button>
         </div>

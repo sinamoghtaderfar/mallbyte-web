@@ -203,7 +203,7 @@ function OrdersListContent() {
 
   if (isLoading) {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+      <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm">
         <p className="text-sm text-slate-500">Loading orders...</p>
       </div>
     );
@@ -211,7 +211,7 @@ function OrdersListContent() {
 
   if (error) {
     return (
-      <div className="rounded-3xl border border-red-200 bg-red-50 p-8 shadow-sm">
+      <div className="rounded-3xl border border-red-200 bg-red-50 p-5 sm:p-8 shadow-sm">
         <h1 className="text-xl font-semibold text-red-800">
           Could not load orders
         </h1>
@@ -238,7 +238,7 @@ function OrdersListContent() {
 
   if (!data.count) {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+      <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm">
         <h1 className="text-2xl font-semibold text-slate-950">No orders yet</h1>
 
         <p className="mt-2 text-sm text-slate-500">
@@ -247,7 +247,7 @@ function OrdersListContent() {
 
         <Link
           href="/products"
-          className="mt-6 inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800"
+          className="mt-6 mb-btn mb-btn-primary"
         >
           Browse products
         </Link>
@@ -258,7 +258,7 @@ function OrdersListContent() {
   return (
     <div className="grid gap-8 lg:grid-cols-[320px_1fr]">
       <aside className="h-fit rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <p className="text-sm font-medium uppercase tracking-[0.2em] text-slate-500">
+        <p className="mb-eyebrow">
           Filter this page
         </p>
 
@@ -281,7 +281,7 @@ function OrdersListContent() {
               value={filters.search}
               onChange={handleFilterChange}
               placeholder="MBA-1001"
-              className="mt-2 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-slate-400"
+              className="mt-2 w-full mb-control"
             />
           </label>
 
@@ -293,7 +293,7 @@ function OrdersListContent() {
               name="status"
               value={filters.status}
               onChange={handleFilterChange}
-              className="mt-2 h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm outline-none transition focus:border-slate-400"
+              className="mt-2 w-full mb-control mb-select"
             >
               <option value="">All statuses</option>
 
@@ -313,7 +313,7 @@ function OrdersListContent() {
               name="payment_status"
               value={filters.payment_status}
               onChange={handleFilterChange}
-              className="mt-2 h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm outline-none transition focus:border-slate-400"
+              className="mt-2 w-full mb-control mb-select"
             >
               <option value="">All payment statuses</option>
 
@@ -333,7 +333,7 @@ function OrdersListContent() {
               name="sort"
               value={filters.sort}
               onChange={handleFilterChange}
-              className="mt-2 h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm outline-none transition focus:border-slate-400"
+              className="mt-2 w-full mb-control mb-select"
             >
               <option value="newest">Newest first</option>
               <option value="oldest">Oldest first</option>
@@ -345,7 +345,7 @@ function OrdersListContent() {
           <button
             type="button"
             onClick={handleClearFilters}
-            className="h-11 rounded-2xl border border-slate-200 px-5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            className="mb-btn mb-btn-secondary"
           >
             Clear filters
           </button>
@@ -355,7 +355,7 @@ function OrdersListContent() {
       <section>
         <div className="mb-6 grid gap-4 sm:grid-cols-3">
           <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">
+            <p className="mb-eyebrow">
               Orders (all pages)
             </p>
             <p className="mt-3 text-2xl font-semibold text-slate-950">
@@ -364,7 +364,7 @@ function OrdersListContent() {
           </div>
 
           <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">
+            <p className="mb-eyebrow">
               Pending (this page)
             </p>
             <p className="mt-3 text-2xl font-semibold text-slate-950">
@@ -373,7 +373,7 @@ function OrdersListContent() {
           </div>
 
           <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">
+            <p className="mb-eyebrow">
               Total amount (this page)
             </p>
             <p className="mt-3 text-2xl font-semibold text-slate-950">
@@ -400,7 +400,7 @@ function OrdersListContent() {
           </div>
 
           {!filteredOrders.length ? (
-            <div className="rounded-3xl border border-dashed border-slate-300 p-8">
+            <div className="rounded-3xl border border-dashed border-slate-300 p-5 sm:p-8">
               <h2 className="text-xl font-semibold text-slate-950">
                 No orders on this page match your filters
               </h2>

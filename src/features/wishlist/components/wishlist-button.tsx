@@ -1,5 +1,7 @@
 "use client";
 
+import { Heart } from "lucide-react";
+
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -121,8 +123,10 @@ function WishlistMembershipButton({ productId }: WishlistButtonProps) {
         type="button"
         onClick={() => void handleToggleWishlist()}
         disabled={isAuthenticated && (isLoading || loadedContext !== context)}
-        className="h-12 rounded-2xl border border-slate-200 px-6 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+        data-saved={isAuthenticated && membership === "saved" ? "true" : undefined}
+        className="mb-button min-h-12 w-full rounded-full border border-line-strong/80 bg-surface px-6 text-[0.9375rem] font-medium text-slate-800 shadow-xs transition hover:border-slate-400 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 data-saved:border-ember-200 data-saved:bg-ember-50 data-saved:text-ember-800"
       >
+        <Heart size={18} aria-hidden="true" className={membership === "saved" && isAuthenticated ? "fill-current" : ""} />
         {!isAuthenticated
           ? "Add to wishlist"
           : isLoading || loadedContext !== context
@@ -139,7 +143,7 @@ function WishlistMembershipButton({ productId }: WishlistButtonProps) {
       membership === "unknown" &&
       !isLoading &&
       loadedContext === context ? (
-        <p className="mt-2 text-sm text-slate-600">
+        <p className="mt-2 text-xs leading-5 text-slate-600">
           {checked
             ? `Checked ${checked} of ${count} saved products. This product may be in your other saved items. `
             : "Saved status has not been confirmed. "}

@@ -54,7 +54,7 @@ export function AuthStatusCard() {
 
         <Link
           href="/auth"
-          className="mt-5 inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800"
+          className="mt-5 mb-btn mb-btn-primary"
         >
           Sign in
         </Link>
@@ -90,7 +90,7 @@ export function AuthStatusCard() {
         type="button"
         onClick={handleLogout}
         disabled={isLoggingOut}
-        className="mt-6 h-11 rounded-2xl border border-slate-200 px-5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+        className="mt-6 mb-btn mb-btn-secondary"
       >
         {isLoggingOut ? "Signing out..." : "Sign out"}
       </button>

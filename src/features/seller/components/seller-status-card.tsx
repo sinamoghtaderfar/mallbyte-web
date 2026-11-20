@@ -83,7 +83,7 @@ export function SellerStatusCard() {
 
   if (isLoading) {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+      <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm">
         <p className="text-sm text-slate-500">Loading seller status...</p>
       </div>
     );
@@ -91,7 +91,7 @@ export function SellerStatusCard() {
 
   if (hasNoApplication) {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+      <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm">
         <h1 className="text-2xl font-semibold text-slate-950">
           No seller application yet
         </h1>
@@ -103,7 +103,7 @@ export function SellerStatusCard() {
 
         <Link
           href="/seller/apply"
-          className="mt-6 inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800"
+          className="mt-6 mb-btn mb-btn-primary"
         >
           Apply as seller
         </Link>
@@ -113,7 +113,7 @@ export function SellerStatusCard() {
 
   if (error) {
     return (
-      <div className="rounded-3xl border border-red-200 bg-red-50 p-8 shadow-sm">
+      <div className="rounded-3xl border border-red-200 bg-red-50 p-5 sm:p-8 shadow-sm">
         <h1 className="text-xl font-semibold text-red-800">
           Could not load seller status
         </h1>
@@ -124,7 +124,7 @@ export function SellerStatusCard() {
 
   if (!seller) {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+      <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm">
         <h1 className="text-xl font-semibold text-slate-950">
           Seller profile not found
         </h1>
@@ -134,10 +134,10 @@ export function SellerStatusCard() {
 
   return (
     <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
-      <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+      <section className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <p className="text-sm font-medium uppercase tracking-[0.2em] text-slate-500">
+            <p className="mb-eyebrow">
               Seller status
             </p>
 
@@ -162,7 +162,7 @@ export function SellerStatusCard() {
 
         <div className="mt-8 grid gap-4 sm:grid-cols-2">
           <div className="rounded-2xl border border-slate-200 p-4">
-            <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">
+            <p className="mb-eyebrow">
               Business email
             </p>
             <p className="mt-2 text-sm font-medium text-slate-950">
@@ -171,7 +171,7 @@ export function SellerStatusCard() {
           </div>
 
           <div className="rounded-2xl border border-slate-200 p-4">
-            <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">
+            <p className="mb-eyebrow">
               Business phone
             </p>
             <p className="mt-2 text-sm font-medium text-slate-950">
@@ -180,7 +180,7 @@ export function SellerStatusCard() {
           </div>
 
           <div className="rounded-2xl border border-slate-200 p-4">
-            <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">
+            <p className="mb-eyebrow">
               Applied at
             </p>
             <p className="mt-2 text-sm font-medium text-slate-950">
@@ -189,7 +189,7 @@ export function SellerStatusCard() {
           </div>
 
           <div className="rounded-2xl border border-slate-200 p-4">
-            <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">
+            <p className="mb-eyebrow">
               Verified at
             </p>
             <p className="mt-2 text-sm font-medium text-slate-950">
@@ -202,7 +202,7 @@ export function SellerStatusCard() {
           {seller.status === "approved" ? (
             <Link
               href="/seller/dashboard"
-              className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800"
+              className="mb-btn mb-btn-primary"
             >
               Open dashboard
             </Link>
@@ -210,7 +210,7 @@ export function SellerStatusCard() {
 
           <Link
             href="/products"
-            className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 px-5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            className="mb-btn mb-btn-secondary"
           >
             Back to products
           </Link>

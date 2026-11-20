@@ -124,7 +124,8 @@ describe("ProductList", () => {
 
     mockedGetProducts
       .mockResolvedValueOnce(makeResponse([]))
-      .mockResolvedValueOnce(
+      // Sorting applies immediately, so every later catalog request returns the filtered page.
+      .mockResolvedValue(
         makeResponse([
           makeProduct({
             name: "Filtered Keyboard",

@@ -68,7 +68,7 @@ export function RecentlyViewedList() {
 
   if (isLoading) {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+      <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm">
         <p className="text-sm text-slate-500">
           Loading recently viewed products...
         </p>
@@ -78,7 +78,7 @@ export function RecentlyViewedList() {
 
   if (error) {
     return (
-      <div className="rounded-3xl border border-red-200 bg-red-50 p-8 shadow-sm">
+      <div className="rounded-3xl border border-red-200 bg-red-50 p-5 sm:p-8 shadow-sm">
         <h1 className="text-xl font-semibold text-red-800">
           Could not load recently viewed products
         </h1>
@@ -88,9 +88,9 @@ export function RecentlyViewedList() {
   }
 
   return (
-    <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+    <section className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm">
       <div>
-        <p className="text-sm font-medium uppercase tracking-[0.2em] text-slate-500">
+        <p className="mb-eyebrow">
           Recently viewed
         </p>
 
@@ -104,7 +104,7 @@ export function RecentlyViewedList() {
       </div>
 
       {!items.length ? (
-        <div className="mt-8 rounded-3xl border border-dashed border-slate-300 p-8">
+        <div className="mt-8 rounded-3xl border border-dashed border-slate-300 p-5 sm:p-8">
           <h2 className="text-xl font-semibold text-slate-950">
             No recently viewed products
           </h2>
@@ -114,7 +114,7 @@ export function RecentlyViewedList() {
 
           <Link
             href="/products"
-            className="mt-6 inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800"
+            className="mt-6 mb-btn mb-btn-primary"
           >
             Browse products
           </Link>
@@ -128,7 +128,7 @@ export function RecentlyViewedList() {
               <Link
                 key={item.id}
                 href={`/products/${item.product}`}
-                className="grid gap-4 rounded-3xl border border-slate-200 p-4 transition hover:bg-slate-50 sm:grid-cols-[120px_1fr_auto]"
+                className="grid gap-4 p-4 sm:grid-cols-[120px_1fr_auto] mb-btn mb-btn-secondary"
               >
                 <div
                   className="flex aspect-square items-center justify-center rounded-2xl bg-slate-100 bg-cover bg-center"

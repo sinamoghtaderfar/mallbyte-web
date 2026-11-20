@@ -180,7 +180,7 @@ export default function WarehouseTransfersPage() {
         </>
       ) : (
         <main className="mx-auto max-w-7xl px-4 py-10">
-          <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+          <p className="mb-eyebrow">
             Warehouse operations
           </p>
 
