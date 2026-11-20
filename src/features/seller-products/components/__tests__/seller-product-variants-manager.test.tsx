@@ -176,7 +176,7 @@ describe("SellerProductVariantsManager", () => {
     render(<SellerProductVariantsManager productId={10} />);
 
     const variantRow = await screen.findByText("Red Switch");
-    const row = variantRow.closest(".grid");
+    const row = variantRow.closest("tr");
 
     await user.click(
       within(row as HTMLElement).getByRole("button", { name: /delete/i }),

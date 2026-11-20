@@ -5,6 +5,14 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import type { ProductDetail } from "@/features/products/types";
+import { ArrowLeft, Boxes, Eye, Lock, PackageX, Pencil, Tag, Trash2 } from "lucide-react";
+
+import { StatusBadge } from "@/components/ui/badge";
+import { Button, buttonStyles } from "@/components/ui/button";
+import { Card, CardHeader, StatCard } from "@/components/ui/card";
+import { DetailList } from "@/components/ui/data-display";
+import { PageHeader } from "@/components/ui/page-header";
+import { EmptyState, Notice, Skeleton } from "@/components/ui/states";
 import { getApiErrorMessage } from "@/lib/api/errors";
 
 import { deleteSellerProduct, getSellerProduct } from "../api";
@@ -27,21 +35,6 @@ function formatPrice(value: string | number | null | undefined) {
   }).format(numberValue);
 }
 
-function getStatusClass(status: string) {
-  if (status === "approved") {
-    return "bg-green-100 text-green-700";
-  }
-
-  if (status === "rejected") {
-    return "bg-red-100 text-red-700";
-  }
-
-  if (status === "draft") {
-    return "bg-slate-100 text-slate-700";
-  }
-
-  return "bg-yellow-100 text-yellow-700";
-}
 
 export function SellerProductDetail() {
   const params = useParams<{ id: string }>();
@@ -110,207 +103,89 @@ export function SellerProductDetail() {
 
   if (isLoading) {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm">
-        <p className="text-sm text-slate-500">Loading seller product...</p>
+      <div className="grid gap-6" aria-busy="true">
+        <p role="status" className="sr-only">Loading seller product...</p>
+        <Skeleton className="h-24 max-w-xl" />
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">{[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-28 rounded-2xl" />)}</div>
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]"><Skeleton className="h-96 rounded-2xl" /><Skeleton className="h-64 rounded-2xl" /></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="rounded-3xl border border-red-200 bg-red-50 p-5 sm:p-8 shadow-sm">
-        <h1 className="text-xl font-semibold text-red-800">
-          Could not load seller product
-        </h1>
-        <p className="mt-2 text-sm text-red-700">{error}</p>
-
-        <Link
-          href="/seller/products"
-          className="mt-6 mb-btn mb-btn-primary"
-        >
-          Back to products
-        </Link>
+      <div className="grid max-w-2xl gap-4">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Could not load seller product</h1>
+        <Notice tone="danger">{error}</Notice>
+        <div><Link href="/seller/products" className={buttonStyles()}>Back to products</Link></div>
       </div>
     );
   }
 
   if (!product) {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm">
-        <h1 className="text-xl font-semibold text-slate-950">
-          Product not found
-        </h1>
-      </div>
+      <EmptyState icon={<PackageX size={24} />} title="Product not found"
+        description="It may have been deleted or belong to another store."
+        action={<Link href="/seller/products" className={buttonStyles({ variant: "secondary" })}>Back to products</Link>} />
     );
   }
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
-      <section className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <p className="mb-eyebrow">
-              Seller product
-            </p>
+    <div className="grid gap-6">
+      <PageHeader eyebrow="Seller product" title={product.name}
+        description={product.short_description || product.description}
+        crumbs={[{ href: "/seller/products", label: "Products" }, { label: "Product details" }]}
+        actions={<>
+          <Link href={`/seller/products/${product.id}/edit`} className={buttonStyles()}><Pencil size={15} aria-hidden="true" />Edit product</Link>
+          <Button variant="secondary" onClick={handleDeleteProduct} loading={isDeleting}
+            className="text-rose-700 hover:border-rose-300 hover:bg-rose-50">
+            {!isDeleting && <Trash2 size={15} aria-hidden="true" />}{isDeleting ? "Deleting..." : "Delete product"}
+          </Button>
+        </>} />
 
-            <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">
-              {product.name}
-            </h1>
+      {deleteError ? <Notice tone="danger">{deleteError}</Notice> : null}
 
-            <p className="mt-3 text-sm leading-6 text-slate-500">
-              {product.short_description || product.description}
-            </p>
-          </div>
-
-          <span
-            className={[
-              "rounded-full px-4 py-2 text-sm font-medium capitalize",
-              getStatusClass(product.status),
-            ].join(" ")}
-          >
-            {product.status}
-          </span>
-        </div>
-
-        {deleteError ? (
-          <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {deleteError}
-          </div>
-        ) : null}
-
-        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-2xl border border-slate-200 p-5">
-            <p className="mb-eyebrow">
-              Price
-            </p>
-            <p className="mt-3 text-2xl font-semibold text-slate-950">
-              {formatPrice(product.final_price)}
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 p-5">
-            <p className="mb-eyebrow">
-              Available
-            </p>
-            <p className="mt-3 text-2xl font-semibold text-slate-950">
-              {product.available_stock}
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 p-5">
-            <p className="mb-eyebrow">
-              Reserved
-            </p>
-            <p className="mt-3 text-2xl font-semibold text-slate-950">
-              {product.reserved_stock}
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 p-5">
-            <p className="mb-eyebrow">
-              Views
-            </p>
-            <p className="mt-3 text-2xl font-semibold text-slate-950">
-              {product.views_count}
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-8 grid gap-4 sm:grid-cols-2">
-          <div className="rounded-2xl border border-slate-200 p-5">
-            <p className="mb-eyebrow">
-              SKU
-            </p>
-            <p className="mt-2 text-sm font-medium text-slate-950">
-              {product.sku}
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 p-5">
-            <p className="mb-eyebrow">
-              Category
-            </p>
-            <p className="mt-2 text-sm font-medium text-slate-950">
-              {product.category_name || "No category"}
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 p-5">
-            <p className="mb-eyebrow">
-              Brand
-            </p>
-            <p className="mt-2 text-sm font-medium text-slate-950">
-              {product.brand_name || "No brand"}
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 p-5">
-            <p className="mb-eyebrow">
-              Barcode
-            </p>
-            <p className="mt-2 text-sm font-medium text-slate-950">
-              {product.barcode || "Not set"}
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-8 rounded-2xl border border-slate-200 p-5">
-          <p className="mb-eyebrow">
-            Description
-          </p>
-          <p className="mt-3 text-sm leading-6 text-slate-600">
-            {product.description}
-          </p>
-        </div>
-
-        <SellerProductImagesManager productId={product.id} />
-
-        <SellerProductVariantsManager productId={product.id} />
-
-        <div className="mt-8 flex flex-wrap gap-3">
-          <Link
-            href={`/seller/products/${product.id}/edit`}
-            className="mb-btn mb-btn-primary"
-          >
-            Edit product
-          </Link>
-
-          <button
-            type="button"
-            onClick={handleDeleteProduct}
-            disabled={isDeleting}
-            className="mb-btn mb-btn-secondary text-rose-700 hover:bg-rose-50"
-          >
-            {isDeleting ? "Deleting..." : "Delete product"}
-          </button>
-
-          <Link
-            href="/seller/products"
-            className="mb-btn mb-btn-secondary"
-          >
-            Back to products
-          </Link>
-        </div>
+      <section aria-label="Product metrics" className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        <StatCard label="Price" value={formatPrice(product.final_price)} icon={<Tag size={16} />} tone="ink" />
+        <StatCard label="Available" value={product.available_stock} icon={<Boxes size={16} />}
+          hint={product.available_stock <= 0 ? "Out of stock" : undefined} />
+        <StatCard label="Reserved" value={product.reserved_stock} icon={<Lock size={16} />} hint="Held by open orders" />
+        <StatCard label="Views" value={product.views_count} icon={<Eye size={16} />} />
       </section>
 
-      <aside className="h-fit rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-slate-950">Product status</h2>
-
-        <div className="mt-5 space-y-4 text-sm leading-6 text-slate-600">
-          <p>
-            <span className="font-semibold text-slate-950">Pending:</span> waits
-            for admin approval.
-          </p>
-          <p>
-            <span className="font-semibold text-slate-950">Approved:</span>{" "}
-            visible to customers.
-          </p>
-          <p>
-            <span className="font-semibold text-slate-950">Rejected:</span>{" "}
-            needs changes before approval.
-          </p>
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <div className="grid min-w-0 gap-6">
+          <Card>
+            <CardHeader title="Description" />
+            <p className="mt-3 max-w-[70ch] text-sm leading-7 whitespace-pre-line text-slate-700">{product.description}</p>
+          </Card>
+          <SellerProductImagesManager productId={product.id} />
+          <SellerProductVariantsManager productId={product.id} />
         </div>
-      </aside>
+
+        <aside className="grid gap-6 lg:sticky lg:top-24">
+          <Card>
+            <CardHeader title="Status" action={<StatusBadge status={product.status} label={product.status} className="capitalize" />} />
+            <ul className="mt-4 grid gap-2.5 text-sm leading-6 text-muted">
+              <li><span className="font-medium text-foreground">Pending:</span> waits for admin approval.</li>
+              <li><span className="font-medium text-foreground">Approved:</span> visible to customers.</li>
+              <li><span className="font-medium text-foreground">Rejected:</span> needs changes before approval.</li>
+            </ul>
+          </Card>
+          <Card>
+            <CardHeader title="Details" />
+            <DetailList className="mt-4" columns={1} items={[
+              { label: "SKU", value: product.sku, mono: true },
+              { label: "Category", value: product.category_name || "No category" },
+              { label: "Brand", value: product.brand_name || "No brand" },
+              { label: "Barcode", value: product.barcode || "Not set", mono: Boolean(product.barcode) },
+            ]} />
+          </Card>
+          <Link href="/seller/products" className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-700 underline-offset-4 hover:text-foreground hover:underline">
+            <ArrowLeft size={15} aria-hidden="true" />Back to products
+          </Link>
+        </aside>
+      </div>
     </div>
   );
 }

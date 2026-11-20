@@ -1,14 +1,16 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChangeEvent, FormEvent, useState } from "react";
 
 import { getApiErrorMessage } from "@/lib/api/errors";
 
-import { createSellerProduct, getSellerProductOptions } from "../api";
+import { createSellerProduct } from "../api";
 import type { SellerProductPayload } from "../types";
-import { ProductReferenceFields } from "@/features/products/components/product-reference-fields";
+import { PageHeader } from "@/components/ui/page-header";
+import { Notice } from "@/components/ui/states";
+
+import { ProductFormAside, ProductFormSections } from "./product-form-layout";
 
 type FormState = {
   name: string;
@@ -109,165 +111,24 @@ export function SellerProductCreateForm() {
   }
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
-      <form
-        onSubmit={handleSubmit}
-        className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm"
-      >
-        <div>
-          <p className="mb-eyebrow">
-            New seller product
-          </p>
-
-          <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">
-            Create product
-          </h1>
-
-          <p className="mt-3 text-sm leading-6 text-slate-500">
-            Add a new product. It will be submitted for admin approval.
-          </p>
+    <form onSubmit={handleSubmit} className="grid gap-6" noValidate={false}>
+      <PageHeader eyebrow="New seller product" title="Create product"
+        description="Add a new product. It will be submitted for admin approval."
+        crumbs={[{ href: "/seller/products", label: "Products" }, { label: "New product" }]} />
+      {error ? <Notice tone="danger" title="The product was not created">{error}</Notice> : null}
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <div className="grid min-w-0 gap-6">
+          <ProductFormSections form={form} onChange={handleChange} disabled={isSubmitting} />
         </div>
-
-        {error ? (
-          <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {error}
-          </div>
-        ) : null}
-
-        <div className="mt-8 grid gap-5 sm:grid-cols-2">
-          <label className="block sm:col-span-2">
-            <span className="text-sm font-medium text-slate-700">
-              Product name
-            </span>
-            <input
-              name="name"
-              value={form.name}
-              onChange={handleChange}
-              required
-              maxLength={255}
-              className="mt-2 w-full mb-control"
-            />
-          </label>
-
-          <label className="block sm:col-span-2">
-            <span className="text-sm font-medium text-slate-700">
-              Description
-            </span>
-            <textarea
-              name="description"
-              value={form.description}
-              onChange={handleChange}
-              required
-              rows={4}
-              className="mt-2 w-full mb-control"
-            />
-          </label>
-
-          <label className="block sm:col-span-2">
-            <span className="text-sm font-medium text-slate-700">
-              Short description
-            </span>
-            <textarea
-              name="short_description"
-              value={form.short_description}
-              onChange={handleChange}
-              rows={3}
-              maxLength={500}
-              className="mt-2 w-full mb-control"
-            />
-          </label>
-
-          <ProductReferenceFields
-            category={form.category}
-            brand={form.brand}
-            onChange={handleChange}
-            loadOptions={getSellerProductOptions}
-            required
-            disabled={isSubmitting}
-          />
-
-          <label className="block">
-            <span className="text-sm font-medium text-slate-700">Price</span>
-            <input
-              name="price"
-              type="number"
-              min="0"
-              value={form.price}
-              onChange={handleChange}
-              required
-              className="mt-2 w-full mb-control"
-            />
-          </label>
-
-          <label className="block">
-            <span className="text-sm font-medium text-slate-700">
-              Compare price
-            </span>
-            <input
-              name="compare_price"
-              type="number"
-              min="0"
-              value={form.compare_price}
-              onChange={handleChange}
-              className="mt-2 w-full mb-control"
-            />
-          </label>
-
-          <label className="block">
-            <span className="text-sm font-medium text-slate-700">SKU</span>
-            <input
-              name="sku"
-              value={form.sku}
-              onChange={handleChange}
-              required
-              maxLength={100}
-              className="mt-2 w-full mb-control"
-            />
-          </label>
-
-          <label className="block">
-            <span className="text-sm font-medium text-slate-700">
-              Low stock threshold
-            </span>
-            <input
-              name="low_stock_threshold"
-              type="number"
-              min="0"
-              value={form.low_stock_threshold}
-              onChange={handleChange}
-              required
-              className="mt-2 w-full mb-control"
-            />
-          </label>
-        </div>
-
-        <div className="mt-8 flex flex-wrap gap-3">
-          <button
-            type="submit"
-            disabled={isSubmitting || !form.category}
-            className="mb-btn mb-btn-primary"
-          >
-            {isSubmitting ? "Creating..." : "Create product"}
-          </button>
-
-          <Link
-            href="/seller/products"
-            className="mb-btn mb-btn-secondary"
-          >
-            Back to products
-          </Link>
-        </div>
-      </form>
-
-      <aside className="h-fit rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-slate-950">Product note</h2>
-
-        <div className="mt-5 space-y-4 text-sm leading-6 text-slate-600">
-          <p>New products are submitted with pending status.</p>
-          <p>Admin approval is needed before customers can buy them.</p>
-          <p>Stock will be managed from inventory later.</p>
-        </div>
-      </aside>
-    </div>
+        <ProductFormAside form={form} title="Ready to submit?" busy={isSubmitting}
+          canSubmit={!isSubmitting && Boolean(form.category)} submitLabel="Create product" busyLabel="Creating..."
+          cancelHref="/seller/products" cancelLabel="Back to products"
+          notes={[
+            "New products are submitted with pending status.",
+            "Admin approval is needed before customers can buy them.",
+            "Add images and variants from the product page after creating it.",
+          ]} />
+      </div>
+    </form>
   );
 }

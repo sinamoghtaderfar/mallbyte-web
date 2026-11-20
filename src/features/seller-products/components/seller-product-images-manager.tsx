@@ -5,6 +5,13 @@ import { getImageUrl } from "@/lib/media/image-url";
 import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 
 import type { ProductImage } from "@/features/products/types";
+import { ImagePlus, Star, Trash2, Upload } from "lucide-react";
+
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardHeader } from "@/components/ui/card";
+import { controlStyles } from "@/components/ui/input";
+import { EmptyState, Notice, Skeleton } from "@/components/ui/states";
 import { getApiErrorMessage } from "@/lib/api/errors";
 
 import {
@@ -127,152 +134,79 @@ export function SellerProductImagesManager({
   }
 
   return (
-    <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-6">
-      <div>
-        <p className="mb-eyebrow">
-          Product images
-        </p>
+    <Card>
+      <CardHeader eyebrow="Product images" title="Manage images"
+        description="Upload product images and choose which image should be marked as main." />
 
-        <h2 className="mt-3 text-2xl font-semibold tracking-tight text-slate-950">
-          Manage images
-        </h2>
+      {error ? <Notice tone="danger" className="mt-5">{error}</Notice> : null}
 
-        <p className="mt-2 text-sm leading-6 text-slate-500">
-          Upload product images and choose which image should be marked as main.
-        </p>
-      </div>
-
-      {error ? (
-        <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error}
+      <form onSubmit={handleUpload} className="mt-5 grid gap-4 rounded-xl border border-dashed border-line-strong bg-sunken/40 p-4 sm:grid-cols-2">
+        <div className="grid gap-1.5 sm:col-span-2">
+          <label htmlFor={`image-file-${productId}`} className="text-sm font-medium text-foreground">Image file</label>
+          <input id={`image-file-${productId}`} type="file" accept="image/*" onChange={handleFileChange}
+            className="block w-full rounded-xl border border-line bg-surface px-3 py-2.5 text-sm text-muted file:mr-3 file:rounded-lg file:border-0 file:bg-ink file:px-3 file:py-2 file:text-sm file:font-medium file:text-white" />
+          {selectedFile && <p className="text-xs text-foreground">Selected: <span className="font-medium">{selectedFile.name}</span></p>}
         </div>
-      ) : null}
-
-      <form onSubmit={handleUpload} className="mt-6 grid gap-4 sm:grid-cols-2">
-        <label className="block sm:col-span-2">
-          <span className="text-sm font-medium text-slate-700">Image file</span>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleFileChange}
-            className="mt-2 block w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm"
-          />
-        </label>
-
-        <label className="block">
-          <span className="text-sm font-medium text-slate-700">Alt text</span>
-          <input
-            value={altText}
-            onChange={(event) => setAltText(event.target.value)}
-            placeholder="Keyboard front view"
-            className="mt-2 w-full mb-control"
-          />
-        </label>
-
-        <label className="block">
-          <span className="text-sm font-medium text-slate-700">Order</span>
-          <input
-            type="number"
-            min="0"
-            value={order}
-            onChange={(event) => setOrder(event.target.value)}
-            className="mt-2 w-full mb-control"
-          />
-        </label>
-
-        <label className="flex items-center gap-3 text-sm font-medium text-slate-700">
-          <input
-            type="checkbox"
-            checked={isMain}
-            onChange={(event) => setIsMain(event.target.checked)}
-            className="h-4 w-4 rounded border-slate-300"
-          />
+        <div className="grid gap-1.5">
+          <label htmlFor={`image-alt-${productId}`} className="text-sm font-medium text-foreground">Alt text</label>
+          <input id={`image-alt-${productId}`} value={altText} onChange={(event) => setAltText(event.target.value)}
+            placeholder="Keyboard front view" aria-describedby={`image-alt-hint-${productId}`} className={controlStyles} />
+          <p id={`image-alt-hint-${productId}`} className="text-xs text-muted">Describe what the photo shows for screen reader users.</p>
+        </div>
+        <div className="grid content-start gap-1.5">
+          <label htmlFor={`image-order-${productId}`} className="text-sm font-medium text-foreground">Order</label>
+          <input id={`image-order-${productId}`} type="number" inputMode="numeric" min="0" value={order}
+            onChange={(event) => setOrder(event.target.value)} className={controlStyles} />
+        </div>
+        <label className="flex min-h-11 items-center gap-3 text-sm font-medium text-foreground sm:col-span-2">
+          <input type="checkbox" checked={isMain} onChange={(event) => setIsMain(event.target.checked)} className="size-4" />
           Set as main image
         </label>
-
         <div className="sm:col-span-2">
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="mb-btn mb-btn-primary"
-          >
-            {isSubmitting ? "Uploading..." : "Upload image"}
-          </button>
+          <Button type="submit" loading={isSubmitting}>{!isSubmitting && <Upload size={15} aria-hidden="true" />}{isSubmitting ? "Uploading..." : "Upload image"}</Button>
         </div>
       </form>
 
-      <div className="mt-8">
+      <div className="mt-6" aria-live="polite">
         {isLoading ? (
-          <p className="text-sm text-slate-500">Loading product images...</p>
+          <div role="status" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <span className="sr-only">Loading product images...</span>
+            {[0, 1, 2].map((i) => <Skeleton key={i} className="aspect-[4/3] rounded-xl" />)}
+          </div>
         ) : null}
 
         {!isLoading && !images.length ? (
-          <div className="rounded-3xl border border-dashed border-slate-300 p-6">
-            <h3 className="text-lg font-semibold text-slate-950">
-              No images yet
-            </h3>
-            <p className="mt-2 text-sm text-slate-500">
-              Upload the first product image.
-            </p>
-          </div>
+          <EmptyState className="py-10" icon={<ImagePlus size={22} />} title="No images yet" description="Upload the first product image." />
         ) : null}
 
         {images.length ? (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {images.map((image) => {
               const imageUrl = getImageUrl(image.image);
-
               return (
-                <div
-                  key={image.id}
-                  className="overflow-hidden rounded-3xl border border-slate-200"
-                >
-                  <div
-                    className="flex aspect-[4/3] items-center justify-center bg-slate-100 bg-cover bg-center"
-                    style={
-                      imageUrl
-                        ? { backgroundImage: `url(${imageUrl})` }
-                        : undefined
-                    }
-                  >
-                    {!imageUrl ? (
-                      <span className="text-sm text-slate-400">No image</span>
-                    ) : null}
+                <li key={image.id} className={`overflow-hidden rounded-xl border bg-surface ${image.is_main ? "border-ink ring-1 ring-ink" : "border-line"}`}>
+                  <div className="relative flex aspect-[4/3] items-center justify-center bg-sunken bg-cover bg-center"
+                    style={imageUrl ? { backgroundImage: `url(${imageUrl})` } : undefined}
+                    role={imageUrl ? "img" : undefined} aria-label={imageUrl ? image.alt_text || "Product image" : undefined}>
+                    {!imageUrl ? <span className="text-sm text-muted">No image</span> : null}
+                    {image.is_main ? <span className="absolute top-2.5 left-2.5"><Badge tone="ink"><Star size={11} aria-hidden="true" />Main</Badge></span> : null}
                   </div>
-
-                  <div className="p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-semibold text-slate-950">
-                          {image.alt_text || "Product image"}
-                        </p>
-                        <p className="mt-1 text-xs text-slate-500">
-                          Order: {image.order}
-                        </p>
-                      </div>
-
-                      {image.is_main ? (
-                        <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700">
-                          Main
-                        </span>
-                      ) : null}
+                  <div className="flex items-start justify-between gap-3 p-3.5">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-foreground">{image.alt_text || "Product image"}</p>
+                      <p className="mt-0.5 text-xs text-muted" data-numeric>Order: {image.order}</p>
                     </div>
-
-                    <button
-                      type="button"
-                      onClick={() => void handleDeleteImage(image.id)}
-                      disabled={deletingImageId === image.id}
-                      className="mt-4 mb-btn mb-btn-secondary text-rose-700 hover:bg-rose-50 mb-btn-sm"
-                    >
-                      {deletingImageId === image.id ? "Deleting..." : "Delete"}
-                    </button>
+                    <Button size="small" variant="quiet" onClick={() => void handleDeleteImage(image.id)} loading={deletingImageId === image.id}
+                      className="shrink-0 text-rose-700 hover:bg-rose-50 hover:text-rose-800">
+                      {deletingImageId !== image.id && <Trash2 size={15} aria-hidden="true" />}{deletingImageId === image.id ? "Deleting..." : "Delete"}
+                    </Button>
                   </div>
-                </div>
+                </li>
               );
             })}
-          </div>
+          </ul>
         ) : null}
       </div>
-    </section>
+    </Card>
   );
 }

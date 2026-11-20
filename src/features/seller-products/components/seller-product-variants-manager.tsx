@@ -3,6 +3,13 @@
 import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 
 import type { ProductVariant } from "@/features/products/types";
+import { Layers, Plus } from "lucide-react";
+
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardHeader } from "@/components/ui/card";
+import { controlStyles } from "@/components/ui/input";
+import { EmptyState, Notice, Skeleton } from "@/components/ui/states";
 import { getApiErrorMessage } from "@/lib/api/errors";
 
 import {
@@ -198,213 +205,95 @@ export function SellerProductVariantsManager({
     }
   }
 
+  const fieldId = (name: string) => `variant-${productId}-${name}`;
+
   return (
-    <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-6">
-      <div>
-        <p className="mb-eyebrow">
-          Product variants
-        </p>
+    <Card>
+      <CardHeader eyebrow="Product variants" title="Manage variants"
+        description="Add different versions of the same product, such as size, color, or switch type." />
 
-        <h2 className="mt-3 text-2xl font-semibold tracking-tight text-slate-950">
-          Manage variants
-        </h2>
+      {error ? <Notice tone="danger" className="mt-5">{error}</Notice> : null}
 
-        <p className="mt-2 text-sm leading-6 text-slate-500">
-          Add different versions of the same product, such as size, color, or
-          switch type.
-        </p>
-      </div>
-
-      {error ? (
-        <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error}
+      <form onSubmit={handleSubmit} className={`mt-5 grid gap-4 rounded-xl border p-4 sm:grid-cols-2 ${editingVariantId ? "border-ember-200 bg-ember-50/50" : "border-dashed border-line-strong bg-sunken/40"}`}>
+        <p className="text-sm font-semibold text-foreground sm:col-span-2">{editingVariantId ? "Edit variant" : "Add a variant"}</p>
+        <div className="grid gap-1.5">
+          <label htmlFor={fieldId("name")} className="text-sm font-medium text-foreground">Variant name</label>
+          <input id={fieldId("name")} name="name" value={form.name} onChange={handleChange} required placeholder="Red Switch" className={controlStyles} />
         </div>
-      ) : null}
-
-      <form onSubmit={handleSubmit} className="mt-6 grid gap-4 sm:grid-cols-2">
-        <label className="block">
-          <span className="text-sm font-medium text-slate-700">
-            Variant name
-          </span>
-          <input
-            name="name"
-            value={form.name}
-            onChange={handleChange}
-            required
-            placeholder="Red Switch"
-            className="mt-2 w-full mb-control"
-          />
-        </label>
-
-        <label className="block">
-          <span className="text-sm font-medium text-slate-700">SKU</span>
-          <input
-            name="sku"
-            value={form.sku}
-            onChange={handleChange}
-            required
-            placeholder="KB-RED-001"
-            className="mt-2 w-full mb-control"
-          />
-        </label>
-
-        <label className="block">
-          <span className="text-sm font-medium text-slate-700">Price</span>
-          <input
-            name="price"
-            type="number"
-            min="0"
-            value={form.price}
-            onChange={handleChange}
-            required
-            className="mt-2 w-full mb-control"
-          />
-        </label>
-
-        <label className="block">
-          <span className="text-sm font-medium text-slate-700">
-            Compare price
-          </span>
-          <input
-            name="compare_price"
-            type="number"
-            min="0"
-            value={form.compare_price}
-            onChange={handleChange}
-            className="mt-2 w-full mb-control"
-          />
-        </label>
-
-        <label className="block">
-          <span className="text-sm font-medium text-slate-700">Stock</span>
-          <input
-            name="stock"
-            type="number"
-            min="0"
-            value={form.stock}
-            onChange={handleChange}
-            required
-            className="mt-2 w-full mb-control"
-          />
-        </label>
-
-        <label className="flex items-center gap-3 text-sm font-medium text-slate-700">
-          <input
-            name="is_default"
-            type="checkbox"
-            checked={form.is_default}
-            onChange={handleChange}
-            className="h-4 w-4 rounded border-slate-300"
-          />
+        <div className="grid gap-1.5">
+          <label htmlFor={fieldId("sku")} className="text-sm font-medium text-foreground">SKU</label>
+          <input id={fieldId("sku")} name="sku" value={form.sku} onChange={handleChange} required placeholder="KB-RED-001" className={`${controlStyles} font-mono`} />
+        </div>
+        <div className="grid gap-1.5">
+          <label htmlFor={fieldId("price")} className="text-sm font-medium text-foreground">Price</label>
+          <input id={fieldId("price")} name="price" type="number" inputMode="decimal" min="0" step="any" value={form.price} onChange={handleChange} required className={controlStyles} />
+        </div>
+        <div className="grid gap-1.5">
+          <label htmlFor={fieldId("compare")} className="text-sm font-medium text-foreground">Compare price</label>
+          <input id={fieldId("compare")} name="compare_price" type="number" inputMode="decimal" min="0" step="any" value={form.compare_price} onChange={handleChange} className={controlStyles} />
+        </div>
+        <div className="grid gap-1.5">
+          <label htmlFor={fieldId("stock")} className="text-sm font-medium text-foreground">Stock</label>
+          <input id={fieldId("stock")} name="stock" type="number" inputMode="numeric" min="0" value={form.stock} onChange={handleChange} required className={controlStyles} />
+        </div>
+        <label className="flex min-h-11 items-center gap-3 self-end text-sm font-medium text-foreground">
+          <input name="is_default" type="checkbox" checked={form.is_default} onChange={handleChange} className="size-4" />
           Default variant
         </label>
-
-        <div className="flex flex-wrap gap-3 sm:col-span-2">
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="mb-btn mb-btn-primary"
-          >
-            {isSubmitting
-              ? "Saving..."
-              : editingVariantId
-                ? "Save variant"
-                : "Create variant"}
-          </button>
-
-          {editingVariantId ? (
-            <button
-              type="button"
-              onClick={handleCancelEdit}
-              className="mb-btn mb-btn-secondary"
-            >
-              Cancel edit
-            </button>
-          ) : null}
+        <div className="flex flex-wrap gap-2 sm:col-span-2">
+          <Button type="submit" loading={isSubmitting}>
+            {!isSubmitting && !editingVariantId && <Plus size={15} aria-hidden="true" />}
+            {isSubmitting ? "Saving..." : editingVariantId ? "Save variant" : "Create variant"}
+          </Button>
+          {editingVariantId ? <Button variant="secondary" onClick={handleCancelEdit}>Cancel edit</Button> : null}
         </div>
       </form>
 
-      <div className="mt-8">
+      <div className="mt-6" aria-live="polite">
         {isLoading ? (
-          <p className="text-sm text-slate-500">Loading product variants...</p>
+          <div role="status" className="grid gap-2">
+            <span className="sr-only">Loading product variants...</span>
+            {[0, 1, 2].map((i) => <Skeleton key={i} className="h-14 rounded-lg" />)}
+          </div>
         ) : null}
 
         {!isLoading && !variants.length ? (
-          <div className="rounded-3xl border border-dashed border-slate-300 p-6">
-            <h3 className="text-lg font-semibold text-slate-950">
-              No variants yet
-            </h3>
-            <p className="mt-2 text-sm text-slate-500">
-              Create the first product variant.
-            </p>
-          </div>
+          <EmptyState className="py-10" icon={<Layers size={22} />} title="No variants yet" description="Create the first product variant." />
         ) : null}
 
         {variants.length ? (
-          <div className="overflow-hidden rounded-3xl border border-slate-200">
-            <div className="grid grid-cols-[1fr_120px_100px_160px] gap-4 border-b border-slate-200 bg-slate-50 px-5 py-3 mb-eyebrow">
-              <span>Variant</span>
-              <span>Price</span>
-              <span>Stock</span>
-              <span>Actions</span>
-            </div>
-
-            <div className="divide-y divide-slate-100">
-              {variants.map((variant) => (
-                <div
-                  key={variant.id}
-                  className="grid grid-cols-[1fr_120px_100px_160px] gap-4 px-5 py-4"
-                >
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-sm font-semibold text-slate-950">
-                        {variant.name}
-                      </p>
-
-                      {variant.is_default ? (
-                        <span className="rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-700">
-                          Default
-                        </span>
-                      ) : null}
-                    </div>
-
-                    <p className="mt-1 text-xs text-slate-500">
-                      SKU: {variant.sku}
-                    </p>
-                  </div>
-
-                  <p className="text-sm font-medium text-slate-900">
-                    {formatPrice(variant.final_price || variant.price)}
-                  </p>
-
-                  <p className="text-sm text-slate-600">{variant.stock}</p>
-
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleEditVariant(variant)}
-                      className="mb-btn mb-btn-secondary mb-btn-sm"
-                    >
-                      Edit
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => void handleDeleteVariant(variant.id)}
-                      disabled={deletingVariantId === variant.id}
-                      className="mb-btn mb-btn-secondary text-rose-700 hover:bg-rose-50 mb-btn-sm"
-                    >
-                      {deletingVariantId === variant.id
-                        ? "Deleting..."
-                        : "Delete"}
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+          <div className="overflow-x-auto rounded-xl border border-line">
+            <table className="mb-table min-w-[36rem]">
+              <caption className="sr-only">Product variants</caption>
+              <thead><tr><th scope="col">Variant</th><th scope="col" className="text-right">Price</th><th scope="col" className="text-right">Stock</th><th scope="col" className="text-right">Actions</th></tr></thead>
+              <tbody>
+                {variants.map((variant) => (
+                  <tr key={variant.id} className={editingVariantId === variant.id ? "[&>td]:!bg-ember-50/60" : ""}>
+                    <td>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-medium text-foreground">{variant.name}</span>
+                        {variant.is_default ? <Badge tone="success">Default</Badge> : null}
+                      </div>
+                      <p className="mt-0.5 font-mono text-xs text-muted">SKU: {variant.sku}</p>
+                    </td>
+                    <td className="text-right font-medium text-foreground">{formatPrice(variant.final_price || variant.price)}</td>
+                    <td className={`text-right ${variant.stock <= 0 ? "font-medium text-danger" : "text-slate-700"}`}>{variant.stock}{variant.stock <= 0 && <span className="sr-only"> (out of stock)</span>}</td>
+                    <td>
+                      <div className="flex justify-end gap-1.5">
+                        <Button size="small" variant="secondary" onClick={() => handleEditVariant(variant)}>Edit</Button>
+                        <Button size="small" variant="quiet" onClick={() => void handleDeleteVariant(variant.id)} loading={deletingVariantId === variant.id}
+                          className="text-rose-700 hover:bg-rose-50 hover:text-rose-800">
+                          {deletingVariantId === variant.id ? "Deleting..." : "Delete"}
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         ) : null}
       </div>
-    </section>
+    </Card>
   );
 }
