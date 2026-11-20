@@ -7,6 +7,11 @@ import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { getOrder } from "@/features/orders/api";
 import type { OrderDetail } from "@/features/orders/types";
 import { getReturnAvailability } from "../eligibility";
+import { Button, buttonStyles } from "@/components/ui/button";
+import { Card, CardHeader } from "@/components/ui/card";
+import { controlStyles } from "@/components/ui/input";
+import { PageHeader } from "@/components/ui/page-header";
+import { EmptyState, Notice, Skeleton } from "@/components/ui/states";
 import { getApiErrorMessage } from "@/lib/api/errors";
 
 import { createReturnRequest } from "../api";
@@ -182,241 +187,134 @@ export function ReturnRequestForm() {
 
   if (isLoading) {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 text-sm text-slate-600 shadow-sm">
-        Loading return form...
+      <div className="grid gap-6" aria-busy="true">
+        <p role="status" className="sr-only">Loading return form...</p>
+        <Skeleton className="h-20 max-w-md" />
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]"><Skeleton className="h-80 rounded-2xl" /><Skeleton className="h-56 rounded-2xl" /></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="rounded-3xl border border-red-200 bg-red-50 p-5 sm:p-8 text-sm text-red-700">
-        {error}
-      </div>
+      <Notice tone="danger" title="We couldn't load the return form">{error}</Notice>
     );
   }
 
   if (!order) {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 text-sm text-slate-600 shadow-sm">
-        Order not found.
-      </div>
+      <EmptyState title="Order not found." action={<Link href="/orders" className={buttonStyles({ variant: "secondary" })}>View your orders</Link>} />
     );
   }
 
   if (!Object.values(items).some((item) => item.maxQuantity > 0)) {
     return (
-      <section className="rounded-3xl border border-amber-200 bg-amber-50 p-5 sm:p-8">
-        <h1 className="text-2xl font-bold text-amber-950">
-          This order is not returnable yet
-        </h1>
-        <p className="mt-2 text-sm text-amber-800">
-          No delivered items with remaining returnable quantity were found.
-        </p>
-        <Link
-          href={`/orders/${order.id}`}
-          className="mt-6 inline-flex h-11 items-center justify-center rounded-2xl bg-amber-900 px-5 text-sm font-medium text-white"
-        >
-          Back to order
-        </Link>
+      <section className="grid max-w-2xl gap-4">
+        <h1>This order is not returnable yet</h1>
+        <Notice tone="warning">No delivered items with remaining returnable quantity were found.</Notice>
+        <div><Link href={`/orders/${order.id}`} className={buttonStyles({ variant: "secondary" })}>Back to order</Link></div>
       </section>
     );
   }
 
+  const chosenItems = order.items.filter((item) => items[item.id]?.enabled);
+  const chosenUnits = chosenItems.reduce((total, item) => total + (items[item.id]?.quantity ?? 0), 0);
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div>
-        <Link
-          href={`/orders/${order.id}`}
-          className="text-sm font-medium text-slate-600 hover:text-slate-950"
-        >
-          ← Back to order
-        </Link>
+    <form onSubmit={handleSubmit} className="grid gap-6">
+      <PageHeader eyebrow="Return request" title="Request a return"
+        description={<>Order <span className="font-mono text-foreground">{order.order_number}</span> · choose the items to send back and tell us why.</>}
+        crumbs={[{ href: "/orders", label: "Orders" }, { href: `/orders/${order.id}`, label: "Order details" }, { label: "Return" }]} />
 
-        <p className="mt-6 text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">
-          Return request
-        </p>
-        <h1 className="mt-2 text-3xl font-bold text-slate-950">
-          Request a return
-        </h1>
-        <p className="mt-2 text-sm text-slate-600">
-          Order {order.order_number}
-        </p>
-      </div>
+      {formError ? <Notice tone="danger">{formError}</Notice> : null}
 
-      {formError ? (
-        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {formError}
-        </div>
-      ) : null}
-
-      <div className="grid gap-6 lg:grid-cols-[1.3fr_0.7fr]">
-        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-950">Select items</h2>
-
-          <div className="mt-4 divide-y divide-slate-100">
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <Card>
+          <CardHeader eyebrow="Step 1" title="Select items" description="Only delivered items with a returnable quantity can be selected." />
+          <ul className="mt-5 grid gap-3">
             {order.items.map((item) => {
               const itemState = items[item.id];
-
+              const returnable = Boolean(itemState?.maxQuantity);
+              const enabled = itemState?.enabled ?? false;
               return (
-                <div key={item.id} className="space-y-4 py-5">
-                  <label className="flex items-start gap-3">
-                    <input
-                      type="checkbox"
-                      checked={itemState?.enabled ?? false}
-                      disabled={!itemState?.maxQuantity}
-                      onChange={(event) =>
-                        updateItem(item.id, { enabled: event.target.checked })
-                      }
-                      className="mt-1 h-4 w-4 rounded border-slate-300"
-                    />
-
-                    <span className="flex-1">
-                      <span className="block font-medium text-slate-950">
-                        {item.product_name}
-                      </span>
-                      <span className="mt-1 block text-xs text-slate-500">
-                        SKU: {item.product_sku}
-                      </span>
-                      <span className="mt-1 block text-xs text-slate-500">
-                        Ordered quantity: {item.quantity}
-                      </span>
-                      <span className="mt-1 block text-xs text-slate-500">
-                        {itemState?.maxQuantity
-                          ? `${itemState.maxQuantity} returnable`
-                          : "Not yet delivered or no returnable quantity left"}
+                <li key={item.id} className={`rounded-xl border transition-colors ${enabled ? "border-ink/25 bg-surface ring-1 ring-ink/10" : returnable ? "border-line" : "border-line bg-sunken/50"}`}>
+                  <label className={`flex items-start gap-3 p-4 ${returnable ? "cursor-pointer" : "cursor-not-allowed"}`}>
+                    <input type="checkbox" checked={enabled} disabled={!returnable}
+                      onChange={(event) => updateItem(item.id, { enabled: event.target.checked })}
+                      className="mt-1 size-4 shrink-0" />
+                    <span className="min-w-0 flex-1">
+                      <span className="block font-medium text-foreground">{item.product_name}</span>
+                      <span className="mt-0.5 block text-xs text-muted"><span className="font-mono">SKU: {item.product_sku}</span> · Ordered quantity: {item.quantity}</span>
+                      <span className={`mt-1.5 block text-xs ${returnable ? "text-success" : "text-muted"}`}>
+                        {itemState?.maxQuantity ? `${itemState.maxQuantity} returnable` : "Not yet delivered or no returnable quantity left"}
                       </span>
                     </span>
-
-                    <span className="text-sm font-semibold text-slate-950">
-                      {formatMoney(item.total_price)}
-                    </span>
+                    <span className="text-sm font-semibold text-foreground" data-numeric>{formatMoney(item.total_price)}</span>
                   </label>
 
                   {itemState?.enabled ? (
-                    <div className="grid gap-4 rounded-2xl bg-slate-50 p-4 md:grid-cols-2">
+                    <div className="grid gap-4 border-t border-line bg-sunken/40 p-4 md:grid-cols-2">
                       {itemState.maxQuantity > 1 ? (
-                        <label className="space-y-1 text-sm">
-                          <span className="font-medium text-slate-700">
-                            Quantity
-                          </span>
-                          <input
-                            type="number"
-                            min={1}
-                            max={itemState.maxQuantity}
-                            value={itemState.quantity}
-                            onChange={(event) =>
-                              updateItem(item.id, {
-                                quantity: Number(event.target.value),
-                              })
-                            }
-                            className="w-full mb-control"
-                          />
-                          <span className="block text-xs text-slate-500">
-                            Max: {itemState.maxQuantity}
-                          </span>
+                        <label className="grid gap-1.5 text-sm">
+                          <span className="font-medium text-foreground">Quantity</span>
+                          <input type="number" inputMode="numeric" min={1} max={itemState.maxQuantity} value={itemState.quantity}
+                            onChange={(event) => updateItem(item.id, { quantity: Number(event.target.value) })} className={controlStyles} />
+                          <span className="text-xs text-muted">Max: {itemState.maxQuantity}</span>
                         </label>
                       ) : (
-                        <div className="space-y-1 text-sm">
-                          <span className="font-medium text-slate-700">
-                            Quantity
-                          </span>
-                          <p className="flex h-11 items-center rounded-2xl border border-slate-200 bg-white px-4 text-slate-600">
-                            1 item will be returned.
-                          </p>
+                        <div className="grid gap-1.5 text-sm">
+                          <span className="font-medium text-foreground">Quantity</span>
+                          <p className="flex min-h-11 items-center rounded-xl border border-line bg-surface px-3.5 text-slate-700">1 item will be returned.</p>
                         </div>
                       )}
-
-                      <label className="space-y-1 text-sm">
-                        <span className="font-medium text-slate-700">
-                          Item condition
-                        </span>
-                        <select
-                          value={itemState.condition}
-                          onChange={(event) =>
-                            updateItem(item.id, {
-                              condition: event.target
-                                .value as ReturnItemCondition,
-                            })
-                          }
-                          className="w-full mb-control mb-select"
-                        >
-                          {conditionOptions.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
+                      <label className="grid gap-1.5 text-sm">
+                        <span className="font-medium text-foreground">Item condition</span>
+                        <select value={itemState.condition} className={`${controlStyles} mb-select pr-10`}
+                          onChange={(event) => updateItem(item.id, { condition: event.target.value as ReturnItemCondition })}>
+                          {conditionOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                         </select>
                       </label>
-
-                      <label className="space-y-1 text-sm md:col-span-2">
-                        <span className="font-medium text-slate-700">
-                          Why are you returning this item?
-                        </span>
-                        <select
-                          value={itemState.reason}
-                          onChange={(event) =>
-                            updateItem(item.id, {
-                              reason: event.target.value as ReturnReason,
-                            })
-                          }
-                          className="w-full mb-control mb-select"
-                        >
-                          {reasonOptions.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
+                      <label className="grid gap-1.5 text-sm md:col-span-2">
+                        <span className="font-medium text-foreground">Why are you returning this item?</span>
+                        <select value={itemState.reason} className={`${controlStyles} mb-select pr-10`}
+                          onChange={(event) => updateItem(item.id, { reason: event.target.value as ReturnReason })}>
+                          {reasonOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                         </select>
                       </label>
-
-                      <label className="space-y-1 text-sm md:col-span-2">
-                        <span className="font-medium text-slate-700">
-                          Describe the issue
-                        </span>
-                        <textarea
-                          value={itemState.customer_note}
-                          onChange={(event) =>
-                            updateItem(item.id, {
-                              customer_note: event.target.value,
-                            })
-                          }
-                          rows={3}
-                          className="w-full mb-control"
-                          placeholder="Example: The item arrived damaged, is missing parts, or does not work as expected."
-                        />
+                      <label className="grid gap-1.5 text-sm md:col-span-2">
+                        <span className="font-medium text-foreground">Describe the issue</span>
+                        <textarea value={itemState.customer_note} rows={3} className={`${controlStyles} min-h-24 resize-y`}
+                          onChange={(event) => updateItem(item.id, { customer_note: event.target.value })}
+                          placeholder="Example: The item arrived damaged, is missing parts, or does not work as expected." />
                       </label>
                     </div>
                   ) : null}
-                </div>
+                </li>
               );
             })}
-          </div>
-        </div>
+          </ul>
+        </Card>
 
-        <aside className="space-y-6">
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-slate-950">
-              Return details
-            </h2>
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-              <p className="font-medium text-slate-900">Refund review</p>
-              <p className="mt-1">
+        <aside className="lg:sticky lg:top-24">
+          <Card>
+            <CardHeader eyebrow="Step 2" title="Return details" />
+            <p className="mt-4 text-sm text-foreground" aria-live="polite" data-numeric>
+              {chosenItems.length
+                ? `${chosenItems.length} product${chosenItems.length === 1 ? "" : "s"} selected · ${chosenUnits} unit${chosenUnits === 1 ? "" : "s"}`
+                : "No items selected yet."}
+            </p>
+            <div className="mt-4 rounded-xl border border-line bg-sunken/60 p-4 text-sm text-slate-700">
+              <p className="font-medium text-foreground">Refund review</p>
+              <p className="mt-1 leading-6">
                 MallByte support will review this request. If it is approved,
                 the refund will be sent back to the original payment method.
               </p>
             </div>
-
-            <div className="mt-4 space-y-4"></div>
-
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="mt-6 w-full mb-btn mb-btn-primary"
-            >
+            <Button type="submit" className="mt-5 w-full" loading={isSubmitting}>
               {isSubmitting ? "Submitting..." : "Submit return request"}
-            </button>
-          </div>
+            </Button>
+            <Link href={`/orders/${order.id}`} className={buttonStyles({ variant: "quiet", className: "mt-2 w-full" })}>Back to order</Link>
+          </Card>
         </aside>
       </div>
     </form>

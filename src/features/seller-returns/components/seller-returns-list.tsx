@@ -9,6 +9,15 @@ import {
   type SellerReturnUser,
   getSellerReturns,
 } from "@/features/seller-returns/api";
+import { CheckCircle2, Clock3, RotateCcw } from "lucide-react";
+
+import { StatusBadge } from "@/components/ui/badge";
+import { Button, buttonStyles } from "@/components/ui/button";
+import { Card, CardHeader, StatCard } from "@/components/ui/card";
+import { Select } from "@/components/ui/input";
+import { PageHeader } from "@/components/ui/page-header";
+import { Pagination } from "@/components/ui/pagination";
+import { Notice, Skeleton } from "@/components/ui/states";
 import { getApiErrorMessage } from "@/lib/api/errors";
 
 const statusLabels: Record<SellerReturnStatus, string> = {
@@ -128,175 +137,73 @@ export function SellerReturnsList() {
   ).length;
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-10">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="mb-eyebrow">
-            Seller
-          </p>
-          <h1 className="mt-2 text-3xl font-semibold text-slate-950">
-            Return requests
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm text-slate-600">
-            View return requests related to your products. MallByte support
-            handles approval and refunds.
-          </p>
-        </div>
+    <main className="grid gap-6">
+      <PageHeader eyebrow="Seller" title="Return requests"
+        description="View return requests related to your products. MallByte support handles approval and refunds."
+        actions={<Link href="/seller/orders" className={buttonStyles({ variant: "secondary" })}>Seller orders</Link>} />
 
-        <Link
-          href="/seller/orders"
-          className="mb-btn mb-btn-secondary"
-        >
-          Seller orders
-        </Link>
-      </div>
-
-      <section className="mt-8 grid gap-4 md:grid-cols-3">
-        <div className="rounded-3xl border border-slate-200 bg-white p-5">
-          <p className="text-sm text-slate-500">Total returns (all pages)</p>
-          <p className="mt-2 text-2xl font-semibold text-slate-950">
-            {pagination.count}
-          </p>
-        </div>
-        <div className="rounded-3xl border border-slate-200 bg-white p-5">
-          <p className="text-sm text-slate-500">Open returns (this page)</p>
-          <p className="mt-2 text-2xl font-semibold text-slate-950">
-            {openCount}
-          </p>
-        </div>
-        <div className="rounded-3xl border border-slate-200 bg-white p-5">
-          <p className="text-sm text-slate-500">Refunded (this page)</p>
-          <p className="mt-2 text-2xl font-semibold text-slate-950">
-            {refundedCount}
-          </p>
-        </div>
+      <section aria-label="Return summary" className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-3 sm:gap-4">
+        <StatCard label="Total returns (all pages)" value={pagination.count} icon={<RotateCcw size={16} />} />
+        <StatCard label="Open returns (this page)" value={openCount} icon={<Clock3 size={16} />} tone={openCount ? "brand" : "default"} />
+        <StatCard label="Refunded (this page)" value={refundedCount} icon={<CheckCircle2 size={16} />} />
       </section>
 
-      <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-5">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="text-lg font-semibold text-slate-950">
-            Product returns
-          </h2>
-
-          <select
-            aria-label="Status on this page"
-            value={statusFilter}
-            onChange={(event) =>
-              setStatusFilter(event.target.value as "all" | SellerReturnStatus)
-            }
-            className="mb-control mb-select"
-          >
-            <option value="all">All statuses</option>
-            {Object.entries(statusLabels).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
+      <Card padded={false} className="overflow-hidden">
+        <div className="grid gap-3 p-5 sm:p-6">
+          <CardHeader title="Product returns"
+            description="Status filters and summaries apply to this page. Use navigation to browse all requests."
+            action={<Select aria-label="Status on this page" value={statusFilter} className="w-48"
+              onChange={(event) => setStatusFilter(event.target.value as "all" | SellerReturnStatus)}>
+              <option value="all">All statuses</option>
+              {Object.entries(statusLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+            </Select>} />
         </div>
 
-        <p className="mt-4 text-sm text-slate-600">
-          Status filters and summaries apply to this page. Use navigation to
-          browse all requests.
-        </p>
         {isLoading ? (
-          <p className="mt-6 text-sm text-slate-500">Loading returns...</p>
+          <div role="status" className="grid gap-2 border-t border-line p-5">
+            <span className="sr-only">Loading returns...</span>
+            {[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-12 rounded-lg" />)}
+          </div>
         ) : error ? (
-          <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-            <p>{error}</p>
-            <button
-              type="button"
-              onClick={() => setRetry((value) => value + 1)}
-              className="mt-3 underline"
-            >
-              Retry returns
-            </button>
+          <div className="border-t border-line p-5">
+            <Notice tone="danger" action={<Button size="small" variant="secondary" onClick={() => setRetry((value) => value + 1)}>Retry returns</Button>}>{error}</Notice>
           </div>
         ) : filteredReturns.length === 0 ? (
-          <p className="mt-6 text-sm text-slate-500">
+          <p className="border-t border-line px-5 py-8 text-center text-sm text-muted">
             No return requests on this page match the selected status.
           </p>
         ) : (
-          <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200">
-            <div className="hidden grid-cols-[1.2fr_1fr_1fr_1fr_1fr_auto] gap-4 bg-slate-50 px-4 py-3 md:grid mb-eyebrow">
-              <span>Request</span>
-              <span>Customer</span>
-              <span>Status</span>
-              <span>Requested</span>
-              <span>Created</span>
-              <span />
-            </div>
-
-            <div className="divide-y divide-slate-100">
-              {filteredReturns.map((returnRequest) => (
-                <div
-                  key={returnRequest.id}
-                  className="grid gap-4 px-4 py-4 md:grid-cols-[1.2fr_1fr_1fr_1fr_1fr_auto] md:items-center"
-                >
-                  <div>
-                    <Link
-                      href={`/seller/returns/${returnRequest.id}`}
-                      className="font-semibold text-slate-950 hover:underline"
-                    >
-                      {returnRequest.request_number}
-                    </Link>
-                    <p className="mt-1 text-xs text-slate-500">
-                      Order {returnRequest.order_number}
-                    </p>
-                  </div>
-
-                  <p className="text-sm text-slate-600">
-                    {getCustomerLabel(returnRequest.customer)}
-                  </p>
-
-                  <span className="w-fit rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
-                    {statusLabels[returnRequest.status] ?? returnRequest.status}
-                  </span>
-
-                  <p className="text-sm font-medium text-slate-950">
-                    {formatMoney(returnRequest.total_requested_amount)}
-                  </p>
-
-                  <p className="text-sm text-slate-600">
-                    {formatDate(returnRequest.created_at)}
-                  </p>
-
-                  <Link
-                    href={`/seller/returns/${returnRequest.id}`}
-                    className="mb-btn mb-btn-primary mb-btn-sm"
-                  >
-                    View
-                  </Link>
-                </div>
-              ))}
-            </div>
+          <div className="overflow-x-auto border-t border-line">
+            <table className="mb-table min-w-[46rem]">
+              <thead><tr><th scope="col">Request</th><th scope="col">Customer</th><th scope="col">Status</th><th scope="col" className="text-right">Requested</th><th scope="col">Created</th><th scope="col"><span className="sr-only">Action</span></th></tr></thead>
+              <tbody>
+                {filteredReturns.map((returnRequest) => (
+                  <tr key={returnRequest.id}>
+                    <td>
+                      <Link href={`/seller/returns/${returnRequest.id}`} className="font-mono text-[0.8125rem] font-semibold text-foreground underline-offset-4 hover:underline">
+                        {returnRequest.request_number}
+                      </Link>
+                      <p className="mt-0.5 text-xs text-muted">Order {returnRequest.order_number}</p>
+                    </td>
+                    <td className="text-slate-700">{getCustomerLabel(returnRequest.customer)}</td>
+                    <td><StatusBadge status={returnRequest.status} label={statusLabels[returnRequest.status] ?? returnRequest.status} /></td>
+                    <td className="text-right font-medium text-foreground">{formatMoney(returnRequest.total_requested_amount)}</td>
+                    <td className="whitespace-nowrap text-muted">{formatDate(returnRequest.created_at)}</td>
+                    <td className="text-right">
+                      <Link href={`/seller/returns/${returnRequest.id}`} className={buttonStyles({ variant: "secondary", size: "small" })}>View</Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
-        <nav
-          aria-label="Return pages"
-          className="mt-6 flex items-center justify-between gap-3 text-sm text-slate-700"
-        >
-          <button
-            type="button"
-            disabled={page === 1}
-            onClick={() => changePage(page - 1)}
-            className="rounded-xl border px-4 py-2 disabled:opacity-50"
-          >
-            Previous returns
-          </button>
-          <span>
-            Page {page} of {Math.max(1, Math.ceil(pagination.count / 20))}
-          </span>
-          <button
-            type="button"
-            disabled={!pagination.next || isLoading || Boolean(error)}
-            onClick={() => changePage(page + 1)}
-            className="rounded-xl border px-4 py-2 disabled:opacity-50"
-          >
-            Next returns
-          </button>
-        </nav>
-      </section>
+        <Pagination className="border-t border-line px-5 py-3" label="Return pages"
+          summary={`Page ${page} of ${Math.max(1, Math.ceil(pagination.count / 20))}`}
+          canPrevious={page !== 1} canNext={Boolean(pagination.next) && !isLoading && !error}
+          previousLabel="Previous returns" nextLabel="Next returns"
+          onPrevious={() => changePage(page - 1)} onNext={() => changePage(page + 1)} />
+      </Card>
     </main>
   );
 }

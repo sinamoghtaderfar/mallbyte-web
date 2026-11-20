@@ -12,7 +12,19 @@ import {
   markAdminReturnRefunded,
   rejectAdminReturn,
 } from "@/features/returns/admin-api";
+import { Banknote, Check, PackageCheck, X } from "lucide-react";
+
+import { humanize, StatusBadge, statusTone } from "@/components/ui/badge";
+import { Button, buttonStyles } from "@/components/ui/button";
+import { Card, CardHeader } from "@/components/ui/card";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { DetailList, Timeline } from "@/components/ui/data-display";
+import { Field, Input, Textarea } from "@/components/ui/input";
+import { Breadcrumbs, PageHeader } from "@/components/ui/page-header";
+import { Notice, Skeleton } from "@/components/ui/states";
 import { getApiErrorMessage } from "@/lib/api/errors";
+
+type ReturnAction = "approve" | "reject" | "received" | "refunded";
 
 const statusLabels: Record<string, string> = {
   draft: "Draft",
@@ -58,6 +70,7 @@ export function AdminReturnDetail() {
   const [isWorking, setIsWorking] = useState(false);
   const [error, setError] = useState("");
   const [actionMessage, setActionMessage] = useState("");
+  const [pendingAction, setPendingAction] = useState<ReturnAction | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -136,29 +149,20 @@ export function AdminReturnDetail() {
 
   if (isLoading) {
     return (
-      <main className="min-h-screen bg-slate-50 px-4 py-10">
-        <div className="mx-auto max-w-6xl">
-          <p className="text-sm text-slate-500">Loading return request...</p>
-        </div>
+      <main className="grid gap-6" aria-busy="true">
+        <p role="status" className="sr-only">Loading return request...</p>
+        <Skeleton className="h-24 max-w-lg" />
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]"><Skeleton className="h-96 rounded-2xl" /><Skeleton className="h-96 rounded-2xl" /></div>
       </main>
     );
   }
 
   if (error && !returnRequest) {
     return (
-      <main className="min-h-screen bg-slate-50 px-4 py-10">
-        <div className="mx-auto max-w-6xl">
-          <Link
-            href="/admin/returns"
-            className="text-sm font-medium text-slate-600 hover:text-slate-950"
-          >
-            ← Back to admin returns
-          </Link>
-
-          <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-            {error}
-          </div>
-        </div>
+      <main className="grid max-w-2xl gap-4">
+        <Breadcrumbs items={[{ href: "/admin/returns", label: "Returns" }, { label: "Return" }]} />
+        <Notice tone="danger" title="Could not load this return">{error}</Notice>
+        <div><Link href="/admin/returns" className={buttonStyles({ variant: "secondary" })}>Back to admin returns</Link></div>
       </main>
     );
   }
@@ -179,284 +183,130 @@ export function AdminReturnDetail() {
     "refund_pending",
   ].includes(returnRequest.status);
 
+  const confirmCopy: Record<ReturnAction, { title: string; description: string; confirm: string; danger?: boolean }> = {
+    approve: { title: `Approve ${returnRequest.request_number}?`, description: approvedAmount ? `The approved refund amount will be ${formatMoney(approvedAmount)}. The customer is notified to send the item back.` : "The customer is notified to send the item back.", confirm: "Approve return" },
+    reject: { title: `Reject ${returnRequest.request_number}?`, description: "The customer sees the decision and your note. This ends the return request.", confirm: "Reject return", danger: true },
+    received: { title: "Mark the item as received?", description: "Confirms the returned item arrived at the warehouse.", confirm: "Mark item received" },
+    refunded: { title: "Mark this return as refunded?", description: "Records that the refund was completed. Make sure the payment provider refund has been issued.", confirm: "Mark refunded" },
+  };
+
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-10">
-      <div className="mx-auto max-w-6xl">
-        <Link
-          href="/admin/returns"
-          className="text-sm font-medium text-slate-600 hover:text-slate-950"
-        >
-          ← Back to admin returns
-        </Link>
+    <main className="grid gap-6">
+      <PageHeader eyebrow="Return request"
+        title={<span className="font-mono text-[1.625rem] tracking-tight sm:text-[1.875rem]">{returnRequest.request_number}</span>}
+        description={<>Order <span className="font-mono text-foreground">{returnRequest.order_number}</span> · Customer {returnRequest.customer}</>}
+        crumbs={[{ href: "/admin/returns", label: "Returns" }, { label: "Return details" }]}
+        actions={<StatusBadge status={returnRequest.status} label={getStatusLabel(returnRequest.status)} className="px-3 py-1 text-sm" />} />
 
-        <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <p className="mb-eyebrow">
-              Return request
-            </p>
-            <h1 className="mt-2 text-3xl font-semibold text-slate-950">
-              {returnRequest.request_number}
-            </h1>
-            <p className="mt-2 text-sm text-slate-600">
-              Order {returnRequest.order_number} · Customer{" "}
-              {returnRequest.customer}
-            </p>
-          </div>
+      {error ? <Notice tone="danger">{error}</Notice> : null}
+      {actionMessage ? <Notice tone="success">{actionMessage}</Notice> : null}
 
-          <span className="w-fit rounded-full bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700">
-            {getStatusLabel(returnRequest.status)}
-          </span>
-        </div>
-
-        {error ? (
-          <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-            {error}
-          </div>
-        ) : null}
-
-        {actionMessage ? (
-          <div className="mt-6 rounded-2xl border border-green-200 bg-green-50 p-4 text-sm text-green-700">
-            {actionMessage}
-          </div>
-        ) : null}
-
-        <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_360px]">
-          <section className="space-y-6">
-            <div className="rounded-3xl border border-slate-200 bg-white p-6">
-              <h2 className="text-lg font-semibold text-slate-950">
-                Returned items
-              </h2>
-
-              <div className="mt-5 space-y-4">
-                {returnRequest.items.map((item) => (
-                  <div
-                    key={item.id}
-                    className="rounded-2xl border border-slate-200 p-4"
-                  >
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                      <div>
-                        <h3 className="font-semibold text-slate-950">
-                          {item.product_name}
-                        </h3>
-                        <p className="mt-1 text-sm text-slate-500">
-                          SKU: {item.product_sku}
-                        </p>
-                        <p className="mt-1 text-sm text-slate-500">
-                          Quantity: {item.quantity}
-                        </p>
-                      </div>
-
-                      <span className="w-fit rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
-                        {getStatusLabel(item.status)}
-                      </span>
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+        <section className="grid min-w-0 gap-6" aria-label="Return contents">
+          <Card>
+            <CardHeader title="Returned items" description={`${returnRequest.items.length} item${returnRequest.items.length === 1 ? "" : "s"} in this request`} />
+            <ul className="mt-5 grid gap-3">
+              {returnRequest.items.map((item) => (
+                <li key={item.id} className="rounded-xl border border-line p-4">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0">
+                      <h3 className="font-medium text-foreground">{item.product_name}</h3>
+                      <p className="mt-0.5 text-xs text-muted"><span className="font-mono">SKU: {item.product_sku}</span> · Quantity: {item.quantity}</p>
                     </div>
-
-                    <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
-                      <div>
-                        <dt className="text-slate-500">Reason</dt>
-                        <dd className="mt-1 font-medium text-slate-950">
-                          {item.reason}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt className="text-slate-500">Condition</dt>
-                        <dd className="mt-1 font-medium text-slate-950">
-                          {item.condition}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt className="text-slate-500">Requested refund</dt>
-                        <dd className="mt-1 font-medium text-slate-950">
-                          {formatMoney(item.requested_refund_amount)}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt className="text-slate-500">Approved refund</dt>
-                        <dd className="mt-1 font-medium text-slate-950">
-                          {formatMoney(item.approved_refund_amount)}
-                        </dd>
-                      </div>
-                    </dl>
-
-                    {item.customer_note ? (
-                      <div className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm text-slate-600">
-                        <p className="font-medium text-slate-900">
-                          Customer note
-                        </p>
-                        <p className="mt-1">{item.customer_note}</p>
-                      </div>
-                    ) : null}
+                    <StatusBadge status={item.status} label={getStatusLabel(item.status)} />
                   </div>
-                ))}
-              </div>
-            </div>
+                  <DetailList className="mt-4 border-t border-line pt-4" items={[
+                    { label: "Reason", value: humanize(item.reason) },
+                    { label: "Condition", value: humanize(item.condition) },
+                    { label: "Requested refund", value: <span data-numeric>{formatMoney(item.requested_refund_amount)}</span> },
+                    { label: "Approved refund", value: <span data-numeric>{formatMoney(item.approved_refund_amount)}</span> },
+                  ]} />
+                  {item.customer_note ? (
+                    <blockquote className="mt-4 rounded-lg border-l-2 border-line-strong bg-sunken/60 px-4 py-3 text-sm text-slate-700">
+                      <p className="text-xs font-medium text-muted">Customer note</p>
+                      <p className="mt-1">{item.customer_note}</p>
+                    </blockquote>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          </Card>
 
-            <div className="rounded-3xl border border-slate-200 bg-white p-6">
-              <h2 className="text-lg font-semibold text-slate-950">
-                Status history
-              </h2>
+          <Card>
+            <CardHeader title="Status history" />
+            {returnRequest.status_history.length === 0 ? (
+              <p className="mt-4 text-sm text-muted">No history entries yet.</p>
+            ) : (
+              <Timeline className="mt-5" items={returnRequest.status_history.map((history, index) => ({
+                id: history.id,
+                title: history.old_status
+                  ? `${getStatusLabel(history.old_status)} → ${getStatusLabel(history.new_status)}`
+                  : getStatusLabel(history.new_status),
+                meta: `${formatDateTime(history.created_at)}${history.changed_by ? ` · ${history.changed_by}` : ""}`,
+                description: history.note || undefined,
+                tone: index === returnRequest.status_history.length - 1 ? statusTone(history.new_status) : "neutral",
+              }))} />
+            )}
+          </Card>
+        </section>
 
-              {returnRequest.status_history.length === 0 ? (
-                <p className="mt-4 text-sm text-slate-500">
-                  No history entries yet.
-                </p>
-              ) : (
-                <div className="mt-5 space-y-4">
-                  {returnRequest.status_history.map((history) => (
-                    <div
-                      key={history.id}
-                      className="rounded-2xl border border-slate-200 p-4"
-                    >
-                      <p className="text-sm font-medium text-slate-950">
-                        {history.old_status
-                          ? `${getStatusLabel(history.old_status)} → ${getStatusLabel(
-                              history.new_status,
-                            )}`
-                          : getStatusLabel(history.new_status)}
-                      </p>
-                      <p className="mt-1 text-xs text-slate-500">
-                        {formatDateTime(history.created_at)}
-                        {history.changed_by ? ` · ${history.changed_by}` : ""}
-                      </p>
-                      {history.note ? (
-                        <p className="mt-2 text-sm text-slate-600">
-                          {history.note}
-                        </p>
-                      ) : null}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </section>
-
-          <aside className="space-y-6">
-            <div className="rounded-3xl border border-slate-200 bg-white p-6">
-              <h2 className="text-lg font-semibold text-slate-950">
-                Refund summary
-              </h2>
-
-              <dl className="mt-5 space-y-4 text-sm">
-                <div className="flex items-center justify-between gap-4">
-                  <dt className="text-slate-500">Requested</dt>
-                  <dd className="font-semibold text-slate-950">
-                    {formatMoney(returnRequest.total_requested_amount)}
-                  </dd>
-                </div>
-                <div className="flex items-center justify-between gap-4">
-                  <dt className="text-slate-500">Approved</dt>
-                  <dd className="font-semibold text-slate-950">
-                    {formatMoney(returnRequest.total_approved_amount)}
-                  </dd>
-                </div>
-                <div className="flex items-center justify-between gap-4">
-                  <dt className="text-slate-500">Refund method</dt>
-                  <dd className="font-semibold text-slate-950">
-                    {returnRequest.refund_method}
-                  </dd>
-                </div>
-                <div className="flex items-center justify-between gap-4">
-                  <dt className="text-slate-500">Reviewed by</dt>
-                  <dd className="font-semibold text-slate-950">
-                    {returnRequest.reviewed_by ?? "—"}
-                  </dd>
-                </div>
-                <div className="flex items-center justify-between gap-4">
-                  <dt className="text-slate-500">Reviewed at</dt>
-                  <dd className="font-semibold text-slate-950">
-                    {formatDateTime(returnRequest.reviewed_at)}
-                  </dd>
-                </div>
-              </dl>
-            </div>
-
-            <div className="rounded-3xl border border-slate-200 bg-white p-6">
-              <h2 className="text-lg font-semibold text-slate-950">
-                Admin action
-              </h2>
-
-              <label className="mt-5 block space-y-2 text-sm">
-                <span className="font-medium text-slate-700">
-                  Internal note
-                </span>
-                <textarea
-                  value={note}
-                  onChange={(event) => setNote(event.target.value)}
-                  rows={4}
-                  placeholder="Add a short note for this decision."
-                  className="w-full mb-control"
-                />
-              </label>
-
+        <aside className="grid gap-6 lg:sticky lg:top-24">
+          <Card className={canReview || canMarkReceived || canMarkRefunded ? "border-ink/15 ring-1 ring-ink/5" : ""}>
+            <CardHeader title="Admin action" description="Decisions are recorded in the return history." />
+            <div className="mt-5 grid gap-4">
+              <Field label="Internal note" htmlFor="admin-return-note">
+                <Textarea id="admin-return-note" value={note} onChange={(event) => setNote(event.target.value)} rows={3}
+                  placeholder="Add a short note for this decision." />
+              </Field>
               {canReview ? (
-                <label className="mt-4 block space-y-2 text-sm">
-                  <span className="font-medium text-slate-700">
-                    Approved refund amount
-                  </span>
-                  <input
-                    value={approvedAmount}
-                    onChange={(event) => setApprovedAmount(event.target.value)}
-                    inputMode="numeric"
-                    className="w-full mb-control"
-                  />
-                </label>
+                <Field label="Approved refund amount" htmlFor="admin-return-amount" hintId="admin-return-amount-hint"
+                  hint={`Requested: ${formatMoney(returnRequest.total_requested_amount)}`}>
+                  <Input id="admin-return-amount" value={approvedAmount} onChange={(event) => setApprovedAmount(event.target.value)}
+                    inputMode="decimal" aria-describedby="admin-return-amount-hint" />
+                </Field>
               ) : null}
-
-              <div className="mt-5 space-y-3">
+              <div className="grid gap-2">
                 {canReview ? (
                   <>
-                    <button
-                      type="button"
-                      disabled={isWorking}
-                      onClick={() => void runAction("approve")}
-                      className="flex w-full mb-btn mb-btn-primary"
-                    >
-                      Approve return
-                    </button>
-
-                    <button
-                      type="button"
-                      disabled={isWorking}
-                      onClick={() => void runAction("reject")}
-                      className="flex w-full mb-btn mb-btn-secondary text-rose-700 hover:bg-rose-50"
-                    >
-                      Reject return
-                    </button>
+                    <Button disabled={isWorking} onClick={() => setPendingAction("approve")}><Check size={16} aria-hidden="true" />Approve return</Button>
+                    <Button variant="secondary" disabled={isWorking} onClick={() => setPendingAction("reject")} className="text-rose-700 hover:border-rose-300 hover:bg-rose-50"><X size={16} aria-hidden="true" />Reject return</Button>
                   </>
                 ) : null}
-
-                {canMarkReceived ? (
-                  <button
-                    type="button"
-                    disabled={isWorking}
-                    onClick={() => void runAction("received")}
-                    className="flex w-full mb-btn mb-btn-primary"
-                  >
-                    Mark item received
-                  </button>
-                ) : null}
-
-                {canMarkRefunded ? (
-                  <button
-                    type="button"
-                    disabled={isWorking}
-                    onClick={() => void runAction("refunded")}
-                    className="flex w-full mb-btn mb-btn-primary"
-                  >
-                    Mark refunded
-                  </button>
-                ) : null}
-
+                {canMarkReceived ? <Button disabled={isWorking} onClick={() => setPendingAction("received")}><PackageCheck size={16} aria-hidden="true" />Mark item received</Button> : null}
+                {canMarkRefunded ? <Button disabled={isWorking} onClick={() => setPendingAction("refunded")}><Banknote size={16} aria-hidden="true" />Mark refunded</Button> : null}
                 {!canReview && !canMarkReceived && !canMarkRefunded ? (
-                  <p className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600">
-                    No admin action is available for the current status.
-                  </p>
+                  <p className="rounded-xl border border-line bg-sunken/60 p-4 text-sm text-muted">No admin action is available for the current status.</p>
                 ) : null}
               </div>
             </div>
-          </aside>
-        </div>
+          </Card>
+
+          <Card>
+            <CardHeader title="Refund summary" />
+            <dl className="mt-4 grid gap-3 text-sm">
+              {([
+                ["Requested", formatMoney(returnRequest.total_requested_amount)],
+                ["Approved", formatMoney(returnRequest.total_approved_amount)],
+                ["Refund method", humanize(returnRequest.refund_method)],
+                ["Reviewed by", returnRequest.reviewed_by ?? "—"],
+                ["Reviewed at", formatDateTime(returnRequest.reviewed_at)],
+              ] as const).map(([label, value]) => (
+                <div key={label} className="flex items-center justify-between gap-4">
+                  <dt className="text-muted">{label}</dt>
+                  <dd className="text-right font-medium text-foreground" data-numeric>{value}</dd>
+                </div>
+              ))}
+            </dl>
+          </Card>
+        </aside>
       </div>
+
+      {pendingAction ? (
+        <ConfirmDialog title={confirmCopy[pendingAction].title} description={confirmCopy[pendingAction].description}
+          confirmLabel={confirmCopy[pendingAction].confirm} tone={confirmCopy[pendingAction].danger ? "danger" : "primary"}
+          busy={isWorking} onCancel={() => setPendingAction(null)}
+          onConfirm={() => { const action = pendingAction; void runAction(action).finally(() => setPendingAction(null)); }} />
+      ) : null}
     </main>
   );
 }

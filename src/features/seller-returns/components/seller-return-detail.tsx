@@ -9,6 +9,12 @@ import {
   type SellerReturnUser,
   getSellerReturn,
 } from "@/features/seller-returns/api";
+import { StatusBadge, statusTone } from "@/components/ui/badge";
+import { buttonStyles } from "@/components/ui/button";
+import { Card, CardHeader } from "@/components/ui/card";
+import { DetailList, Timeline } from "@/components/ui/data-display";
+import { Breadcrumbs, PageHeader } from "@/components/ui/page-header";
+import { Notice, Skeleton } from "@/components/ui/states";
 import { getApiErrorMessage } from "@/lib/api/errors";
 
 const statusLabels: Record<string, string> = {
@@ -142,25 +148,20 @@ export function SellerReturnDetail() {
 
   if (isLoading) {
     return (
-      <main className="mx-auto max-w-6xl px-4 py-10">
-        <p className="text-sm text-slate-500">Loading return request...</p>
+      <main className="grid gap-6" aria-busy="true">
+        <p role="status" className="sr-only">Loading return request...</p>
+        <Skeleton className="h-24 max-w-lg" />
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]"><Skeleton className="h-96 rounded-2xl" /><Skeleton className="h-72 rounded-2xl" /></div>
       </main>
     );
   }
 
   if (error && !returnRequest) {
     return (
-      <main className="mx-auto max-w-6xl px-4 py-10">
-        <Link
-          href="/seller/returns"
-          className="text-sm font-medium text-slate-600 hover:text-slate-950"
-        >
-          ← Back to seller returns
-        </Link>
-
-        <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-          {error}
-        </div>
+      <main className="grid max-w-2xl gap-4">
+        <Breadcrumbs items={[{ href: "/seller/returns", label: "Seller returns" }, { label: "Return" }]} />
+        <Notice tone="danger" title="Could not load this return">{error}</Notice>
+        <div><Link href="/seller/returns" className={buttonStyles({ variant: "secondary" })}>Back to seller returns</Link></div>
       </main>
     );
   }
@@ -170,197 +171,92 @@ export function SellerReturnDetail() {
   }
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-10">
-      <Link
-        href="/seller/returns"
-        className="text-sm font-medium text-slate-600 hover:text-slate-950"
-      >
-        ← Back to seller returns
-      </Link>
+    <main className="grid gap-6">
+      <PageHeader eyebrow="Seller return view"
+        title={<span className="font-mono text-[1.625rem] tracking-tight sm:text-[1.875rem]">{returnRequest.request_number}</span>}
+        description={<>Order <span className="font-mono text-foreground">{returnRequest.order_number}</span> · Customer {getCustomerLabel(returnRequest.customer)}</>}
+        crumbs={[{ href: "/seller/returns", label: "Seller returns" }, { label: "Return details" }]}
+        actions={<StatusBadge status={returnRequest.status} label={getStatusLabel(returnRequest.status)} className="px-3 py-1 text-sm" />} />
 
-      <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="mb-eyebrow">
-            Seller return view
-          </p>
-          <h1 className="mt-2 text-3xl font-semibold text-slate-950">
-            {returnRequest.request_number}
-          </h1>
-          <p className="mt-2 text-sm text-slate-600">
-            Order {returnRequest.order_number} · Customer{" "}
-            {getCustomerLabel(returnRequest.customer)}
-          </p>
-        </div>
-
-        <span className="w-fit rounded-full bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700">
-          {getStatusLabel(returnRequest.status)}
-        </span>
-      </div>
-
-      <div className="mt-6 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-700">
+      <Notice tone="info">
         MallByte support handles approval, rejection, receiving, and refunds.
         Sellers can view the return details but cannot complete refunds.
-      </div>
+      </Notice>
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_340px]">
-        <section className="space-y-6">
-          <div className="rounded-3xl border border-slate-200 bg-white p-6">
-            <h2 className="text-lg font-semibold text-slate-950">
-              Returned products
-            </h2>
-
-            <div className="mt-5 space-y-4">
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <section className="grid min-w-0 gap-6" aria-label="Return contents">
+          <Card>
+            <CardHeader title="Returned products" description={`${returnRequest.items.length} item${returnRequest.items.length === 1 ? "" : "s"} in this request`} />
+            <ul className="mt-5 grid gap-3">
               {returnRequest.items.map((item) => (
-                <div
-                  key={item.id}
-                  className="rounded-2xl border border-slate-200 p-4"
-                >
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div>
-                      <h3 className="font-semibold text-slate-950">
-                        {item.product_name}
-                      </h3>
-                      <p className="mt-1 text-sm text-slate-500">
-                        SKU: {item.product_sku || "—"}
-                      </p>
-                      <p className="mt-1 text-sm text-slate-500">
-                        Quantity: {item.quantity}
-                      </p>
+                <li key={item.id} className="rounded-xl border border-line p-4">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0">
+                      <h3 className="font-medium text-foreground">{item.product_name}</h3>
+                      <p className="mt-0.5 text-xs text-muted"><span className="font-mono">SKU: {item.product_sku || "—"}</span> · Quantity: {item.quantity}</p>
                     </div>
-
-                    <span className="w-fit rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
-                      {getStatusLabel(item.status)}
-                    </span>
+                    <StatusBadge status={item.status} label={getStatusLabel(item.status)} />
                   </div>
-
-                  <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
-                    <div>
-                      <dt className="text-slate-500">Return reason</dt>
-                      <dd className="mt-1 font-medium text-slate-950">
-                        {getReturnValueLabel(item.reason)}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-slate-500">Condition</dt>
-                      <dd className="mt-1 font-medium text-slate-950">
-                        {getReturnValueLabel(item.condition)}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-slate-500">Requested refund</dt>
-                      <dd className="mt-1 font-medium text-slate-950">
-                        {formatMoney(item.requested_refund_amount)}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-slate-500">Approved refund</dt>
-                      <dd className="mt-1 font-medium text-slate-950">
-                        {formatMoney(item.approved_refund_amount)}
-                      </dd>
-                    </div>
-                  </dl>
-
+                  <DetailList className="mt-4 border-t border-line pt-4" items={[
+                    { label: "Return reason", value: getReturnValueLabel(item.reason) },
+                    { label: "Condition", value: getReturnValueLabel(item.condition) },
+                    { label: "Requested refund", value: <span data-numeric>{formatMoney(item.requested_refund_amount)}</span> },
+                    { label: "Approved refund", value: <span data-numeric>{formatMoney(item.approved_refund_amount)}</span> },
+                  ]} />
                   {item.customer_note ? (
-                    <div className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm text-slate-600">
-                      <p className="font-medium text-slate-900">
-                        Customer note
-                      </p>
+                    <blockquote className="mt-4 rounded-lg border-l-2 border-line-strong bg-sunken/60 px-4 py-3 text-sm text-slate-700">
+                      <p className="text-xs font-medium text-muted">Customer note</p>
                       <p className="mt-1">{item.customer_note}</p>
-                    </div>
+                    </blockquote>
                   ) : null}
-                </div>
+                </li>
               ))}
-            </div>
-          </div>
+            </ul>
+          </Card>
 
-          <div className="rounded-3xl border border-slate-200 bg-white p-6">
-            <h2 className="text-lg font-semibold text-slate-950">
-              Status history
-            </h2>
-
+          <Card>
+            <CardHeader title="Status history" />
             {returnRequest.status_history.length === 0 ? (
-              <p className="mt-4 text-sm text-slate-500">
-                No history entries yet.
-              </p>
+              <p className="mt-4 text-sm text-muted">No history entries yet.</p>
             ) : (
-              <div className="mt-5 space-y-4">
-                {returnRequest.status_history.map((history) => (
-                  <div
-                    key={history.id}
-                    className="rounded-2xl border border-slate-200 p-4"
-                  >
-                    <p className="text-sm font-medium text-slate-950">
-                      {history.old_status
-                        ? `${getStatusLabel(history.old_status)} → ${getStatusLabel(
-                            history.new_status,
-                          )}`
-                        : getStatusLabel(history.new_status)}
-                    </p>
-                    <p className="mt-1 text-xs text-slate-500">
-                      {formatDateTime(history.created_at)}
-                      {history.changed_by ? ` · ${history.changed_by}` : ""}
-                    </p>
-                    {history.note ? (
-                      <p className="mt-2 text-sm text-slate-600">
-                        {history.note}
-                      </p>
-                    ) : null}
-                  </div>
-                ))}
-              </div>
+              <Timeline className="mt-5" items={returnRequest.status_history.map((history, index) => ({
+                id: history.id,
+                title: history.old_status
+                  ? `${getStatusLabel(history.old_status)} → ${getStatusLabel(history.new_status)}`
+                  : getStatusLabel(history.new_status),
+                meta: `${formatDateTime(history.created_at)}${history.changed_by ? ` · ${history.changed_by}` : ""}`,
+                description: history.note || undefined,
+                tone: index === returnRequest.status_history.length - 1 ? statusTone(history.new_status) : "neutral",
+              }))} />
             )}
-          </div>
+          </Card>
         </section>
 
-        <aside className="space-y-6">
-          <div className="rounded-3xl border border-slate-200 bg-white p-6">
-            <h2 className="text-lg font-semibold text-slate-950">
-              Refund summary
-            </h2>
-
-            <dl className="mt-5 space-y-4 text-sm">
-              <div className="flex items-center justify-between gap-4">
-                <dt className="text-slate-500">Requested</dt>
-                <dd className="font-semibold text-slate-950">
-                  {formatMoney(returnRequest.total_requested_amount)}
-                </dd>
-              </div>
-              <div className="flex items-center justify-between gap-4">
-                <dt className="text-slate-500">Approved</dt>
-                <dd className="font-semibold text-slate-950">
-                  {formatMoney(returnRequest.total_approved_amount)}
-                </dd>
-              </div>
-              <div className="flex items-center justify-between gap-4">
-                <dt className="text-slate-500">Refund method</dt>
-                <dd className="font-semibold text-slate-950">
-                  {getReturnValueLabel(returnRequest.refund_method)}
-                </dd>
-              </div>
-              <div className="flex items-center justify-between gap-4">
-                <dt className="text-slate-500">Reviewed by</dt>
-                <dd className="font-semibold text-slate-950">
-                  {returnRequest.reviewed_by ?? "—"}
-                </dd>
-              </div>
-              <div className="flex items-center justify-between gap-4">
-                <dt className="text-slate-500">Reviewed at</dt>
-                <dd className="font-semibold text-slate-950">
-                  {formatDateTime(returnRequest.reviewed_at)}
-                </dd>
-              </div>
+        <aside className="grid gap-6 lg:sticky lg:top-24">
+          <Card>
+            <CardHeader title="Refund summary" />
+            <dl className="mt-4 grid gap-3 text-sm">
+              {([
+                ["Requested", formatMoney(returnRequest.total_requested_amount)],
+                ["Approved", formatMoney(returnRequest.total_approved_amount)],
+                ["Refund method", getReturnValueLabel(returnRequest.refund_method)],
+                ["Reviewed by", returnRequest.reviewed_by ?? "—"],
+                ["Reviewed at", formatDateTime(returnRequest.reviewed_at)],
+              ] as const).map(([label, value]) => (
+                <div key={label} className="flex items-center justify-between gap-4">
+                  <dt className="text-muted">{label}</dt>
+                  <dd className="text-right font-medium text-foreground" data-numeric>{value}</dd>
+                </div>
+              ))}
             </dl>
-          </div>
-
-          <div className="rounded-3xl border border-slate-200 bg-white p-6">
-            <h2 className="text-lg font-semibold text-slate-950">
-              Seller permissions
-            </h2>
-            <p className="mt-3 text-sm text-slate-600">
+          </Card>
+          <Card>
+            <CardHeader title="Seller permissions" />
+            <p className="mt-3 text-sm leading-6 text-muted">
               This view is read-only. The platform admin is responsible for the
               final return decision and refund completion.
             </p>
-          </div>
+          </Card>
         </aside>
       </div>
     </main>

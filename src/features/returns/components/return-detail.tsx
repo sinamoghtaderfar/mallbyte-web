@@ -4,6 +4,15 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
+import { RotateCcw } from "lucide-react";
+
+import { StatusBadge, statusTone } from "@/components/ui/badge";
+import { Button, buttonStyles } from "@/components/ui/button";
+import { Card, CardHeader } from "@/components/ui/card";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { DetailList, Timeline } from "@/components/ui/data-display";
+import { PageHeader } from "@/components/ui/page-header";
+import { EmptyState, Notice, Skeleton } from "@/components/ui/states";
 import { getApiErrorMessage } from "@/lib/api/errors";
 
 import { cancelReturnRequest, getReturnRequest } from "../api";
@@ -40,6 +49,7 @@ export function ReturnDetail() {
   const [error, setError] = useState("");
   const [actionError, setActionError] = useState("");
   const [actionMessage, setActionMessage] = useState("");
+  const [confirmCancel, setConfirmCancel] = useState(false);
 
   const canCancel = useMemo(() => {
     if (!returnRequest) return false;
@@ -99,250 +109,123 @@ export function ReturnDetail() {
 
   if (isLoading) {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 text-sm text-slate-600 shadow-sm">
-        Loading return request...
+      <div className="grid gap-6" aria-busy="true">
+        <p role="status" className="sr-only">Loading return request...</p>
+        <Skeleton className="h-24 max-w-lg" />
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]"><Skeleton className="h-96 rounded-2xl" /><Skeleton className="h-64 rounded-2xl" /></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="rounded-3xl border border-red-200 bg-red-50 p-5 sm:p-8 text-sm text-red-700">
-        {error}
+      <div className="grid max-w-2xl gap-4">
+        <Notice tone="danger" title="We couldn't load this return">{error}</Notice>
+        <div><Link href="/returns" className={buttonStyles({ variant: "secondary" })}>Back to returns</Link></div>
       </div>
     );
   }
 
   if (!returnRequest) {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 text-sm text-slate-600 shadow-sm">
-        Return request not found.
-      </div>
+      <EmptyState icon={<RotateCcw size={24} />} title="Return request not found."
+        action={<Link href="/returns" className={buttonStyles({ variant: "secondary" })}>Back to returns</Link>} />
     );
   }
 
   return (
-    <section className="space-y-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-        <div>
-          <Link
-            href="/returns"
-            className="text-sm font-medium text-slate-600 hover:text-slate-950"
-          >
-            ← Back to returns
-          </Link>
-
-          <p className="mt-6 text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">
-            Return request
-          </p>
-          <h1 className="mt-2 text-3xl font-bold text-slate-950">
-            {returnRequest.request_number}
-          </h1>
-
-          <div className="mt-4 flex flex-wrap gap-2">
-            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
-              {formatStatus(returnRequest.status)}
-            </span>
-            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
-              Order: {returnRequest.order_number}
-            </span>
-          </div>
-        </div>
-
-        {canCancel ? (
-          <button
-            type="button"
-            onClick={handleCancel}
-            disabled={isCancelling}
-            className="bg-white mb-btn mb-btn-secondary text-rose-700 hover:bg-rose-50"
-          >
+    <section className="grid gap-6">
+      <PageHeader eyebrow="Return request" title={returnRequest.request_number}
+        crumbs={[{ href: "/returns", label: "Returns" }, { label: "Return details" }]}
+        actions={canCancel ? (
+          <Button variant="secondary" onClick={() => setConfirmCancel(true)} loading={isCancelling}
+            className="text-rose-700 hover:border-rose-300 hover:bg-rose-50">
             {isCancelling ? "Cancelling..." : "Cancel return"}
-          </button>
-        ) : null}
+          </Button>
+        ) : null} />
+
+      <div className="flex flex-wrap gap-2">
+        <StatusBadge status={returnRequest.status} label={formatStatus(returnRequest.status)} />
+        <Link href={`/orders/${returnRequest.order}`} className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium leading-5 text-slate-700 ring-1 ring-inset ring-slate-200 hover:bg-slate-200">
+          Order: <span className="ml-1 font-mono">{returnRequest.order_number}</span>
+        </Link>
       </div>
 
-      {actionMessage ? (
-        <div className="rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
-          {actionMessage}
-        </div>
-      ) : null}
+      {actionMessage ? <Notice tone="success">{actionMessage}</Notice> : null}
+      {actionError ? <Notice tone="danger">{actionError}</Notice> : null}
 
-      {actionError ? (
-        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {actionError}
-        </div>
-      ) : null}
-
-      <div className="grid gap-6 lg:grid-cols-[1.4fr_0.8fr]">
-        <div className="space-y-6">
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-slate-950">
-              Return items
-            </h2>
-
-            <div className="mt-4 divide-y divide-slate-100">
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <div className="grid min-w-0 gap-6">
+          <Card>
+            <CardHeader title="Return items" />
+            <ul className="mt-4 divide-y divide-line">
               {returnRequest.items.map((item) => (
-                <div key={item.id} className="space-y-3 py-4">
-                  <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                    <div>
-                      <p className="font-medium text-slate-950">
-                        {item.product_name}
-                      </p>
-                      <p className="mt-1 text-xs text-slate-500">
-                        SKU: {item.product_sku}
-                      </p>
-                      <p className="mt-1 text-xs text-slate-500">
-                        Quantity: {item.quantity}
-                      </p>
+                <li key={item.id} className="grid gap-3 py-4 first:pt-0">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0">
+                      <p className="font-medium text-foreground">{item.product_name}</p>
+                      <p className="mt-0.5 text-xs text-muted"><span className="font-mono">SKU: {item.product_sku}</span> · Quantity: {item.quantity}</p>
                     </div>
-
-                    <div className="text-sm font-semibold text-slate-950">
-                      {formatMoney(item.requested_refund_amount)}
-                    </div>
+                    <span className="text-sm font-semibold text-foreground" data-numeric>{formatMoney(item.requested_refund_amount)}</span>
                   </div>
-
-                  <div className="grid gap-3 rounded-2xl bg-slate-50 p-4 text-sm md:grid-cols-3">
-                    <div>
-                      <p className="text-slate-500">Status</p>
-                      <p className="font-medium text-slate-950">
-                        {formatStatus(item.status)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-slate-500">Reason</p>
-                      <p className="font-medium text-slate-950">
-                        {formatStatus(item.reason)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-slate-500">Condition</p>
-                      <p className="font-medium text-slate-950">
-                        {formatStatus(item.condition)}
-                      </p>
-                    </div>
-                  </div>
-
-                  {item.customer_note ? (
-                    <p className="text-sm text-slate-600">
-                      {item.customer_note}
-                    </p>
-                  ) : null}
-                </div>
+                  <DetailList columns={3} className="rounded-xl bg-sunken/60 p-4" items={[
+                    { label: "Status", value: <StatusBadge status={item.status} label={formatStatus(item.status)} /> },
+                    { label: "Reason", value: formatStatus(item.reason) },
+                    { label: "Condition", value: formatStatus(item.condition) },
+                  ]} />
+                  {item.customer_note ? <p className="text-sm text-slate-700">{item.customer_note}</p> : null}
+                </li>
               ))}
-            </div>
+            </ul>
+            <dl className="mt-2 grid gap-2 rounded-xl border border-line px-4 py-3 text-sm">
+              <div className="flex items-center justify-between"><dt className="text-muted">Requested refund</dt><dd className="font-semibold text-foreground" data-numeric>{formatMoney(returnRequest.total_requested_amount)}</dd></div>
+              <div className="flex items-center justify-between"><dt className="text-muted">Approved refund</dt><dd className="font-semibold text-foreground" data-numeric>{formatMoney(returnRequest.total_approved_amount)}</dd></div>
+            </dl>
+          </Card>
 
-            <div className="mt-4 space-y-2 rounded-2xl bg-slate-50 px-4 py-3 text-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-slate-600">Requested refund</span>
-                <span className="font-bold text-slate-950">
-                  {formatMoney(returnRequest.total_requested_amount)}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-slate-600">Approved refund</span>
-                <span className="font-bold text-slate-950">
-                  {formatMoney(returnRequest.total_approved_amount)}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-slate-950">
-              Status history
-            </h2>
-
+          <Card>
+            <CardHeader title="Status history" />
             {returnRequest.status_history.length === 0 ? (
-              <p className="mt-4 text-sm text-slate-600">
-                No status history yet.
-              </p>
+              <p className="mt-4 text-sm text-muted">No status history yet.</p>
             ) : (
-              <div className="mt-4 space-y-3">
-                {returnRequest.status_history.map((event) => (
-                  <div
-                    key={event.id}
-                    className="rounded-2xl border border-slate-100 bg-slate-50 p-4 text-sm"
-                  >
-                    <p className="font-medium text-slate-950">
-                      {event.old_status || "created"} → {event.new_status}
-                    </p>
-                    {event.note ? (
-                      <p className="mt-1 text-slate-600">{event.note}</p>
-                    ) : null}
-                    <p className="mt-2 text-xs text-slate-500">
-                      {formatDate(event.created_at)}
-                    </p>
-                  </div>
-                ))}
-              </div>
+              <Timeline className="mt-5" items={returnRequest.status_history.map((event, index) => ({
+                id: event.id,
+                title: `${formatStatus(event.old_status || "created")} → ${formatStatus(event.new_status)}`,
+                meta: formatDate(event.created_at),
+                description: event.note || undefined,
+                tone: index === returnRequest.status_history.length - 1 ? statusTone(event.new_status) : "neutral",
+              }))} />
             )}
-          </div>
+          </Card>
         </div>
 
-        <aside className="space-y-6">
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-slate-950">
-              Request details
-            </h2>
-
-            <dl className="mt-4 space-y-3 text-sm">
-              <div>
-                <dt className="text-slate-500">Reason</dt>
-                <dd className="font-medium text-slate-950">
-                  {formatStatus(returnRequest.reason)}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-slate-500">Resolution</dt>
-                <dd className="font-medium text-slate-950">
-                  {formatStatus(returnRequest.requested_resolution)}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-slate-500">Refund method</dt>
-                <dd className="font-medium text-slate-950">
-                  {formatStatus(returnRequest.refund_method)}
-                </dd>
-              </div>
-              {returnRequest.customer_note ? (
-                <div>
-                  <dt className="text-slate-500">Customer note</dt>
-                  <dd className="font-medium text-slate-950">
-                    {returnRequest.customer_note}
-                  </dd>
-                </div>
-              ) : null}
-            </dl>
-          </div>
-
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-slate-950">
-              Important dates
-            </h2>
-
-            <dl className="mt-4 space-y-3 text-sm">
-              <div>
-                <dt className="text-slate-500">Created</dt>
-                <dd className="font-medium text-slate-950">
-                  {formatDate(returnRequest.created_at)}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-slate-500">Reviewed</dt>
-                <dd className="font-medium text-slate-950">
-                  {formatDate(returnRequest.reviewed_at)}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-slate-500">Closed</dt>
-                <dd className="font-medium text-slate-950">
-                  {formatDate(returnRequest.closed_at)}
-                </dd>
-              </div>
-            </dl>
-          </div>
+        <aside className="grid gap-6 lg:sticky lg:top-24">
+          <Card>
+            <CardHeader title="Request details" />
+            <DetailList className="mt-4" columns={1} items={[
+              { label: "Reason", value: formatStatus(returnRequest.reason) },
+              { label: "Resolution", value: formatStatus(returnRequest.requested_resolution) },
+              { label: "Refund method", value: formatStatus(returnRequest.refund_method) },
+              ...(returnRequest.customer_note ? [{ label: "Customer note", value: returnRequest.customer_note }] : []),
+            ]} />
+          </Card>
+          <Card>
+            <CardHeader title="Important dates" />
+            <DetailList className="mt-4" columns={1} items={[
+              { label: "Created", value: formatDate(returnRequest.created_at) },
+              { label: "Reviewed", value: formatDate(returnRequest.reviewed_at) },
+              { label: "Closed", value: formatDate(returnRequest.closed_at) },
+            ]} />
+          </Card>
         </aside>
       </div>
+
+      {confirmCancel ? (
+        <ConfirmDialog title="Cancel this return request?" description="The request is withdrawn. You can start a new return from the order while it is still eligible."
+          confirmLabel="Cancel return" cancelLabel="Keep request" tone="danger" busy={isCancelling}
+          onCancel={() => setConfirmCancel(false)}
+          onConfirm={() => { void handleCancel().finally(() => setConfirmCancel(false)); }} />
+      ) : null}
     </section>
   );
 }

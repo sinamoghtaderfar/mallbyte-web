@@ -3,6 +3,12 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { ChevronRight, RotateCcw } from "lucide-react";
+
+import { StatusBadge } from "@/components/ui/badge";
+import { buttonStyles } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
+import { EmptyState, Notice, Skeleton } from "@/components/ui/states";
 import { getApiErrorMessage } from "@/lib/api/errors";
 
 import { getReturns } from "../api";
@@ -64,85 +70,46 @@ export function ReturnsList() {
 
   if (isLoading) {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 text-sm text-slate-600 shadow-sm">
-        Loading return requests...
-      </div>
+      <section className="grid gap-6" aria-busy="true">
+        <p role="status" className="sr-only">Loading return requests...</p>
+        <Skeleton className="h-20 max-w-md" />
+        <div className="grid gap-3">{[0, 1, 2].map((i) => <Skeleton key={i} className="h-20 rounded-2xl" />)}</div>
+      </section>
     );
   }
 
   if (error) {
-    return (
-      <div className="rounded-3xl border border-red-200 bg-red-50 p-5 sm:p-8 text-sm text-red-700">
-        {error}
-      </div>
-    );
+    return <Notice tone="danger" title="We couldn't load your returns">{error}</Notice>;
   }
 
   return (
-    <section className="space-y-6">
-      <div>
-        <p className="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">
-          Customer service
-        </p>
-        <h1 className="mt-2 text-3xl font-bold text-slate-950">
-          Return Requests
-        </h1>
-        <p className="mt-2 max-w-2xl text-sm text-slate-600">
-          Track your return and refund requests after delivered orders.
-        </p>
-      </div>
+    <section className="grid gap-6">
+      <PageHeader eyebrow="Customer service" title="Return Requests"
+        description="Track your return and refund requests after delivered orders." />
 
       {returns.length === 0 ? (
-        <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-5 sm:p-8 text-center text-sm text-slate-600">
-          No return requests yet.
-        </div>
+        <EmptyState icon={<RotateCcw size={24} />} title="No return requests yet."
+          description="You can request a return from a delivered order while it is within the return window."
+          action={<Link href="/orders" className={buttonStyles({ variant: "secondary" })}>View your orders</Link>} />
       ) : (
-        <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-          <div className="grid grid-cols-6 gap-4 border-b border-slate-100 bg-slate-50 px-5 py-3 mb-eyebrow">
-            <span className="col-span-2">Request</span>
-            <span>Order</span>
-            <span>Status</span>
-            <span>Requested</span>
-            <span className="text-right">Action</span>
-          </div>
-
-          <div className="divide-y divide-slate-100">
-            {returns.map((returnRequest) => (
-              <div
-                key={returnRequest.id}
-                className="grid grid-cols-1 gap-3 px-5 py-4 text-sm text-slate-700 md:grid-cols-6 md:items-center md:gap-4"
-              >
-                <div className="md:col-span-2">
-                  <p className="font-semibold text-slate-950">
-                    {returnRequest.request_number}
-                  </p>
-                  <p className="mt-1 text-xs text-slate-500">
-                    {formatDate(returnRequest.created_at)}
-                  </p>
+        <ul className="grid gap-3">
+          {returns.map((returnRequest) => (
+            <li key={returnRequest.id}>
+              <Link href={`/returns/${returnRequest.id}`}
+                className="group grid gap-3 rounded-2xl border border-line bg-surface p-4 shadow-xs transition-[border-color,box-shadow] hover:border-line-strong hover:shadow-md sm:grid-cols-[minmax(0,1fr)_auto_auto_auto] sm:items-center sm:gap-6 sm:px-5">
+                <div className="min-w-0">
+                  <p className="font-mono text-[0.8125rem] font-semibold text-foreground">{returnRequest.request_number}</p>
+                  <p className="mt-0.5 text-xs text-muted">{formatDate(returnRequest.created_at)} · Order <span className="font-mono">{returnRequest.order_number}</span></p>
                 </div>
-
-                <span>{returnRequest.order_number}</span>
-
-                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
-                  {formatStatus(returnRequest.status)}
+                <StatusBadge status={returnRequest.status} label={formatStatus(returnRequest.status)} />
+                <span className="text-sm font-semibold text-foreground" data-numeric>{formatMoney(returnRequest.total_requested_amount)}</span>
+                <span className="inline-flex items-center gap-1 text-sm font-medium text-slate-700 group-hover:text-foreground">
+                  View details<ChevronRight size={16} aria-hidden="true" className="transition-transform group-hover:translate-x-0.5" />
                 </span>
-
-                <span className="font-semibold text-slate-950">
-                  {formatMoney(returnRequest.total_requested_amount)}
-                </span>
-
-                <div className="md:text-right">
-                  <Link
-                    href={`/returns/${returnRequest.id}`}
-                    className="mb-btn mb-btn-primary mb-btn-sm"
-                  >
-                    View details
-                  </Link>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+              </Link>
+            </li>
+          ))}
+        </ul>
       )}
     </section>
   );
