@@ -360,3 +360,21 @@ button:not(:disabled), summary {
 .workspace-content main > .mx-auto {
   margin-inline-start: 0;
 }
+/* Customer account titles share the storefront's editorial voice. */
+.account-content main h1:not(.font-mono) {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  letter-spacing: -0.015em;
+  line-height: 1.05;
+  font-size: clamp(2rem, 2.6vw, 2.5rem);
+  color: var(--ink);
+}
+/* Wide data tables scroll inside their own container instead of crushing columns. */
+:is(.workspace-content, .account-content) :is(div, section):has(> table) {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+@media (max-width: 767px) {
+  :is(.workspace-content, .account-content) table { min-width: 42rem; }
+}
+:is(.workspace-content, .account-content) .grid > * { min-width: 0; }

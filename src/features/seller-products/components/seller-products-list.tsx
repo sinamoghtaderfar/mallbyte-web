@@ -81,7 +81,7 @@ export function SellerProductsList() {
   }, [page, retry]);
 
   const pager = (
-    <nav aria-label="Seller product pages" className="mt-6 flex items-center gap-4 text-sm text-slate-700">
+    <nav aria-label="Seller product pages" className="mt-6 flex flex-wrap items-center gap-3 text-sm text-slate-700">
       <span>{pagination.count} products · Page {page} of {Math.max(1, Math.ceil(pagination.count / 20))}</span>
       <button type="button" disabled={page <= 1} onClick={() => changePage(page - 1)} className="mb-btn mb-btn-secondary mb-btn-sm">Previous products</button>
       <button type="button" disabled={isLoading || Boolean(error) || !pagination.next} onClick={() => changePage(page + 1)} className="mb-btn mb-btn-secondary mb-btn-sm">Next products</button>

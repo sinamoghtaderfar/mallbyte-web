@@ -266,16 +266,16 @@ function OrdersListContent() {
         ) : null}
       </div>
 
-      <dl className="mt-6 grid grid-cols-3 divide-x divide-line overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
+      <dl className="mt-6 grid grid-cols-2 overflow-hidden rounded-2xl border border-line bg-surface shadow-sm sm:grid-cols-3">
         <div className="p-4 sm:p-5">
           <dt className="text-xs text-muted sm:text-sm">Orders (all pages)</dt>
           <dd data-numeric className="mt-1.5 text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">{data.count}</dd>
         </div>
-        <div className="p-4 sm:p-5">
+        <div className="border-l border-line p-4 sm:p-5">
           <dt className="text-xs text-muted sm:text-sm">Pending (this page)</dt>
           <dd data-numeric className="mt-1.5 text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">{pendingOrders}</dd>
         </div>
-        <div className="p-4 sm:p-5">
+        <div className="col-span-2 border-t border-line p-4 sm:col-span-1 sm:border-l sm:border-t-0 sm:p-5">
           <dt className="text-xs text-muted sm:text-sm">Total amount (this page)</dt>
           <dd data-numeric className="mt-1.5 text-xl font-semibold tracking-tight text-slate-950 [overflow-wrap:anywhere] sm:text-2xl">{formatPrice(totalSpent)}</dd>
         </div>

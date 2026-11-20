@@ -49,21 +49,6 @@ function formatDate(value: string | null | undefined) {
   return new Date(value).toLocaleString();
 }
 
-function getBadgeClass(status: string) {
-  if (status.includes("cancel")) {
-    return "bg-red-100 text-red-700";
-  }
-
-  if (status.includes("deliver") || status.includes("paid")) {
-    return "bg-green-100 text-green-700";
-  }
-
-  if (status.includes("ship") || status.includes("process")) {
-    return "bg-blue-100 text-blue-700";
-  }
-
-  return "bg-yellow-100 text-yellow-700";
-}
 
 function isStepCompleted(orderStatus: string, stepValue: string) {
   if (orderStatus === "cancelled") {

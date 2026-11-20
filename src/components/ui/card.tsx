@@ -21,12 +21,12 @@ export function StatCard({ label, value, hint, icon, tone = "default" }: {
   label: ReactNode; value: ReactNode; hint?: ReactNode; icon?: ReactNode; tone?: "default" | "brand" | "ink";
 }) {
   const surface = tone === "ink" ? "bg-ink text-white border-ink" : tone === "brand" ? "bg-ember-50 border-ember-200" : "bg-surface border-line";
-  return <div className={`min-w-0 rounded-2xl border p-5 shadow-sm ${surface}`}>
+  return <div className={`min-w-0 rounded-2xl border p-4 shadow-sm sm:p-5 ${surface}`}>
     <div className="flex items-center justify-between gap-3">
       <p className={`text-sm font-medium ${tone === "ink" ? "text-slate-300" : "text-muted"}`}>{label}</p>
       {icon && <span className={`flex size-8 items-center justify-center rounded-lg ${tone === "ink" ? "bg-white/10 text-white" : "bg-slate-100 text-slate-700"}`} aria-hidden="true">{icon}</span>}
     </div>
-    <p data-numeric className="mt-3 text-[1.75rem] font-semibold leading-none tracking-tight [overflow-wrap:anywhere]">{value}</p>
+    <p data-numeric className="mt-3 text-[1.5rem] font-semibold leading-none tracking-tight [overflow-wrap:anywhere] sm:text-[1.75rem]">{value}</p>
     {hint && <p className={`mt-2 text-xs leading-5 ${tone === "ink" ? "text-slate-400" : "text-muted"}`}>{hint}</p>}
   </div>;
 }

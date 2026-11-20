@@ -160,7 +160,7 @@ export function WishlistList() {
       ) : null}
 
       {!error && !items.length ? (
-        <div className="mt-8 rounded-3xl border border-dashed border-slate-300 p-5 sm:p-8">
+        <div className="mt-8 rounded-2xl border border-dashed border-line-strong p-8 text-center sm:p-12">
           <h2 className="text-xl font-semibold text-slate-950">
             Your wishlist is empty
           </h2>
@@ -176,53 +176,47 @@ export function WishlistList() {
           </Link>
         </div>
       ) : !error ? (
-        <div className="mt-8 grid gap-4">
+        <ul className="mt-8 grid grid-cols-2 gap-x-4 gap-y-8 sm:gap-x-6 md:grid-cols-3">
           {items.map((item) => {
             const imageUrl = getImageUrl(item.product_image);
 
             return (
-              <div
-                key={item.id}
-                className="grid gap-4 rounded-3xl border border-slate-200 p-4 sm:grid-cols-[120px_1fr_auto]"
-              >
-                <div
-                  className="flex aspect-square items-center justify-center rounded-2xl bg-slate-100 bg-cover bg-center"
-                  style={
-                    imageUrl
-                      ? { backgroundImage: `url(${imageUrl})` }
-                      : undefined
-                  }
-                >
-                  {!imageUrl ? (
-                    <span className="text-xs text-slate-400">No image</span>
-                  ) : null}
+              <li key={item.id} className="group min-w-0">
+                <Link href={`/products/${item.product}`} tabIndex={-1} aria-hidden="true" className="block aspect-[4/5] overflow-hidden rounded-2xl bg-sunken">
+                  {imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={imageUrl} alt="" loading="lazy" className="size-full object-cover transition-transform duration-700 group-hover:scale-[1.04]" />
+                  ) : (
+                    <span className="flex size-full items-center justify-center text-xs text-slate-500">No image</span>
+                  )}
+                </Link>
+
+                <div className="mt-3 flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <Link
+                      href={`/products/${item.product}`}
+                      className="line-clamp-2 text-[0.9375rem] font-medium leading-snug text-slate-950 underline-offset-4 hover:underline"
+                    >
+                      {item.product_name}
+                    </Link>
+
+                    <p data-numeric className="mt-1 text-sm font-semibold text-slate-900">
+                      {formatPrice(item.product_price)}
+                    </p>
+                  </div>
                 </div>
-
-                <div>
-                  <Link
-                    href={`/products/${item.product}`}
-                    className="text-lg font-semibold text-slate-950 underline-offset-4 hover:underline"
-                  >
-                    {item.product_name}
-                  </Link>
-
-                  <p className="mt-2 text-sm font-medium text-slate-700">
-                    {formatPrice(item.product_price)}
-                  </p>
-                </div>
-
                 <button
                   type="button"
                   onClick={() => void handleRemoveItem(item.id)}
                   disabled={removingItemId !== null}
-                  className="mb-btn mb-btn-secondary text-rose-700 hover:bg-rose-50"
+                  className="mt-3 w-full mb-btn mb-btn-secondary mb-btn-sm rounded-full hover:text-rose-700"
                 >
                   {removingItemId === item.id ? "Removing..." : "Remove"}
                 </button>
-              </div>
+              </li>
             );
           })}
-        </div>
+        </ul>
       ) : null}
 
       <nav
@@ -233,7 +227,7 @@ export function WishlistList() {
           type="button"
           onClick={() => setPage(page - 1)}
           disabled={page === 1 || removingItemId !== null}
-          className="rounded-xl border px-4 py-2 disabled:opacity-50"
+          className="mb-btn mb-btn-secondary mb-btn-sm"
         >
           Previous
         </button>
@@ -246,7 +240,7 @@ export function WishlistList() {
           disabled={
             !pagination.next || Boolean(error) || removingItemId !== null
           }
-          className="rounded-xl border px-4 py-2 disabled:opacity-50"
+          className="mb-btn mb-btn-secondary mb-btn-sm"
         >
           Next
         </button>

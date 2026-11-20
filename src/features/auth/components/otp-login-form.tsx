@@ -131,12 +131,12 @@ export function OtpLoginForm() {
   const isFactorStep = step === "setup-code" || step === "mfa-code" || step === "recovery";
 
   return (
-    <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm">
-      <div className="mb-7 text-center">
-        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-900 text-white">
+    <div className="w-full max-w-md">
+      <div className="mb-8">
+        <div className="mb-6 flex size-12 items-center justify-center rounded-xl bg-ink text-white" aria-hidden="true">
           {isEmailStep ? <Mail size={24} /> : isFactorStep ? <KeyRound size={24} /> : <ShieldCheck size={24} />}
         </div>
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
+        <h1 className="mb-display text-[2.5rem] text-ink">
           {step === "email" ? "Sign in to MallByte"
             : step === "email-code" ? "Verify your email"
               : step === "setup-password" ? "Secure your admin account"
@@ -145,7 +145,7 @@ export function OtpLoginForm() {
                     : step === "recovery" ? "Use a recovery code"
                       : "Save your recovery codes"}
         </h1>
-        <p className="mt-2 text-sm text-slate-500">
+        <p className="mt-3 text-[0.9375rem] leading-7 text-muted">
           {step === "email" ? "Receive a one-time code to your email."
             : step === "email-code" ? `Enter the six-digit code sent to ${email}.`
               : step === "setup-password" ? "Confirm your existing admin password before enabling MFA."
@@ -156,30 +156,30 @@ export function OtpLoginForm() {
         </p>
       </div>
 
-      {serverMessage && <p role="status" className="mb-4 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800">{serverMessage}</p>}
-      {serverError && <p role="alert" className="mb-4 rounded-xl bg-red-50 p-3 text-sm text-red-800">{serverError}</p>}
+      {serverMessage && <p role="status" className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">{serverMessage}</p>}
+      {serverError && <p role="alert" className="mb-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">{serverError}</p>}
 
       {step === "email" && (
         <form onSubmit={handleEmail} className="space-y-4">
-          <label className="block text-sm font-medium text-slate-700" htmlFor="login-email">Email address</label>
-          <input id="login-email" type="email" autoComplete="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" className="h-12 w-full rounded-xl border px-4" />
-          <button disabled={isSubmitting} type="submit" className="w-full mb-btn mb-btn-primary">{isSubmitting ? "Sending..." : "Send code"}</button>
+          <label className="block text-sm font-medium text-slate-800" htmlFor="login-email">Email address</label>
+          <input id="login-email" type="email" autoComplete="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" className="mb-control min-h-12" />
+          <button disabled={isSubmitting} type="submit" className="w-full mb-btn mb-btn-primary min-h-12 rounded-full">{isSubmitting ? "Sending..." : "Send code"}</button>
         </form>
       )}
 
       {step === "email-code" && (
         <form onSubmit={handleEmailCode} className="space-y-4">
-          <label htmlFor="email-code" className="block text-sm font-medium">Email verification code</label>
-          <input id="email-code" inputMode="numeric" autoComplete="one-time-code" required maxLength={6} value={emailCode} onChange={e => setEmailCode(e.target.value)} className="h-12 w-full rounded-xl border px-4 text-center tracking-widest" />
-          <button disabled={isSubmitting} type="submit" className="w-full mb-btn mb-btn-primary">{isSubmitting ? "Checking..." : "Verify email"}</button>
+          <label htmlFor="email-code" className="block text-sm font-medium text-slate-800">Email verification code</label>
+          <input id="email-code" inputMode="numeric" autoComplete="one-time-code" required maxLength={6} value={emailCode} onChange={e => setEmailCode(e.target.value)} className="mb-control min-h-14 text-center font-mono text-xl tracking-[0.5em]" />
+          <button disabled={isSubmitting} type="submit" className="w-full mb-btn mb-btn-primary min-h-12 rounded-full">{isSubmitting ? "Checking..." : "Verify email"}</button>
         </form>
       )}
 
       {step === "setup-password" && (
         <form onSubmit={handleSetup} className="space-y-4">
-          <label htmlFor="admin-password" className="block text-sm font-medium">Existing admin password</label>
-          <input id="admin-password" type="password" autoComplete="current-password" required value={password} onChange={e => setPassword(e.target.value)} className="h-12 w-full rounded-xl border px-4" />
-          <button disabled={isSubmitting} type="submit" className="w-full mb-btn mb-btn-primary">{isSubmitting ? "Verifying..." : "Set up authenticator"}</button>
+          <label htmlFor="admin-password" className="block text-sm font-medium text-slate-800">Existing admin password</label>
+          <input id="admin-password" type="password" autoComplete="current-password" required value={password} onChange={e => setPassword(e.target.value)} className="mb-control min-h-12" />
+          <button disabled={isSubmitting} type="submit" className="w-full mb-btn mb-btn-primary min-h-12 rounded-full">{isSubmitting ? "Verifying..." : "Set up authenticator"}</button>
         </form>
       )}
 
@@ -194,9 +194,9 @@ export function OtpLoginForm() {
 
       {isFactorStep && (
         <form onSubmit={handleFactor} className="space-y-4">
-          <label htmlFor="factor-code" className="block text-sm font-medium">{step === "recovery" ? "Recovery code" : "Authenticator code"}</label>
-          <input id="factor-code" autoComplete="one-time-code" inputMode={step === "recovery" ? "text" : "numeric"} required maxLength={step === "recovery" ? 14 : 6} value={factorCode} onChange={e => setFactorCode(e.target.value)} className="h-12 w-full rounded-xl border px-4 text-center font-mono tracking-widest" />
-          <button disabled={isSubmitting} type="submit" className="w-full mb-btn mb-btn-primary">{isSubmitting ? "Verifying..." : step === "setup-code" ? "Enable MFA and sign in" : "Verify and sign in"}</button>
+          <label htmlFor="factor-code" className="block text-sm font-medium text-slate-800">{step === "recovery" ? "Recovery code" : "Authenticator code"}</label>
+          <input id="factor-code" autoComplete="one-time-code" inputMode={step === "recovery" ? "text" : "numeric"} required maxLength={step === "recovery" ? 14 : 6} value={factorCode} onChange={e => setFactorCode(e.target.value)} className="mb-control min-h-14 text-center font-mono text-xl tracking-[0.35em]" />
+          <button disabled={isSubmitting} type="submit" className="w-full mb-btn mb-btn-primary min-h-12 rounded-full">{isSubmitting ? "Verifying..." : step === "setup-code" ? "Enable MFA and sign in" : "Verify and sign in"}</button>
           {step === "mfa-code" && <button type="button" onClick={() => { setFactorCode(""); setStep("recovery"); }} className="w-full text-sm text-slate-600 underline">Use a recovery code</button>}
           {step === "recovery" && <button type="button" onClick={() => { setFactorCode(""); setStep("mfa-code"); }} className="w-full text-sm text-slate-600 underline">Use authenticator instead</button>}
         </form>
@@ -206,19 +206,19 @@ export function OtpLoginForm() {
         <div className="space-y-4">
           <p className="text-sm font-medium text-red-700">These codes are shown only once. Store them in a password manager.</p>
           <div className="grid grid-cols-2 gap-2 rounded-xl bg-slate-100 p-4 font-mono text-sm">{recoveryCodes.map(code => <code key={code}>{code}</code>)}</div>
-          <button type="button" onClick={() => { void navigator.clipboard?.writeText(recoveryCodes.join("\n")); }} className="h-11 w-full rounded-xl border text-sm">Copy recovery codes</button>
+          <button type="button" onClick={() => { void navigator.clipboard?.writeText(recoveryCodes.join("\n")); }} className="w-full mb-btn mb-btn-secondary rounded-full">Copy recovery codes</button>
           <button type="button" onClick={() => {
             if (!savedUser) return;
             setRecoveryCodes([]);
             setSavedUser(null);
             setUser(savedUser);
             router.push(savedUser.is_superuser ? "/admin/super" : savedUser.is_staff ? "/admin" : "/");
-          }} className="w-full mb-btn mb-btn-primary">I saved my recovery codes</button>
+          }} className="w-full mb-btn mb-btn-primary min-h-12 rounded-full">I saved my recovery codes</button>
         </div>
       )}
 
       {step !== "email" && step !== "save-codes" && (
-        <button type="button" onClick={restart} className="mt-4 h-10 w-full rounded-xl border text-sm text-slate-600">Start over with another email</button>
+        <button type="button" onClick={restart} className="mt-4 w-full mb-btn mb-btn-secondary rounded-full text-slate-600">Start over with another email</button>
       )}
     </div>
   );

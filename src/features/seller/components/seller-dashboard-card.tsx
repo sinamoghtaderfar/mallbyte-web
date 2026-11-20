@@ -168,7 +168,7 @@ export function SellerDashboardCard() {
         </div>
       </header>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         <StatCard tone="ink" label="Total sales" value={formatMoney(seller.total_sales)} icon={<CircleDollarSign size={16} />} hint="Lifetime, as reported by the store record" />
         <StatCard label="Orders" value={seller.total_orders} icon={<ShoppingCart size={16} />} hint="Total orders containing your products" />
         <StatCard label="Balance" value={formatMoney(seller.balance)} icon={<Wallet size={16} />} hint="See Finance for ledger details" />
