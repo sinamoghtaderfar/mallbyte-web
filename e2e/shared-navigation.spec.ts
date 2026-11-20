@@ -16,10 +16,32 @@ async function mockStorefront(page: Page, catalogRequests: string[] = []) {
   });
 }
 
+async function visitReady(page: Page, route: string) {
+  const session = page.waitForResponse((response) =>
+    new URL(response.url()).pathname === "/api/auth/token/refresh/",
+  );
+  await page.goto(route);
+  // Hydration can start after load/network idle. Wait for the actual anonymous
+  // bootstrap request before waiting for its shell remount and content requests.
+  await session;
+  await page.waitForLoadState("networkidle");
+}
+
+async function firstAppTab(page: Page) {
+  await page.keyboard.press("Tab");
+  // The development server injects a toolbar ahead of the application.
+  // Skip only that portal, keeping the first application Tab assertion intact.
+  for (let steps = 0; steps < 3; steps += 1) {
+    const inDevTools = await page.evaluate(() => document.activeElement?.tagName === "NEXTJS-PORTAL");
+    if (!inDevTools) break;
+    await page.keyboard.press("Tab");
+  }
+}
+
 test("marketplace search submits its native GET value to the existing catalog API", async ({ page }) => {
   const requests: string[] = [];
   await mockStorefront(page, requests);
-  await page.goto("/");
+  await visitReady(page, "/");
   const search = page.getByRole("searchbox", { name: "Search marketplace" });
   await search.fill("canvas & carry");
   await search.press("Enter");
@@ -33,7 +55,7 @@ test("marketplace search submits its native GET value to the existing catalog AP
 test("mobile menu Escape closes navigation and returns keyboard focus", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await mockStorefront(page);
-  await page.goto("/");
+  await visitReady(page, "/");
   const trigger = page.getByRole("button", { name: "Open menu", exact: true });
   await trigger.focus();
   await page.keyboard.press("Enter");
@@ -48,8 +70,8 @@ test("mobile menu Escape closes navigation and returns keyboard focus", async ({
 
 test("skip link moves keyboard focus past the shared navigation", async ({ page }) => {
   await mockStorefront(page);
-  await page.goto("/products");
-  await page.keyboard.press("Tab");
+  await visitReady(page, "/products");
+  await firstAppTab(page);
   const skip = page.getByRole("link", { name: "Skip to content" });
   await expect(skip).toBeFocused();
   await expect(skip).toBeInViewport();
@@ -61,7 +83,7 @@ for (const width of [360, 390, 768, 1024, 1280, 1440]) {
   test(`shared storefront navigation fits a ${width}px viewport`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await mockStorefront(page);
-    await page.goto("/products");
+    await visitReady(page, "/products");
     await expect(page.getByRole("heading", { name: "No products yet" })).toBeVisible();
     await expect(page.getByRole("searchbox", { name: "Search marketplace" })).toBeVisible();
     await expect(page.getByRole("banner").getByRole("link", { name: "Cart", exact: true })).toBeVisible();
@@ -79,8 +101,8 @@ for (const width of [360, 390, 768, 1024, 1280, 1440]) {
 test("dark OS preference and reduced motion retain readable controls and visible keyboard focus", async ({ page }) => {
   await page.emulateMedia({ colorScheme: "dark", reducedMotion: "reduce" });
   await mockStorefront(page);
-  await page.goto("/products");
-  await page.keyboard.press("Tab");
+  await visitReady(page, "/products");
+  await firstAppTab(page);
   const skip = page.getByRole("link", { name: "Skip to content" });
   await expect(skip).toBeFocused();
   const focus = await skip.evaluate((element) => {
