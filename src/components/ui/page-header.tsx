@@ -21,7 +21,7 @@ export function Breadcrumbs({ items, className = "" }: { items: Crumb[]; classNa
 export function PageHeader({ eyebrow, title, description, actions, crumbs, display = false, className = "" }: {
   eyebrow?: ReactNode; title: ReactNode; description?: ReactNode; actions?: ReactNode; crumbs?: Crumb[]; display?: boolean; className?: string;
 }) {
-  return <header className={`flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between ${className}`}>
+  return <header className={`flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between ${className}`}>
     <div className="min-w-0 max-w-3xl">
       {crumbs && <Breadcrumbs items={crumbs} className="mb-4" />}
       {eyebrow && <p className="mb-eyebrow mb-2">{eyebrow}</p>}

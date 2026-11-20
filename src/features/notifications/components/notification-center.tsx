@@ -714,7 +714,7 @@ export function NotificationCenter() {
               <div
                 key={notification.id}
                 className={[
-                  "group relative flex gap-3 border-b border-line px-4 py-4 last:border-b-0 sm:gap-4 sm:px-5",
+                  "group relative grid grid-cols-[auto_auto_minmax(0,1fr)] items-start gap-x-3 gap-y-2 border-b border-line px-4 py-4 last:border-b-0 sm:flex sm:gap-4 sm:px-5",
                   notification.is_read
                     ? "bg-surface"
                     : "bg-ember-50/40 before:absolute before:inset-y-0 before:left-0 before:w-[3px] before:bg-brand",
@@ -731,7 +731,7 @@ export function NotificationCenter() {
                       notification.id,
                     )
                   }
-                  className="mt-1 h-4 w-4 shrink-0 rounded border-slate-300"
+                  className="mt-2.5 h-4 w-4 shrink-0 rounded border-slate-300"
                 />
 
                 <span
@@ -796,7 +796,7 @@ export function NotificationCenter() {
                   </p>
                 </button>
 
-                <div className="shrink-0">
+                <div className="col-start-3 -ml-3 shrink-0 sm:ml-0">
                   <button
                     type="button"
                     onClick={() =>
