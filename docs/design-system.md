@@ -1,42 +1,64 @@
-# MallByte design foundation
+# MallByte design system — "Ink & Ember"
 
-The visual direction retains MallByte's slate and cyan identity with a quieter teal accent, clear typography, restrained corners, and purposeful borders. Product images, useful information, and the next action carry the hierarchy. Published CMS content remains authoritative; presentation must not invent currencies, delivery promises, testimonials, or operational capabilities.
+MallByte reads as an editorial marketplace: warm paper surfaces, near-black ink for structure and primary actions, and a single ember accent for brand moments, discounts and the active indicator. Product imagery carries colour; the interface stays quiet around it. Published CMS content remains authoritative; presentation must not invent currencies, delivery promises, testimonials, or operational capabilities.
 
 ## Tokens
 
-`src/app/globals.css` is the single token source. Tailwind's inline theme exposes the same values to existing JSX without a runtime styling library.
+`src/app/globals.css` is the single token source.
 
-| Token | Purpose |
-| --- | --- |
-| `background` / `surface` | Soft page canvas / white content surface |
-| `foreground` / `muted` | Main information / readable supporting text |
-| `line` | Neutral dividers and control borders |
-| `brand` / `brand-hover` / `brand-soft` | Primary actions, active navigation, subtle selection |
-| `danger` | Destructive actions and validation |
+| Token | Value | Purpose |
+| --- | --- | --- |
+| `background` | `#f7f5f0` | Warm page canvas |
+| `surface` / `sunken` | `#ffffff` / `#f1efea` | Cards and panels / image wells, quiet groups |
+| `foreground` / `muted` | `#1c1b19` / `#6b675f` | Body text / supporting text (5.3:1 on white) |
+| `line` / `line-strong` | `#e4e1da` / `#cfcbc2` | Dividers / control borders |
+| `ink` / `ink-hover` | `#121211` / `#2a2926` | Primary buttons, active navigation, dark panels |
+| `brand` / `brand-hover` / `brand-soft` | `#c93d0b` / `#a8340d` / `#fff4ed` | Ember accent (5.05:1 with white text) |
+| `danger`, `success`, `warning` | — | Semantic states; always paired with text/icons |
 
-Keep `color-scheme: light` in both OS preferences. Native inputs must remain readable. Semantic success, warning, and error notices retain the existing emerald, amber, and rose palettes with visible text and icons; color alone must not communicate state.
+The neutral `slate-*` (and `gray-*`, `zinc-*`) scales are remapped to the warm ink scale and `cyan-*`/`teal-*` to the ember scale, so legacy utility classes inherit the identity. `ember-*` is available as a first-class scale. `slate-400` (`#8b877e`) is for icons and decorative strokes only; text starts at `slate-500`.
 
-Use the local system sans stack: no font download, invisible-text interval, or new asset dependency. Headings use tight tracking and medium/semibold weight; supporting text normally uses 14px with a 20–24px line height. Form text remains 16px on narrow screens. Avoid uppercase paragraphs and low-contrast 12px metadata. Verify actual contrast for each adopted foreground/surface pair; this is not a blanket WCAG certification.
+Radii: controls 12px (`rounded-xl`), cards 14px (`rounded-2xl`), large media 18–28px. Shadows are layered and low-contrast (`shadow-xs` … `shadow-2xl`); prefer a border plus `shadow-sm`.
 
-## Layout and components
+## Typography
 
-- Align shared navigation to `max-w-7xl`, with 16px mobile, 24px tablet and 32px desktop gutters. Allow dense workspaces to choose an appropriate narrower container rather than stretching forms.
-- Use the 4px spacing scale, 8px control corners, and roughly 12px content-surface corners. Reserve pills for short status labels. Prefer borders to repeated shadows.
-- `Button` and `buttonStyles` share primary, secondary, quiet and danger treatments. Native button semantics remain intact; the default type is `button`. `loading` announces busy state and disables repeat activation without removing the label. Icon controls require an accessible name. All supported sizes are at least 44px high.
-- `Input`, `Select`, and `Textarea` preserve native props, labels, required validation, and `aria-invalid`. Associate help/error text with `aria-describedby` in callers. Never hide an error behind a loading indicator.
-- Keep existing `AccessibleDialog` focus containment, inert background, Escape behavior and return focus. Style its caller surfaces without replacing this behavior.
-- Reuse the existing insights `Panel`, `Metric`, `Notice`, period picker and charts when refining finance/analytics. Align their presentation to these tokens rather than creating a competing kit.
-- Preserve server pagination counts and bounded requests. Pagination controls must wrap or remain in a clearly bounded local scroller; mobile pages must not overflow horizontally.
-- Loading, empty and error states need distinct copy and semantics (`status` for progress, `alert` for actionable failures), with recovery actions where supported. Skeletons should reserve the real content footprint and respect reduced motion.
+Fonts are self-hosted via `next/font/local` (SIL OFL, see `src/app/fonts/LICENSE-fonts.txt`); no runtime font CDN.
 
-## Navigation and interaction
+- **Geist** (variable) — all UI text. Body 14–16px, workspace headings semibold with tight tracking.
+- **Instrument Serif** — editorial display only: storefront section titles, hero, product names, customer account titles (`.mb-display`, `font-display`). Use the italic for a single emphasised word, not whole sentences.
+- **Geist Mono** — order numbers and codes.
 
-The header provides native GET search into the existing catalog URL contract; typing does not trigger API requests. Main navigation appears from 1024px and wraps for published CMS links. On smaller screens it is an inline disclosure: Escape closes it and restores its trigger; following a link closes it. It is not a modal and must not trap focus. Permission-scoped links retain identity checks and server permission decisions.
+Numbers in tables and stats use tabular figures (`data-numeric` or any `table`).
 
-Account pages share real destination links with an active destination and a bounded horizontal rail on narrow screens. The skip link moves keyboard users beyond repeated navigation. All interactive elements have a visible focus indicator. Motion remains subtle and is suppressed for reduced-motion users.
+## Components
 
-## Adoption and verification
+`src/components/ui`:
 
-This first stage adopts the foundation in shared navigation, search, account wayfinding, footer, cart access and notification preview placement. Storefront, shopping workflows, seller and operations are separate dependent stages; legacy page styling has not been claimed as migrated.
+- `Button` / `buttonStyles` — `primary` (ink), `accent` (ember), `secondary`, `quiet`, `danger`, `inverse`; sizes `default`, `small`, `large`, `icon`. All ≥44px high except `mb-btn-sm` (36px). `loading` keeps the label and sets `aria-busy`.
+- `Input`, `Select`, `Textarea`, `Field` — shared control recipe (`controlStyles`), visible focus ring, `aria-invalid` styling.
+- `Badge`, `StatusBadge`, `statusTone` — maps API lifecycle values (order, payment, shipment, return, seller, CMS) to tones, label from the API's display text.
+- `Card`, `CardHeader`, `StatCard`, `PageHeader`, `Breadcrumbs`.
+- `Skeleton`, `EmptyState`, `Notice` (danger → `role="alert"`, others → `role="status"`).
+- `Price`, `Rating`, `formatAmount`, `discountPercent` — amounts are shown as plain numbers because catalog endpoints return no currency; currencies appear only where the API supplies them (payments, finance).
 
-Before/after evidence uses isolated, fail-closed mock APIs and records exact source revisions, widths and states. It does not certify deployed API contracts, production content, real payment, a complete WCAG audit, or field performance. Keep existing Phase 1–3 regression tests and request/session guards. Validate full unit tests, TypeScript, lint, Chromium and a production Docker image before finalizing each major workstream.
+Legacy markup uses the CSS recipes `.mb-control`, `.mb-select`, `.mb-btn` (`-primary`, `-secondary`, `-danger`, `-success`, `-sm`), `.mb-card`, `.mb-eyebrow`, `.mb-table`, `.mb-skeleton`, `.mb-container`. New code should prefer the React components.
+
+## Layout and frames
+
+- Storefront pages use `.mb-container` (88rem max, 16/24/32px gutters).
+- `ShellFrame` (inside `SiteShell`) chooses the frame from the route: customer account routes get the account sidebar (horizontal rail below `lg`); seller workspace routes and admin/warehouse routes get `WorkspaceShell` with grouped navigation from `workspace-nav.ts`. Chrome is only shown to identities whose role matches; route guards and the API still make every access decision.
+- Inside frames, the frame owns spacing; legacy page `<main>` padding is neutralised in CSS.
+- Wide tables scroll inside their own container; on small screens they keep a 42rem minimum rather than crushing columns.
+- Workspaces use a quiet utility footer; the storefront uses the full ink footer.
+
+## Interaction and accessibility
+
+- Visible 2px ember focus outline on every interactive element; skip link to `#main-content`.
+- Mobile header menu is an inline disclosure (Escape closes and restores focus). Catalog filters collapse behind a disclosure below `lg`; sorting applies immediately; applied filters appear as removable chips.
+- Motion is limited to short transitions and image hover scale; `prefers-reduced-motion` disables them.
+- Loading, empty and error states are distinct: skeletons with `role="status"`, empty states with a next action, errors with recovery actions.
+- `color-scheme: light` in both OS preferences so native controls stay readable.
+
+## Verification
+
+Before/after evidence for this redesign lives in `docs/ui-evidence/redesign/` (captured against a local `mallbyte-api` on SQLite with seeded demo data and procedurally generated product illustrations — not production content). Validate unit tests, TypeScript, lint, Playwright (mocked API) and a production build before merging.

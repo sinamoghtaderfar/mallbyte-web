@@ -96,6 +96,9 @@ for (const colorScheme of ["light", "dark"] as const) {
       });
 
       await page.goto("/products");
+      // Below the desktop breakpoint, catalog filters live behind a disclosure.
+      const filterToggle = page.locator('button[aria-controls="catalog-filter-panel"]');
+      if (await filterToggle.isVisible()) await filterToggle.click();
       const search = page.getByRole("textbox", { name: "Search products" });
       await search.fill("Keyboard");
       await expectReadable(search);
