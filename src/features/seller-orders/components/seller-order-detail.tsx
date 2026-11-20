@@ -4,6 +4,14 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
+import { PackageCheck, PackageSearch } from "lucide-react";
+
+import { StatusBadge, statusTone } from "@/components/ui/badge";
+import { Button, buttonStyles } from "@/components/ui/button";
+import { Card, CardHeader } from "@/components/ui/card";
+import { DetailList, Timeline } from "@/components/ui/data-display";
+import { PageHeader } from "@/components/ui/page-header";
+import { EmptyState, Notice, Skeleton } from "@/components/ui/states";
 import { getApiErrorMessage } from "@/lib/api/errors";
 
 import { getSellerOrder, updateSellerOrderStatus } from "../api";
@@ -118,248 +126,116 @@ export function SellerOrderDetail() {
 
   if (isLoading) {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 text-sm text-slate-600 shadow-sm">
-        Loading seller order...
+      <div className="grid gap-6" aria-busy="true">
+        <p role="status" className="sr-only">Loading seller order...</p>
+        <Skeleton className="h-24 max-w-lg" />
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]"><Skeleton className="h-96 rounded-2xl" /><Skeleton className="h-72 rounded-2xl" /></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="rounded-3xl border border-red-200 bg-red-50 p-5 sm:p-8 text-sm text-red-700">
-        {error}
+      <div className="grid max-w-2xl gap-4">
+        <Notice tone="danger" title="Could not load this order">{error}</Notice>
+        <div><Link href="/seller/orders" className={buttonStyles({ variant: "secondary" })}>Back to seller orders</Link></div>
       </div>
     );
   }
 
   if (!order) {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 text-sm text-slate-600 shadow-sm">
-        Order not found.
-      </div>
+      <EmptyState icon={<PackageSearch size={24} />} title="Order not found."
+        action={<Link href="/seller/orders" className={buttonStyles({ variant: "secondary" })}>Back to seller orders</Link>} />
     );
   }
 
   return (
-    <section className="space-y-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-        <div>
-          <Link
-            href="/seller/orders"
-            className="text-sm font-medium text-slate-600 hover:text-slate-950"
-          >
-            ← Back to seller orders
-          </Link>
+    <section className="grid gap-6">
+      <PageHeader eyebrow="Seller order"
+        title={<span className="font-mono text-[1.625rem] tracking-tight sm:text-[1.875rem]">{order.order_number}</span>}
+        crumbs={[{ href: "/seller/orders", label: "Seller orders" }, { label: "Order details" }]}
+        description={order.seller_status === "processing"
+          ? "Your items are in preparation. The shipping team will update shipped and delivered statuses when your shipment is processed."
+          : undefined}
+        actions={nextStatus ? (
+          <Button onClick={() => handleUpdateStatus(nextStatus)} loading={isUpdating}>
+            {!isUpdating && <PackageCheck size={16} aria-hidden="true" />}{isUpdating ? "Updating..." : "Mark as processing"}
+          </Button>
+        ) : null} />
 
-          <p className="mt-6 text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">
-            Seller order
-          </p>
+      <ul className="flex flex-wrap gap-2" aria-label="Order status">
+        <li><StatusBadge status={order.seller_status} label={`Your fulfillment: ${order.seller_status_display}`} /></li>
+        <li><StatusBadge status={order.status} label={`Overall order: ${order.status_display}`} /></li>
+        <li><StatusBadge status={order.payment_status} label={`Payment: ${order.payment_status_display}`} /></li>
+      </ul>
 
-          <h1 className="mt-2 text-3xl font-bold text-slate-950">
-            {order.order_number}
-          </h1>
+      {actionMessage ? <Notice tone="success">{actionMessage}</Notice> : null}
+      {actionError ? <Notice tone="danger">{actionError}</Notice> : null}
 
-          <div className="mt-4 flex flex-wrap gap-2">
-            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
-              Your fulfillment: {order.seller_status_display}
-            </span>
-
-            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
-              Overall order: {order.status_display}
-            </span>
-
-            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
-              Payment: {order.payment_status_display}
-            </span>
-          </div>
-
-          {order.seller_status === "processing" ? (
-            <p className="mt-3 text-sm text-slate-600">
-              Your items are in preparation. The shipping team will update
-              shipped and delivered statuses when your shipment is processed.
-            </p>
-          ) : null}
-        </div>
-
-        {nextStatus ? (
-          <button
-            type="button"
-            onClick={() => handleUpdateStatus(nextStatus)}
-            disabled={isUpdating}
-            className="mb-btn mb-btn-primary"
-          >
-            {isUpdating ? "Updating..." : "Mark as processing"}
-          </button>
-        ) : null}
-      </div>
-
-      {actionMessage ? (
-        <div className="rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
-          {actionMessage}
-        </div>
-      ) : null}
-
-      {actionError ? (
-        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {actionError}
-        </div>
-      ) : null}
-
-      <div className="grid gap-6 lg:grid-cols-[1.4fr_0.8fr]">
-        <div className="space-y-6">
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-slate-950">Your items</h2>
-
-            <div className="mt-4 divide-y divide-slate-100">
-              {order.items.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex flex-col gap-2 py-4 md:flex-row md:items-center md:justify-between"
-                >
-                  <div>
-                    <p className="font-medium text-slate-950">
-                      {item.product_name}
-                    </p>
-
-                    <p className="mt-1 text-xs text-slate-500">
-                      SKU: {item.product_sku}
-                    </p>
-
-                    <p className="mt-1 text-xs text-slate-500">
-                      Quantity: {item.quantity}
-                    </p>
-                  </div>
-
-                  <div className="text-sm font-semibold text-slate-950">
-                    {formatMoney(item.total_price)}
-                  </div>
-                </div>
-              ))}
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <div className="grid min-w-0 gap-6">
+          <Card padded={false} className="overflow-hidden">
+            <CardHeader className="p-5 sm:p-6" title="Your items" description="Only the items your store sold in this order." />
+            <div className="overflow-x-auto border-t border-line">
+              <table className="mb-table min-w-[32rem]">
+                <thead><tr><th scope="col">Product</th><th scope="col" className="text-right">Quantity</th><th scope="col" className="text-right">Total</th></tr></thead>
+                <tbody>
+                  {order.items.map((item) => (
+                    <tr key={item.id}>
+                      <td>
+                        <p className="font-medium text-foreground">{item.product_name}</p>
+                        <p className="mt-0.5 font-mono text-xs text-muted">SKU: {item.product_sku}</p>
+                      </td>
+                      <td className="text-right text-slate-700"><span className="sr-only">Quantity: </span>{item.quantity}</td>
+                      <td className="text-right font-semibold text-foreground">{formatMoney(item.total_price)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <th scope="row" colSpan={2} className="!border-b-0 !bg-sunken/60 !text-sm !font-medium !tracking-normal text-foreground">Seller total</th>
+                    <td className="bg-sunken/60 text-right text-base font-semibold text-foreground" data-numeric>{formatMoney(order.seller_total_amount)}</td>
+                  </tr>
+                </tfoot>
+              </table>
             </div>
+          </Card>
 
-            <div className="mt-4 flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3 text-sm">
-              <span className="text-slate-600">Seller total</span>
-
-              <span className="font-bold text-slate-950">
-                {formatMoney(order.seller_total_amount)}
-              </span>
-            </div>
-          </div>
-
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-slate-950">
-              Overall order history
-            </h2>
-
-            <p className="mt-2 text-sm text-slate-500">
-              This is the overall order history, not the individual seller
-              fulfillment history.
-            </p>
-
+          <Card>
+            <CardHeader title="Overall order history" description="This is the overall order history, not the individual seller fulfillment history." />
             {order.status_history.length === 0 ? (
-              <p className="mt-4 text-sm text-slate-600">
-                No status history yet.
-              </p>
+              <p className="mt-4 text-sm text-muted">No status history yet.</p>
             ) : (
-              <div className="mt-4 space-y-3">
-                {order.status_history.map((event) => (
-                  <div
-                    key={event.id}
-                    className="rounded-2xl border border-slate-100 bg-slate-50 p-4 text-sm"
-                  >
-                    <p className="font-medium text-slate-950">
-                      {event.old_status || "created"} → {event.new_status}
-                    </p>
-
-                    {event.note ? (
-                      <p className="mt-1 text-slate-600">{event.note}</p>
-                    ) : null}
-
-                    <p className="mt-2 text-xs text-slate-500">
-                      {formatDate(event.created_at)}
-                    </p>
-                  </div>
-                ))}
-              </div>
+              <Timeline className="mt-5" items={order.status_history.map((event, index) => ({
+                id: event.id,
+                title: <span className="capitalize">{(event.old_status || "created").replaceAll("_", " ")} → {event.new_status.replaceAll("_", " ")}</span>,
+                meta: formatDate(event.created_at),
+                description: event.note || undefined,
+                tone: index === order.status_history.length - 1 ? statusTone(event.new_status) : "neutral",
+              }))} />
             )}
-          </div>
+          </Card>
         </div>
 
-        <aside className="space-y-6">
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-slate-950">
-              Fulfillment address
-            </h2>
-
-            <dl className="mt-4 space-y-3 text-sm">
-              <div>
-                <dt className="text-slate-500">Receiver</dt>
-
-                <dd className="font-medium text-slate-950">
-                  {order.receiver_name}
-                </dd>
-              </div>
-
-              <div>
-                <dt className="text-slate-500">Phone</dt>
-
-                <dd className="font-medium text-slate-950">
-                  {order.receiver_phone}
-                </dd>
-              </div>
-
-              <div>
-                <dt className="text-slate-500">Address</dt>
-
-                <dd className="font-medium text-slate-950">
-                  {order.address}, {order.city}, {order.province},{" "}
-                  {order.postal_code}
-                </dd>
-              </div>
-
-              {order.customer_note ? (
-                <div>
-                  <dt className="text-slate-500">Customer note</dt>
-
-                  <dd className="font-medium text-slate-950">
-                    {order.customer_note}
-                  </dd>
-                </div>
-              ) : null}
-            </dl>
-          </div>
-
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-slate-950">
-              Important dates
-            </h2>
-
-            <dl className="mt-4 space-y-3 text-sm">
-              <div>
-                <dt className="text-slate-500">Created</dt>
-
-                <dd className="font-medium text-slate-950">
-                  {formatDate(order.created_at)}
-                </dd>
-              </div>
-
-              <div>
-                <dt className="text-slate-500">Paid</dt>
-
-                <dd className="font-medium text-slate-950">
-                  {formatDate(order.paid_at)}
-                </dd>
-              </div>
-
-              <div>
-                <dt className="text-slate-500">Delivered</dt>
-
-                <dd className="font-medium text-slate-950">
-                  {formatDate(order.delivered_at)}
-                </dd>
-              </div>
-            </dl>
-          </div>
+        <aside className="grid gap-6 lg:sticky lg:top-24">
+          <Card>
+            <CardHeader title="Fulfillment address" />
+            <DetailList className="mt-4" columns={1} items={[
+              { label: "Receiver", value: order.receiver_name },
+              { label: "Phone", value: order.receiver_phone },
+              { label: "Address", value: `${order.address}, ${order.city}, ${order.province}, ${order.postal_code}` },
+              ...(order.customer_note ? [{ label: "Customer note", value: order.customer_note }] : []),
+            ]} />
+          </Card>
+          <Card>
+            <CardHeader title="Important dates" />
+            <DetailList className="mt-4" columns={1} items={[
+              { label: "Created", value: formatDate(order.created_at) },
+              { label: "Paid", value: formatDate(order.paid_at) },
+              { label: "Delivered", value: formatDate(order.delivered_at) },
+            ]} />
+          </Card>
         </aside>
       </div>
     </section>
