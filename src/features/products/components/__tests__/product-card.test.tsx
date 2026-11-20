@@ -88,4 +88,22 @@ describe("ProductCard", () => {
     expect(screen.getByText("No image")).toBeInTheDocument();
     expect(screen.getByText("Unknown brand")).toBeInTheDocument();
   });
+
+  it("exposes product imagery with meaningful alternative text and lazy loading", () => {
+    render(
+      <ProductCard
+        product={makeProduct({ main_image: "/media/keyboard.jpg" })}
+      />,
+    );
+    const image = screen.getByRole("img", { name: "Mechanical Keyboard" });
+    expect(image).toHaveAttribute("loading", "lazy");
+    expect(image).toHaveAttribute("width", "800");
+    expect(image).toHaveAttribute("height", "800");
+  });
+
+  it("makes unavailable inventory explicit without changing the product destination", () => {
+    render(<ProductCard product={makeProduct({ available_stock: 0 })} />);
+    expect(screen.getByText("Out of stock")).toBeInTheDocument();
+    expect(screen.getByRole("link")).toHaveAttribute("href", "/products/42");
+  });
 });

@@ -1,0 +1,1402 @@
+{
+  "status": "WIP; incomplete validation; no final completion claim",
+  "captureDate": "2026-11-20T11:04:43.263Z",
+  "baseMain": "3b89904f82104267f0d618de5a6657c319448cca",
+  "foundation": "cec7479c291a3051b5b09946b740ea0287f6f747",
+  "foundationMerge": "e8cee740913aa8ec0a52ecd720921c257ebf0965",
+  "attempted": 33,
+  "successfulCaptures": 32,
+  "harnessFailures": 1,
+  "applicationPageErrorsObserved": 0,
+  "unmockedApiRequestsObserved": 0,
+  "observedHorizontalOverflows": 0,
+  "sourceProvenance": "source-sha256.json fingerprints the 13 unchanged application/test files captured. No application code was changed for this handoff.",
+  "fixtureLimit": "Fictional account/product/CMS data and synthetic SVG carryall geometry; not merchant photography or a live backend.",
+  "captureLimits": [
+    "Representative screenshots were manually viewed; not every capture was manually reviewed.",
+    "Full-page screenshots do not scroll all lazy images into view; some below-fold PDP related media may appear blank.",
+    "Validation screenshot failed because the harness selector was ambiguous.",
+    "Earlier interrupted runs and readiness failures are not reported as successful final checks."
+  ],
+  "results": [
+    {
+      "name": "home",
+      "route": "/",
+      "role": "guest",
+      "width": 360,
+      "metrics": {
+        "width": 360,
+        "scrollWidth": 360,
+        "height": 2332,
+        "colorScheme": "light",
+        "h1": [
+          "Everyday discoveries. Independent perspectives."
+        ],
+        "firstProductTop": null,
+        "primaryBuyTop": null
+      },
+      "images": [],
+      "pageErrors": [],
+      "unmocked": []
+    },
+    {
+      "name": "home",
+      "route": "/",
+      "role": "guest",
+      "width": 390,
+      "metrics": {
+        "width": 390,
+        "scrollWidth": 390,
+        "height": 2308,
+        "colorScheme": "light",
+        "h1": [
+          "Everyday discoveries. Independent perspectives."
+        ],
+        "firstProductTop": null,
+        "primaryBuyTop": null
+      },
+      "images": [],
+      "pageErrors": [],
+      "unmocked": []
+    },
+    {
+      "name": "home",
+      "route": "/",
+      "role": "guest",
+      "width": 768,
+      "metrics": {
+        "width": 768,
+        "scrollWidth": 768,
+        "height": 1877,
+        "colorScheme": "light",
+        "h1": [
+          "Everyday discoveries. Independent perspectives."
+        ],
+        "firstProductTop": null,
+        "primaryBuyTop": null
+      },
+      "images": [],
+      "pageErrors": [],
+      "unmocked": []
+    },
+    {
+      "name": "home",
+      "route": "/",
+      "role": "guest",
+      "width": 1024,
+      "metrics": {
+        "width": 1024,
+        "scrollWidth": 1024,
+        "height": 1738,
+        "colorScheme": "light",
+        "h1": [
+          "Everyday discoveries. Independent perspectives."
+        ],
+        "firstProductTop": null,
+        "primaryBuyTop": null
+      },
+      "images": [],
+      "pageErrors": [],
+      "unmocked": []
+    },
+    {
+      "name": "home",
+      "route": "/",
+      "role": "guest",
+      "width": 1280,
+      "metrics": {
+        "width": 1280,
+        "scrollWidth": 1280,
+        "height": 1651,
+        "colorScheme": "light",
+        "h1": [
+          "Everyday discoveries. Independent perspectives."
+        ],
+        "firstProductTop": null,
+        "primaryBuyTop": null
+      },
+      "images": [],
+      "pageErrors": [],
+      "unmocked": []
+    },
+    {
+      "name": "home",
+      "route": "/",
+      "role": "guest",
+      "width": 1440,
+      "metrics": {
+        "width": 1440,
+        "scrollWidth": 1440,
+        "height": 1651,
+        "colorScheme": "light",
+        "h1": [
+          "Everyday discoveries. Independent perspectives."
+        ],
+        "firstProductTop": null,
+        "primaryBuyTop": null
+      },
+      "images": [],
+      "pageErrors": [],
+      "unmocked": []
+    },
+    {
+      "name": "catalog",
+      "route": "/products",
+      "role": "guest",
+      "width": 360,
+      "metrics": {
+        "width": 360,
+        "scrollWidth": 360,
+        "height": 1928,
+        "colorScheme": "light",
+        "h1": [
+          "Products"
+        ],
+        "firstProductTop": 430,
+        "primaryBuyTop": null
+      },
+      "images": [
+        {
+          "alt": "Everyday canvas carryall",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Compact ceramic table lamp",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Woven cotton throw",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Studio wireless headphones",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Essential mechanical keyboard",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Handcrafted stoneware mug",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        }
+      ],
+      "pageErrors": [],
+      "unmocked": []
+    },
+    {
+      "name": "catalog",
+      "route": "/products",
+      "role": "guest",
+      "width": 390,
+      "metrics": {
+        "width": 390,
+        "scrollWidth": 390,
+        "height": 1953,
+        "colorScheme": "light",
+        "h1": [
+          "Products"
+        ],
+        "firstProductTop": 430,
+        "primaryBuyTop": null
+      },
+      "images": [
+        {
+          "alt": "Everyday canvas carryall",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Compact ceramic table lamp",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Woven cotton throw",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Studio wireless headphones",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Essential mechanical keyboard",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Handcrafted stoneware mug",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        }
+      ],
+      "pageErrors": [],
+      "unmocked": []
+    },
+    {
+      "name": "catalog",
+      "route": "/products",
+      "role": "guest",
+      "width": 768,
+      "metrics": {
+        "width": 768,
+        "scrollWidth": 768,
+        "height": 2364,
+        "colorScheme": "light",
+        "h1": [
+          "Products"
+        ],
+        "firstProductTop": 410,
+        "primaryBuyTop": null
+      },
+      "images": [
+        {
+          "alt": "Everyday canvas carryall",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Compact ceramic table lamp",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Woven cotton throw",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Studio wireless headphones",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Essential mechanical keyboard",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Handcrafted stoneware mug",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        }
+      ],
+      "pageErrors": [],
+      "unmocked": []
+    },
+    {
+      "name": "catalog",
+      "route": "/products",
+      "role": "guest",
+      "width": 1024,
+      "metrics": {
+        "width": 1024,
+        "scrollWidth": 1024,
+        "height": 2255,
+        "colorScheme": "light",
+        "h1": [
+          "Products"
+        ],
+        "firstProductTop": 343,
+        "primaryBuyTop": null
+      },
+      "images": [
+        {
+          "alt": "Everyday canvas carryall",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Compact ceramic table lamp",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Woven cotton throw",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Studio wireless headphones",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Essential mechanical keyboard",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Handcrafted stoneware mug",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        }
+      ],
+      "pageErrors": [],
+      "unmocked": []
+    },
+    {
+      "name": "catalog",
+      "route": "/products",
+      "role": "guest",
+      "width": 1280,
+      "metrics": {
+        "width": 1280,
+        "scrollWidth": 1280,
+        "height": 1673,
+        "colorScheme": "light",
+        "h1": [
+          "Products"
+        ],
+        "firstProductTop": 343,
+        "primaryBuyTop": null
+      },
+      "images": [
+        {
+          "alt": "Everyday canvas carryall",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Compact ceramic table lamp",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Woven cotton throw",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Studio wireless headphones",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Essential mechanical keyboard",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Handcrafted stoneware mug",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        }
+      ],
+      "pageErrors": [],
+      "unmocked": []
+    },
+    {
+      "name": "catalog",
+      "route": "/products",
+      "role": "guest",
+      "width": 1440,
+      "metrics": {
+        "width": 1440,
+        "scrollWidth": 1440,
+        "height": 1705,
+        "colorScheme": "light",
+        "h1": [
+          "Products"
+        ],
+        "firstProductTop": 343,
+        "primaryBuyTop": null
+      },
+      "images": [
+        {
+          "alt": "Everyday canvas carryall",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Compact ceramic table lamp",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Woven cotton throw",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Studio wireless headphones",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Essential mechanical keyboard",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Handcrafted stoneware mug",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        }
+      ],
+      "pageErrors": [],
+      "unmocked": []
+    },
+    {
+      "name": "product",
+      "route": "/products/1",
+      "role": "customer",
+      "width": 360,
+      "metrics": {
+        "width": 360,
+        "scrollWidth": 360,
+        "height": 5924,
+        "colorScheme": "light",
+        "h1": [
+          "Everyday canvas carryall"
+        ],
+        "firstProductTop": 3647,
+        "primaryBuyTop": 1020,
+        "disabledBuy": false
+      },
+      "images": [
+        {
+          "alt": "Canvas carryall in warm sand",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "eager"
+        },
+        {
+          "alt": "",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Compact ceramic table lamp",
+          "complete": false,
+          "naturalWidth": 0,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Woven cotton throw",
+          "complete": false,
+          "naturalWidth": 0,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Studio wireless headphones",
+          "complete": false,
+          "naturalWidth": 0,
+          "loading": "lazy"
+        }
+      ],
+      "pageErrors": [],
+      "unmocked": []
+    },
+    {
+      "name": "product",
+      "route": "/products/1",
+      "role": "customer",
+      "width": 390,
+      "metrics": {
+        "width": 390,
+        "scrollWidth": 390,
+        "height": 5859,
+        "colorScheme": "light",
+        "h1": [
+          "Everyday canvas carryall"
+        ],
+        "firstProductTop": 3567.5,
+        "primaryBuyTop": 1012.5,
+        "disabledBuy": false
+      },
+      "images": [
+        {
+          "alt": "Canvas carryall in warm sand",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "eager"
+        },
+        {
+          "alt": "",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Compact ceramic table lamp",
+          "complete": false,
+          "naturalWidth": 0,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Woven cotton throw",
+          "complete": false,
+          "naturalWidth": 0,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Studio wireless headphones",
+          "complete": false,
+          "naturalWidth": 0,
+          "loading": "lazy"
+        }
+      ],
+      "pageErrors": [],
+      "unmocked": []
+    },
+    {
+      "name": "product",
+      "route": "/products/1",
+      "role": "customer",
+      "width": 768,
+      "metrics": {
+        "width": 768,
+        "scrollWidth": 768,
+        "height": 4660,
+        "colorScheme": "light",
+        "h1": [
+          "Everyday canvas carryall"
+        ],
+        "firstProductTop": 2896.59375,
+        "primaryBuyTop": 1329.59375,
+        "disabledBuy": false
+      },
+      "images": [
+        {
+          "alt": "Canvas carryall in warm sand",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "eager"
+        },
+        {
+          "alt": "",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Compact ceramic table lamp",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Woven cotton throw",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Studio wireless headphones",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        }
+      ],
+      "pageErrors": [],
+      "unmocked": []
+    },
+    {
+      "name": "product",
+      "route": "/products/1",
+      "role": "customer",
+      "width": 1024,
+      "metrics": {
+        "width": 1024,
+        "scrollWidth": 1024,
+        "height": 3426,
+        "colorScheme": "light",
+        "h1": [
+          "Everyday canvas carryall"
+        ],
+        "firstProductTop": 2221,
+        "primaryBuyTop": 650,
+        "disabledBuy": false
+      },
+      "images": [
+        {
+          "alt": "Canvas carryall in warm sand",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "eager"
+        },
+        {
+          "alt": "",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Compact ceramic table lamp",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Woven cotton throw",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Studio wireless headphones",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        }
+      ],
+      "pageErrors": [],
+      "unmocked": []
+    },
+    {
+      "name": "product",
+      "route": "/products/1",
+      "role": "customer",
+      "width": 1280,
+      "metrics": {
+        "width": 1280,
+        "scrollWidth": 1280,
+        "height": 3511,
+        "colorScheme": "light",
+        "h1": [
+          "Everyday canvas carryall"
+        ],
+        "firstProductTop": 2220.234375,
+        "primaryBuyTop": 605,
+        "disabledBuy": false
+      },
+      "images": [
+        {
+          "alt": "Canvas carryall in warm sand",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "eager"
+        },
+        {
+          "alt": "",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Compact ceramic table lamp",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Woven cotton throw",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Studio wireless headphones",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        }
+      ],
+      "pageErrors": [],
+      "unmocked": []
+    },
+    {
+      "name": "product",
+      "route": "/products/1",
+      "role": "customer",
+      "width": 1440,
+      "metrics": {
+        "width": 1440,
+        "scrollWidth": 1440,
+        "height": 3552,
+        "colorScheme": "light",
+        "h1": [
+          "Everyday canvas carryall"
+        ],
+        "firstProductTop": 2245.3125,
+        "primaryBuyTop": 605,
+        "disabledBuy": false
+      },
+      "images": [
+        {
+          "alt": "Canvas carryall in warm sand",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "eager"
+        },
+        {
+          "alt": "",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Compact ceramic table lamp",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Woven cotton throw",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Studio wireless headphones",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        }
+      ],
+      "pageErrors": [],
+      "unmocked": []
+    },
+    {
+      "name": "catalog-open",
+      "route": "/products",
+      "role": "guest",
+      "width": 390,
+      "action": "filters",
+      "metrics": {
+        "width": 390,
+        "scrollWidth": 390,
+        "height": 3018,
+        "colorScheme": "light",
+        "h1": [
+          "Products"
+        ],
+        "firstProductTop": 1495,
+        "primaryBuyTop": null
+      },
+      "images": [
+        {
+          "alt": "Everyday canvas carryall",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Compact ceramic table lamp",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Woven cotton throw",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Studio wireless headphones",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Essential mechanical keyboard",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Handcrafted stoneware mug",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        }
+      ],
+      "pageErrors": [],
+      "unmocked": []
+    },
+    {
+      "name": "catalog-validation",
+      "route": "/products",
+      "role": "guest",
+      "width": 390,
+      "action": "validation",
+      "pageErrors": [],
+      "unmocked": [],
+      "error": "Harness strict selector failure: getByRole(\"alert\") matched both #catalog-price-error and the Next route announcer. The price error was rendered; the state was not successfully captured."
+    },
+    {
+      "name": "catalog-empty",
+      "route": "/products",
+      "role": "guest",
+      "width": 390,
+      "state": "empty",
+      "metrics": {
+        "width": 390,
+        "scrollWidth": 390,
+        "height": 995,
+        "colorScheme": "light",
+        "h1": [
+          "Products"
+        ],
+        "firstProductTop": null,
+        "primaryBuyTop": null
+      },
+      "images": [],
+      "pageErrors": [],
+      "unmocked": []
+    },
+    {
+      "name": "catalog-loading",
+      "route": "/products",
+      "role": "guest",
+      "width": 390,
+      "state": "loading",
+      "metrics": {
+        "width": 390,
+        "scrollWidth": 390,
+        "height": 1590,
+        "colorScheme": "light",
+        "h1": [
+          "Products"
+        ],
+        "firstProductTop": null,
+        "primaryBuyTop": null
+      },
+      "images": [],
+      "pageErrors": [],
+      "unmocked": []
+    },
+    {
+      "name": "catalog-error",
+      "route": "/products",
+      "role": "guest",
+      "width": 390,
+      "state": "error",
+      "metrics": {
+        "width": 390,
+        "scrollWidth": 390,
+        "height": 960,
+        "colorScheme": "light",
+        "h1": [
+          "Products"
+        ],
+        "firstProductTop": null,
+        "primaryBuyTop": null
+      },
+      "images": [],
+      "pageErrors": [],
+      "unmocked": []
+    },
+    {
+      "name": "catalog-long-text",
+      "route": "/products",
+      "role": "guest",
+      "width": 390,
+      "state": "long-text",
+      "metrics": {
+        "width": 390,
+        "scrollWidth": 390,
+        "height": 1953,
+        "colorScheme": "light",
+        "h1": [
+          "Products"
+        ],
+        "firstProductTop": 430,
+        "primaryBuyTop": null
+      },
+      "images": [
+        {
+          "alt": "Limited edition everyday carryall with reinforced natural cotton handles and thoughtfully organised interior compartments for travel, work and the weekend",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Compact ceramic table lamp",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Woven cotton throw",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Studio wireless headphones",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Essential mechanical keyboard",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Handcrafted stoneware mug",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        }
+      ],
+      "pageErrors": [],
+      "unmocked": []
+    },
+    {
+      "name": "product-unavailable",
+      "route": "/products/1",
+      "role": "customer",
+      "width": 390,
+      "productState": "unavailable",
+      "metrics": {
+        "width": 390,
+        "scrollWidth": 390,
+        "height": 5859,
+        "colorScheme": "light",
+        "h1": [
+          "Everyday canvas carryall"
+        ],
+        "firstProductTop": 3567.5,
+        "primaryBuyTop": 1012.5,
+        "disabledBuy": true
+      },
+      "images": [
+        {
+          "alt": "Canvas carryall in warm sand",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "eager"
+        },
+        {
+          "alt": "",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Compact ceramic table lamp",
+          "complete": false,
+          "naturalWidth": 0,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Woven cotton throw",
+          "complete": false,
+          "naturalWidth": 0,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Studio wireless headphones",
+          "complete": false,
+          "naturalWidth": 0,
+          "loading": "lazy"
+        }
+      ],
+      "pageErrors": [],
+      "unmocked": []
+    },
+    {
+      "name": "product-missing",
+      "route": "/products/1",
+      "role": "customer",
+      "width": 390,
+      "productState": "missing",
+      "metrics": {
+        "width": 390,
+        "scrollWidth": 390,
+        "height": 5735,
+        "colorScheme": "light",
+        "h1": [
+          "Everyday canvas carryall"
+        ],
+        "firstProductTop": 3444,
+        "primaryBuyTop": 889,
+        "disabledBuy": false
+      },
+      "images": [
+        {
+          "alt": "Compact ceramic table lamp",
+          "complete": false,
+          "naturalWidth": 0,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Woven cotton throw",
+          "complete": false,
+          "naturalWidth": 0,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Studio wireless headphones",
+          "complete": false,
+          "naturalWidth": 0,
+          "loading": "lazy"
+        }
+      ],
+      "pageErrors": [],
+      "unmocked": []
+    },
+    {
+      "name": "product-broken",
+      "route": "/products/1",
+      "role": "customer",
+      "width": 390,
+      "productState": "broken",
+      "metrics": {
+        "width": 390,
+        "scrollWidth": 390,
+        "height": 5735,
+        "colorScheme": "light",
+        "h1": [
+          "Everyday canvas carryall"
+        ],
+        "firstProductTop": 3444,
+        "primaryBuyTop": 889,
+        "disabledBuy": false
+      },
+      "images": [
+        {
+          "alt": "Compact ceramic table lamp",
+          "complete": false,
+          "naturalWidth": 0,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Woven cotton throw",
+          "complete": false,
+          "naturalWidth": 0,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Studio wireless headphones",
+          "complete": false,
+          "naturalWidth": 0,
+          "loading": "lazy"
+        }
+      ],
+      "pageErrors": [],
+      "unmocked": []
+    },
+    {
+      "name": "product-loading",
+      "route": "/products/1",
+      "role": "customer",
+      "width": 390,
+      "productState": "loading",
+      "metrics": {
+        "width": 390,
+        "scrollWidth": 390,
+        "height": 1083,
+        "colorScheme": "light",
+        "h1": [],
+        "firstProductTop": null,
+        "primaryBuyTop": null
+      },
+      "images": [],
+      "pageErrors": [],
+      "unmocked": []
+    },
+    {
+      "name": "product-error",
+      "route": "/products/1",
+      "role": "customer",
+      "width": 390,
+      "productState": "error",
+      "metrics": {
+        "width": 390,
+        "scrollWidth": 390,
+        "height": 960,
+        "colorScheme": "light",
+        "h1": [
+          "Could not load product"
+        ],
+        "firstProductTop": null,
+        "primaryBuyTop": null
+      },
+      "images": [],
+      "pageErrors": [],
+      "unmocked": []
+    },
+    {
+      "name": "product-long",
+      "route": "/products/1",
+      "role": "customer",
+      "width": 390,
+      "productState": "long",
+      "action": "gallery",
+      "metrics": {
+        "width": 390,
+        "scrollWidth": 390,
+        "height": 6255,
+        "colorScheme": "light",
+        "h1": [
+          "LimitedEditionEverydayCarryallWithReinforcedNaturalCottonHandlesAndThoughtfullyOrganisedInteriorCompartmentsForTravelWorkAndTheWeekend"
+        ],
+        "firstProductTop": 3964,
+        "primaryBuyTop": 1329,
+        "disabledBuy": false
+      },
+      "images": [
+        {
+          "alt": "Carryall view 6",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "eager"
+        },
+        {
+          "alt": "",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Compact ceramic table lamp",
+          "complete": false,
+          "naturalWidth": 0,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Woven cotton throw",
+          "complete": false,
+          "naturalWidth": 0,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Studio wireless headphones",
+          "complete": false,
+          "naturalWidth": 0,
+          "loading": "lazy"
+        }
+      ],
+      "pageErrors": [],
+      "unmocked": []
+    },
+    {
+      "name": "product-saved",
+      "route": "/products/1",
+      "role": "customer",
+      "width": 390,
+      "action": "saved",
+      "metrics": {
+        "width": 390,
+        "scrollWidth": 390,
+        "height": 5859,
+        "colorScheme": "light",
+        "h1": [
+          "Everyday canvas carryall"
+        ],
+        "firstProductTop": 3567.5,
+        "primaryBuyTop": 1012.5,
+        "disabledBuy": false
+      },
+      "images": [
+        {
+          "alt": "Canvas carryall in warm sand",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "eager"
+        },
+        {
+          "alt": "",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Compact ceramic table lamp",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Woven cotton throw",
+          "complete": false,
+          "naturalWidth": 0,
+          "loading": "lazy"
+        },
+        {
+          "alt": "Studio wireless headphones",
+          "complete": false,
+          "naturalWidth": 0,
+          "loading": "lazy"
+        }
+      ],
+      "pageErrors": [],
+      "unmocked": []
+    },
+    {
+      "name": "home-cms",
+      "route": "/",
+      "role": "guest",
+      "width": 390,
+      "cms": true,
+      "metrics": {
+        "width": 390,
+        "scrollWidth": 390,
+        "height": 1655,
+        "colorScheme": "light",
+        "h1": [
+          "Objects with a story. Made for everyday."
+        ],
+        "firstProductTop": null,
+        "primaryBuyTop": null
+      },
+      "images": [
+        {
+          "alt": "Objects with a story. Made for everyday.",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "eager"
+        }
+      ],
+      "pageErrors": [],
+      "unmocked": []
+    },
+    {
+      "name": "home-cms",
+      "route": "/",
+      "role": "guest",
+      "width": 1440,
+      "cms": true,
+      "metrics": {
+        "width": 1440,
+        "scrollWidth": 1440,
+        "height": 1138,
+        "colorScheme": "light",
+        "h1": [
+          "Objects with a story. Made for everyday."
+        ],
+        "firstProductTop": null,
+        "primaryBuyTop": null
+      },
+      "images": [
+        {
+          "alt": "Objects with a story. Made for everyday.",
+          "complete": true,
+          "naturalWidth": 200,
+          "loading": "eager"
+        }
+      ],
+      "pageErrors": [],
+      "unmocked": []
+    }
+  ]
+}

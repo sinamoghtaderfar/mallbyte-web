@@ -32,32 +32,42 @@ const mockedGetProducts = vi.mocked(getProducts);
 const mockedGetProductFilters = vi.mocked(getProductFilters);
 
 const filterOptions = {
-  categories: { count: 1, next: null, previous: null, results: [
-    {
-      id: 1,
-      name: "Accessories",
-      slug: "accessories",
-      parent: null,
-      parent_name: null,
-      description: "",
-      image: null,
-      is_active: true,
-      order: 1,
-      created_at: "2026-09-05T18:00:00Z",
-    },
-  ] },
-  brands: { count: 1, next: null, previous: null, results: [
-    {
-      id: 2,
-      name: "Keychron",
-      slug: "keychron",
-      logo: null,
-      description: "",
-      website: "",
-      is_active: true,
-      created_at: "2026-09-05T18:00:00Z",
-    },
-  ] },
+  categories: {
+    count: 1,
+    next: null,
+    previous: null,
+    results: [
+      {
+        id: 1,
+        name: "Accessories",
+        slug: "accessories",
+        parent: null,
+        parent_name: null,
+        description: "",
+        image: null,
+        is_active: true,
+        order: 1,
+        created_at: "2026-09-05T18:00:00Z",
+      },
+    ],
+  },
+  brands: {
+    count: 1,
+    next: null,
+    previous: null,
+    results: [
+      {
+        id: 2,
+        name: "Keychron",
+        slug: "keychron",
+        logo: null,
+        description: "",
+        website: "",
+        is_active: true,
+        created_at: "2026-09-05T18:00:00Z",
+      },
+    ],
+  },
 };
 
 function makeProduct(
@@ -137,8 +147,14 @@ describe("ProductList", () => {
     await screen.findByText(/no products yet/i);
 
     await user.type(screen.getByLabelText(/search products/i), "keyboard");
-    await user.selectOptions(screen.getByRole("combobox", { name: /^category$/i }), "1");
-    await user.selectOptions(screen.getByRole("combobox", { name: /^brand$/i }), "2");
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: /^category$/i }),
+      "1",
+    );
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: /^brand$/i }),
+      "2",
+    );
     await user.type(screen.getByLabelText(/min price/i), "1000");
     await user.type(screen.getByLabelText(/max price/i), "2000");
     await user.selectOptions(screen.getByLabelText(/label/i), "new");
@@ -224,7 +240,11 @@ describe("ProductList", () => {
       count: 25,
       next: params.page === "2" ? null : "/api/products/products/?page=2",
       previous: params.page === "2" ? "/api/products/products/?page=1" : null,
-      results: [makeProduct({ name: params.page === "2" ? "Second Page" : "First Page" })],
+      results: [
+        makeProduct({
+          name: params.page === "2" ? "Second Page" : "First Page",
+        }),
+      ],
     }));
     render(<ProductList />);
     expect(await screen.findByText("First Page")).toBeInTheDocument();
@@ -233,8 +253,16 @@ describe("ProductList", () => {
     expect(mockedGetProducts).toHaveBeenCalledWith({ page: "2" });
     await user.type(screen.getByLabelText(/search products/i), "keyboard");
     await user.click(screen.getByRole("button", { name: /apply filters/i }));
-    await waitFor(() => expect(mockedGetProducts).toHaveBeenLastCalledWith({ search: "keyboard" }));
-    expect(within(screen.getByRole("navigation", { name: "Product pagination" })).getByText(/Page 1 of/)).toBeInTheDocument();
+    await waitFor(() =>
+      expect(mockedGetProducts).toHaveBeenLastCalledWith({
+        search: "keyboard",
+      }),
+    );
+    expect(
+      within(
+        screen.getByRole("navigation", { name: "Product pagination" }),
+      ).getByText(/Page 1 of/),
+    ).toBeInTheDocument();
   });
 
   it("rejects an inverted price range without making a catalog request", async () => {
@@ -245,12 +273,18 @@ describe("ProductList", () => {
     await user.type(screen.getByLabelText(/min price/i), "2000");
     await user.type(screen.getByLabelText(/max price/i), "1000");
     await user.click(screen.getByRole("button", { name: /apply filters/i }));
-    expect(screen.getByText(/Minimum price cannot exceed maximum price/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Minimum price cannot exceed maximum price/),
+    ).toBeInTheDocument();
     expect(mockedGetProducts).toHaveBeenCalledTimes(1);
   });
 
   it("restores filters and page from a shared URL", async () => {
-    window.history.replaceState(null, "", "/products?search=keyboard&page=2&page_size=12");
+    window.history.replaceState(
+      null,
+      "",
+      "/products?search=keyboard&page=2&page_size=12",
+    );
     mockedGetProducts.mockResolvedValue({
       count: 24,
       next: null,
@@ -261,14 +295,24 @@ describe("ProductList", () => {
     expect(await screen.findByText("Shared Result")).toBeInTheDocument();
     expect(screen.getByLabelText(/search products/i)).toHaveValue("keyboard");
     expect(screen.getByText(/Page 2 of/)).toBeInTheDocument();
-    expect(mockedGetProducts).toHaveBeenCalledWith({ search: "keyboard", page: "2", page_size: "12" });
+    expect(mockedGetProducts).toHaveBeenCalledWith({
+      search: "keyboard",
+      page: "2",
+      page_size: "12",
+    });
   });
 
   it("restores results on browser Back navigation", async () => {
     const user = userEvent.setup();
     mockedGetProducts.mockImplementation(async (params = {}) => ({
-      count: 1, next: null, previous: null,
-      results: [makeProduct({ name: params.search ? "Filtered Result" : "Unfiltered Result" })],
+      count: 1,
+      next: null,
+      previous: null,
+      results: [
+        makeProduct({
+          name: params.search ? "Filtered Result" : "Unfiltered Result",
+        }),
+      ],
     }));
     render(<ProductList />);
     expect(await screen.findByText("Unfiltered Result")).toBeInTheDocument();
@@ -302,5 +346,69 @@ describe("ProductList", () => {
 
     expect(await screen.findByText("Mechanical Keyboard")).toBeInTheDocument();
     expect(screen.getByText("Filters failed.")).toBeInTheDocument();
+  });
+
+  it("keeps a single filter form and preserves its draft without fetching when toggled", async () => {
+    const user = userEvent.setup();
+    mockedGetProducts.mockResolvedValue(makeResponse([makeProduct()]));
+    const { container } = render(<ProductList />);
+    await screen.findByText("Mechanical Keyboard");
+    const show = screen.getByRole("button", { name: "Show filters" });
+    expect(show).toHaveAttribute("aria-expanded", "false");
+    await user.click(show);
+    expect(
+      screen.getByRole("button", { name: "Hide filters" }),
+    ).toHaveAttribute("aria-expanded", "true");
+    await user.type(screen.getByLabelText("Search products"), "carryall");
+    await user.click(screen.getByRole("button", { name: "Hide filters" }));
+    await user.click(screen.getByRole("button", { name: "Show filters" }));
+    expect(screen.getByLabelText("Search products")).toHaveValue("carryall");
+    expect(container.querySelectorAll("form")).toHaveLength(1);
+    expect(mockedGetProducts).toHaveBeenCalledTimes(1);
+    expect(mockedGetProductFilters).toHaveBeenCalledTimes(1);
+    expect(window.location.search).toBe("");
+  });
+
+  it("retries the current server page and filters without resetting the shared URL", async () => {
+    const user = userEvent.setup();
+    window.history.replaceState(
+      null,
+      "",
+      "/products?search=carryall&page=2&page_size=12",
+    );
+    mockedGetProducts
+      .mockRejectedValueOnce(new Error("Temporarily unavailable"))
+      .mockResolvedValueOnce({
+        count: 24,
+        next: null,
+        previous: "/products?page=1",
+        results: [makeProduct({ name: "Recovered carryall" })],
+      });
+    render(<ProductList />);
+    await screen.findByRole("heading", { name: "Could not load products" });
+    await user.click(screen.getByRole("button", { name: "Retry products" }));
+    await screen.findByText("Recovered carryall");
+    expect(mockedGetProducts).toHaveBeenLastCalledWith({
+      search: "carryall",
+      page: "2",
+      page_size: "12",
+    });
+    expect(mockedGetProducts).toHaveBeenCalledTimes(2);
+    expect(window.location.search).toBe("?search=carryall&page=2&page_size=12");
+  });
+
+  it("announces invalid price input without replacing the loaded products", async () => {
+    const user = userEvent.setup();
+    mockedGetProducts.mockResolvedValue(makeResponse([makeProduct()]));
+    render(<ProductList />);
+    await screen.findByText("Mechanical Keyboard");
+    await user.type(screen.getByLabelText("Min price"), "200");
+    await user.type(screen.getByLabelText("Max price"), "100");
+    await user.click(screen.getByRole("button", { name: "Apply filters" }));
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Minimum price cannot exceed maximum price",
+    );
+    expect(screen.getByText("Mechanical Keyboard")).toBeInTheDocument();
+    expect(mockedGetProducts).toHaveBeenCalledTimes(1);
   });
 });

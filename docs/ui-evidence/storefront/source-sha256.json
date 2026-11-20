@@ -1,0 +1,15 @@
+{
+  "src/app/products/[id]/page.tsx": "e83cb832ab43b537b31d33bcd56d9c2af38c8848cc2c3ffe00a63594482fde37",
+  "src/app/products/page.tsx": "b40cc71d47fb5269d1da4fcfae6e5afcd177f9959223ea1f1002a58baefa8ebf",
+  "src/features/content/components/storefront-home.tsx": "cdf2d245ae2329e4f2ce3e266b8dd6d3da07c30be0a98a3b908b4dd4c3adc791",
+  "src/features/products/components/__tests__/product-card.test.tsx": "b22e2dae3f74819ffa05a130c5800a947ed7e11696acdd1453b06b70297b194e",
+  "src/features/products/components/__tests__/product-list.test.tsx": "210a8de94c60c11f74a2c2d194ceb10b5756c826c3dcafc02487fb4538513152",
+  "src/features/products/components/product-card.tsx": "46a47372f73ca2614e6955573861bb0c93f0dd717e29de2f130d3d16ef445047",
+  "src/features/products/components/product-detail.tsx": "bc0b69cfa98955553d42f5f60b6b80ef0bf93b54e3c11d596e9a1f6de2323dd2",
+  "src/features/products/components/product-list.tsx": "a584b7e9cb0d658777890718e66b426f4ced089462b860b9a766b7c7fe39fd29",
+  "e2e/storefront-experience.spec.ts": "c3f97111edb50d0d387396ca7527a8140a91dee94f7c374dd4508d540e67e006",
+  "src/features/content/components/__tests__/storefront-home.test.tsx": "89b2ccb781a44a445cc8798fb2053c70b1cc05d5a40fa7411a63c32d0a76365d",
+  "src/features/products/components/__tests__/product-gallery.test.tsx": "40e94280795423aadfc6e7569194d69b97fb0a0aa2e9328f8224b5cb9ad0f138",
+  "src/features/products/components/product-gallery.tsx": "df6af8ff4460e3206bb94cf005636aa964f6e760db06eef8f6fa84775f8ee946",
+  "src/features/products/components/product-image.tsx": "0c5666e18ab818eba7201f6f070cba80596cabd94e9b338ed136e157cd711d7a"
+}

@@ -1,0 +1,46 @@
+{
+  "baselineSource": "3b89904f82104267f0d618de5a6657c319448cca",
+  "afterSource": "Frozen WIP source fingerprinted in source-sha256.json after normal foundation merge e8cee740913aa8ec0a52ecd720921c257ebf0965",
+  "screenshots": [
+    {
+      "file": "before-catalog-390.png",
+      "sha256": "9ead1066e55c8cada0387a47c75ad7342f518d71016e48424144510b8dc364bb",
+      "viewport": {
+        "width": 390,
+        "height": 960
+      },
+      "state": "anonymous populated catalog",
+      "capture": "Original PNG copy, no visual edits"
+    },
+    {
+      "file": "after-catalog-390.png",
+      "sha256": "f68142847fb96a7f3b8b5ee4d29313899635b92774b1926854c42d4dfa9e7521",
+      "viewport": {
+        "width": 390,
+        "height": 960
+      },
+      "state": "anonymous populated catalog",
+      "capture": "Original PNG copy, no visual edits"
+    },
+    {
+      "file": "after-home-1440.png",
+      "sha256": "e38f8897c0934738f0e00ae35d87984e33e0820ab2dbff52b9bb2253c93b1497",
+      "viewport": {
+        "width": 1440,
+        "height": 960
+      },
+      "state": "anonymous CMS fallback homepage with featured page/FAQ",
+      "capture": "Original PNG copy, no visual edits"
+    },
+    {
+      "file": "after-product-1440.png",
+      "sha256": "2aebd38ba9e26da6f5a114d4e3b9a9ba01013bac2a3bd636637fbb9ced5aa7a4",
+      "viewport": {
+        "width": 1440,
+        "height": 960
+      },
+      "state": "authenticated populated product detail",
+      "capture": "Original PNG copy, no visual edits"
+    }
+  ]
+}

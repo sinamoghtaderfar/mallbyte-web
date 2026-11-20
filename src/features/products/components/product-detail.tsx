@@ -1,6 +1,7 @@
 "use client";
 
-import { getImageUrl } from "@/lib/media/image-url";
+import { buttonStyles } from "@/components/ui/button";
+import { ProductGallery } from "./product-gallery";
 
 import { AddToCartButton } from "@/features/cart/components/add-to-cart-button";
 import { ProductReviewsSection } from "@/features/reviews/components/product-reviews-section";
@@ -74,23 +75,38 @@ export function ProductDetail() {
 
   if (isLoading) {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-        <p className="text-sm text-slate-500">Loading product...</p>
+      <div role="status" className="grid items-start gap-8 lg:grid-cols-2">
+        <span className="sr-only">Loading product...</span>
+        <div
+          aria-hidden="true"
+          className="aspect-[4/3] animate-pulse rounded-xl bg-slate-100"
+        />
+        <div aria-hidden="true" className="space-y-5 py-2">
+          <div className="h-4 w-1/3 rounded bg-slate-100" />
+          <div className="h-9 w-4/5 rounded bg-slate-100" />
+          <div className="h-4 w-1/2 rounded bg-slate-100" />
+          <div className="h-24 rounded bg-slate-100" />
+          <div className="h-12 w-1/2 rounded bg-slate-100" />
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="rounded-3xl border border-red-200 bg-red-50 p-8 shadow-sm">
-        <h1 className="text-xl font-semibold text-red-800">
+      <div
+        role="alert"
+        className="rounded-xl border border-rose-200 bg-rose-50 p-6 sm:p-8"
+      >
+        <h1 className="text-xl font-semibold text-danger">
           Could not load product
         </h1>
-        <p className="mt-2 text-sm text-red-700">{error}</p>
-
+        <p className="mt-2 break-words text-sm leading-6 text-danger">
+          {error}
+        </p>
         <Link
           href="/products"
-          className="mt-6 inline-flex h-11 items-center justify-center rounded-2xl bg-red-700 px-5 text-sm font-medium text-white transition hover:bg-red-800"
+          className={buttonStyles({ variant: "secondary", className: "mt-6" })}
         >
           Back to products
         </Link>
@@ -100,239 +116,195 @@ export function ProductDetail() {
 
   if (!product) {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-        <h1 className="text-xl font-semibold text-slate-950">
+      <div className="rounded-xl border border-line bg-surface p-6 sm:p-8">
+        <h1 className="text-xl font-semibold text-foreground">
           Product not found
         </h1>
-
-        <Link
-          href="/products"
-          className="mt-6 inline-flex h-11 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800"
-        >
+        <Link href="/products" className={buttonStyles({ className: "mt-6" })}>
           Back to products
         </Link>
       </div>
     );
   }
 
-  const mainImage =
-    product.images.find((image) => image.is_main) ?? product.images[0];
-  const imageUrl = getImageUrl(mainImage?.image);
   const labels = product.label_display.length
     ? product.label_display
     : product.labels;
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
-      <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-        <div
-          className="flex aspect-[4/3] items-center justify-center bg-slate-100 bg-cover bg-center"
-          style={imageUrl ? { backgroundImage: `url(${imageUrl})` } : undefined}
-        >
-          {!imageUrl ? (
-            <span className="text-sm font-medium text-slate-400">No image</span>
-          ) : null}
-        </div>
-
-        {product.images.length > 1 ? (
-          <div className="grid grid-cols-4 gap-3 p-4">
-            {product.images.slice(0, 4).map((image) => {
-              const thumbnailUrl = getImageUrl(image.image);
-
-              return (
-                <div
-                  key={image.id}
-                  className="aspect-square rounded-2xl bg-slate-100 bg-cover bg-center"
-                  style={
-                    thumbnailUrl
-                      ? { backgroundImage: `url(${thumbnailUrl})` }
-                      : undefined
-                  }
-                />
-              );
-            })}
-          </div>
-        ) : null}
-      </section>
-
-      <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-        <div className="flex flex-wrap gap-2">
-          {product.is_featured ? (
-            <span className="rounded-full bg-slate-900 px-3 py-1 text-xs font-medium text-white">
-              Featured
-            </span>
-          ) : null}
-
-          {labels.slice(0, 3).map((label) => (
-            <span
-              key={label}
-              className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600"
-            >
-              {label}
-            </span>
-          ))}
-        </div>
-
-        <h1 className="mt-5 text-3xl font-semibold tracking-tight text-slate-950">
+    <div className="space-y-7">
+      <nav
+        aria-label="Breadcrumb"
+        className="flex min-w-0 items-center gap-2 text-sm text-muted"
+      >
+        <Link href="/products" className="shrink-0 hover:text-brand">
+          Products
+        </Link>
+        <span aria-hidden="true">/</span>
+        <span className="truncate" aria-current="page">
           {product.name}
-        </h1>
-
-        <p className="mt-3 text-sm text-slate-500">
-          {product.brand_name || "Unknown brand"}
-          {product.category_name ? ` · ${product.category_name}` : ""}
-        </p>
-
-        {product.short_description ? (
-          <p className="mt-5 text-base leading-7 text-slate-600">
-            {product.short_description}
+        </span>
+      </nav>
+      <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:gap-12">
+        <ProductGallery
+          key={product.id}
+          productName={product.name}
+          images={product.images}
+        />
+        <section className="min-w-0 py-1">
+          {(product.is_featured || labels.length > 0) && (
+            <div className="mb-4 flex flex-wrap gap-2">
+              {product.is_featured && (
+                <span className="rounded bg-brand-soft px-2.5 py-1 text-xs font-semibold text-brand">
+                  Featured
+                </span>
+              )}
+              {labels.slice(0, 3).map((label) => (
+                <span
+                  key={label}
+                  className="rounded bg-slate-100 px-2.5 py-1 text-xs font-medium text-muted"
+                >
+                  {label}
+                </span>
+              ))}
+            </div>
+          )}
+          <p className="text-sm text-muted">
+            {product.brand_name || "Unknown brand"}
+            {product.category_name ? ` · ${product.category_name}` : ""}
           </p>
-        ) : null}
-
-        <div className="mt-8 rounded-3xl bg-slate-50 p-5">
-          <p className="text-3xl font-semibold text-slate-950">
-            {formatPrice(product.final_price || product.price)}
-          </p>
-
-          {product.compare_price ? (
-            <p className="mt-1 text-sm text-slate-400 line-through">
-              {formatPrice(product.compare_price)}
-            </p>
-          ) : null}
-
-          <p className="mt-4 text-sm font-medium text-slate-600">
-            {product.is_in_stock
-              ? `${product.available_stock} available`
-              : "Out of stock"}
-          </p>
-
-          <p className="mt-2 text-sm text-slate-500">
-            {product.views_count} views
-          </p>
-        </div>
-
-        <div className="mt-8 grid gap-3 sm:grid-cols-2">
-          <div className="rounded-2xl border border-slate-200 p-4">
-            <p className="text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
-              SKU
-            </p>
-            <p className="mt-2 text-sm font-medium text-slate-900">
-              {product.sku || "—"}
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 p-4">
-            <p className="text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
-              Seller
-            </p>
-            <p className="mt-2 text-sm font-medium text-slate-900">
-              {product.seller_name || product.seller_email || "—"}
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 p-4">
-            <p className="text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
-              Rating
-            </p>
-            <p className="mt-2 text-sm font-medium text-slate-900">
+          <h1 className="mt-3 break-words text-3xl font-semibold leading-tight tracking-tight text-foreground sm:text-4xl">
+            {product.name}
+          </h1>
+          <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted">
+            <p className="font-semibold tabular-nums text-foreground">
               {product.average_rating ?? "—"} / 5
             </p>
+            <span aria-hidden="true">·</span>
+            <p>{product.reviews_count} reviews</p>
           </div>
-
-          <div className="rounded-2xl border border-slate-200 p-4">
-            <p className="text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
-              Reviews
+          {product.short_description && (
+            <p className="mt-5 break-words text-base leading-7 text-muted">
+              {product.short_description}
             </p>
-            <p className="mt-2 text-sm font-medium text-slate-900">
-              {product.reviews_count}
+          )}
+          <div className="mt-6 border-y border-line py-5">
+            <div className="flex flex-wrap items-baseline gap-3">
+              <p className="text-3xl font-semibold tracking-tight tabular-nums text-foreground">
+                {formatPrice(product.final_price || product.price)}
+              </p>
+              {product.compare_price && (
+                <p className="text-base tabular-nums text-muted line-through">
+                  {formatPrice(product.compare_price)}
+                </p>
+              )}
+            </div>
+            <p
+              className={`mt-3 text-sm font-medium ${product.is_in_stock ? "text-brand" : "text-danger"}`}
+            >
+              {product.is_in_stock
+                ? `${product.available_stock} available`
+                : "Out of stock"}
             </p>
           </div>
-        </div>
-
-        <div className="mt-8 flex flex-wrap gap-3">
-          <AddToCartButton
-            productId={product.id}
-            disabled={!product.is_in_stock}
-          />
-
-          <WishlistButton productId={product.id} />
-
-          <Link
-            href="/recently-viewed"
-            className="inline-flex h-12 items-center justify-center rounded-2xl border border-slate-200 px-6 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-          >
-            Recently viewed
-          </Link>
-
-          <Link
-            href="/products"
-            className="inline-flex h-12 items-center justify-center rounded-2xl border border-slate-200 px-6 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-          >
-            Back to products
-          </Link>
-        </div>
-      </section>
-
-      <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm lg:col-span-2">
-        <h2 className="text-xl font-semibold text-slate-950">Description</h2>
-
-        <p className="mt-4 whitespace-pre-line text-base leading-8 text-slate-600">
-          {product.description || "No description available."}
-        </p>
-      </section>
-
-      {product.attributes.length ? (
-        <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm lg:col-span-2">
-          <h2 className="text-xl font-semibold text-slate-950">Attributes</h2>
-
-          <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {product.attributes.map((attribute) => (
-              <div
-                key={`${attribute.attribute_slug}-${attribute.value_slug}`}
-                className="rounded-2xl border border-slate-200 p-4"
-              >
-                <p className="text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
-                  {attribute.attribute}
-                </p>
-                <p className="mt-2 text-sm font-medium text-slate-900">
-                  {attribute.value}
-                </p>
-              </div>
-            ))}
+          <div className="mt-6 flex flex-wrap gap-3">
+            <AddToCartButton
+              productId={product.id}
+              disabled={!product.is_in_stock}
+            />
+            <WishlistButton productId={product.id} />
+          </div>
+          <dl className="mt-7 grid grid-cols-2 gap-x-6 gap-y-5 border-t border-line pt-6 text-sm">
+            <div className="min-w-0">
+              <dt className="text-muted">Seller</dt>
+              <dd className="mt-1 break-words font-medium text-foreground">
+                {product.seller_name || product.seller_email || "—"}
+              </dd>
+            </div>
+            <div className="min-w-0">
+              <dt className="text-muted">SKU</dt>
+              <dd className="mt-1 break-words font-medium text-foreground">
+                {product.sku || "—"}
+              </dd>
+            </div>
+          </dl>
+          <div className="mt-6 flex flex-wrap items-center gap-3">
+            <Link
+              href="/recently-viewed"
+              className={buttonStyles({ variant: "quiet", size: "small" })}
+            >
+              Recently viewed
+            </Link>
+            <Link
+              href="/products"
+              className={buttonStyles({ variant: "quiet", size: "small" })}
+            >
+              Back to products
+            </Link>
+            <p className="text-xs tabular-nums text-muted">
+              {product.views_count} views
+            </p>
           </div>
         </section>
-      ) : null}
-
-      {product.variants.length ? (
-        <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm lg:col-span-2">
-          <h2 className="text-xl font-semibold text-slate-950">Variants</h2>
-
-          <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {product.variants.map((variant) => (
-              <div
-                key={variant.id}
-                className="rounded-2xl border border-slate-200 p-4"
-              >
-                <p className="text-sm font-semibold text-slate-950">
-                  {variant.name}
-                </p>
-                <p className="mt-2 text-sm text-slate-500">
-                  SKU: {variant.sku}
-                </p>
-                <p className="mt-3 text-base font-semibold text-slate-950">
-                  {formatPrice(variant.final_price || variant.price)}
-                </p>
-                <p className="mt-1 text-xs text-slate-500">
-                  Stock: {variant.stock}
-                </p>
-              </div>
-            ))}
-          </div>
+        <section className="border-t border-line pt-7 lg:col-span-2">
+          <h2 className="text-xl font-semibold tracking-tight text-foreground">
+            Description
+          </h2>
+          <p className="mt-4 max-w-4xl whitespace-pre-line break-words text-base leading-8 text-muted">
+            {product.description || "No description available."}
+          </p>
         </section>
-      ) : null}
-
-      <ProductReviewsSection productId={product.id} />
-
-      <RelatedProductsSection productId={product.id} />
+        {product.attributes.length > 0 && (
+          <section className="border-t border-line pt-7 lg:col-span-2">
+            <h2 className="text-xl font-semibold tracking-tight text-foreground">
+              Attributes
+            </h2>
+            <dl className="mt-5 grid gap-x-8 sm:grid-cols-2 lg:grid-cols-3">
+              {product.attributes.map((attribute) => (
+                <div
+                  key={`${attribute.attribute_slug}-${attribute.value_slug}`}
+                  className="min-w-0 border-b border-line py-4"
+                >
+                  <dt className="text-sm text-muted">{attribute.attribute}</dt>
+                  <dd className="mt-1 break-words text-sm font-medium text-foreground">
+                    {attribute.value}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+        )}
+        {product.variants.length > 0 && (
+          <section className="border-t border-line pt-7 lg:col-span-2">
+            <h2 className="text-xl font-semibold tracking-tight text-foreground">
+              Variants
+            </h2>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {product.variants.map((variant) => (
+                <div
+                  key={variant.id}
+                  className="min-w-0 rounded-lg border border-line bg-surface p-4"
+                >
+                  <h3 className="break-words text-sm font-semibold text-foreground">
+                    {variant.name}
+                  </h3>
+                  <p className="mt-1 break-words text-xs text-muted">
+                    SKU: {variant.sku}
+                  </p>
+                  <p className="mt-4 text-base font-semibold tabular-nums text-foreground">
+                    {formatPrice(variant.final_price || variant.price)}
+                  </p>
+                  <p className="mt-1 text-xs text-muted">
+                    Stock: {variant.stock}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+        <ProductReviewsSection productId={product.id} />
+        <RelatedProductsSection productId={product.id} />
+      </div>
     </div>
   );
 }
