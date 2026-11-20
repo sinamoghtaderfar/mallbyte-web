@@ -1,0 +1,42 @@
+{
+  "application_source": "d68b7b66a0a21d878d63963637c7c6cd663f4466",
+  "baseline_source": "3b89904f82104267f0d618de5a6657c319448cca",
+  "screenshots": [
+    {
+      "file": "before-home-1440.png",
+      "original": "/tmp/mallbyte-phase4-visual-audit/before/home-1440.png",
+      "sha256": "a21b0204fa45b78d9c1f38542c83689876b38f8628dc1831d9ba1c8d1669fe1e",
+      "png_dimensions": [
+        1440,
+        1675
+      ]
+    },
+    {
+      "file": "after-home-1440.png",
+      "original": "/tmp/mallbyte-phase4-visual-audit/after-foundation-final/home-1440.png",
+      "sha256": "2afe617701019844bb9de2411ae5bba19d41a688644b8b65babb4a862b4ced77",
+      "png_dimensions": [
+        1440,
+        1806
+      ]
+    },
+    {
+      "file": "after-menu-long-cms-390.png",
+      "original": "/tmp/mallbyte-phase4-visual-audit/after-foundation-final/menu-long-cms-390.png",
+      "sha256": "a73136f36ba7bb5c66ec20dc97f67689c17e3cdf8f807830f8c5dcb3e68a9de5",
+      "png_dimensions": [
+        390,
+        3399
+      ]
+    },
+    {
+      "file": "after-notification-long-390.png",
+      "original": "/tmp/mallbyte-phase4-visual-audit/after-foundation-final/notification-long-390.png",
+      "sha256": "41795031fee2b98a8e62fe4bb483d56f5dd179b517bf7a2b1b9821dbea07d8c5",
+      "png_dimensions": [
+        390,
+        2826
+      ]
+    }
+  ]
+}
