@@ -62,165 +62,90 @@ export function StockMovementHistory({
   );
 
   return (
-    <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-5">
-      <div>
-        <h2 className="text-lg font-semibold text-slate-950">
-          Movement history
-        </h2>
-
-        <p className="mt-1 text-sm text-slate-500">
-          Audit trail for every recorded inventory change.
-        </p>
-      </div>
-
-      <div className="mt-6 grid gap-3 lg:grid-cols-[1fr_220px_220px]">
-        <input
-          type="search"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder="Search product, SKU, reference, or reason..."
-          className="mb-control"
-        />
-
-        <select
-          value={typeFilter}
-          onChange={(event) => setTypeFilter(event.target.value)}
-          className="mb-control mb-select"
-        >
-          <option value="all">All movement types</option>
-
-          {movementTypes.map((type) => (
-            <option key={type} value={type}>
-              {getStockMovementLabel(type)}
-            </option>
-          ))}
-        </select>
-
-        <select
-          value={warehouseFilter}
-          onChange={(event) => setWarehouseFilter(event.target.value)}
-          className="mb-control mb-select"
-        >
-          <option value="all">All warehouses</option>
-
-          {warehouses.map((warehouse) => (
-            <option key={warehouse.id} value={warehouse.id}>
-              {warehouse.name}
-            </option>
-          ))}
-        </select>
+    <section className="mb-card min-w-0 overflow-hidden" aria-labelledby="movement-history-title">
+      <div className="grid gap-4 p-5 sm:p-6">
+        <div>
+          <h2 id="movement-history-title" className="text-base font-semibold tracking-tight text-foreground">Movement history</h2>
+          <p className="mt-1 text-sm text-muted">Audit trail for every recorded inventory change.</p>
+        </div>
+        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_13rem_13rem]">
+          <input type="search" aria-label="Search movements" value={search} onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search product, SKU, reference, or reason..." className="mb-control" />
+          <select aria-label="Movement type" value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)} className="mb-control mb-select">
+            <option value="all">All movement types</option>
+            {movementTypes.map((type) => <option key={type} value={type}>{getStockMovementLabel(type)}</option>)}
+          </select>
+          <select aria-label="Movement warehouse" value={warehouseFilter} onChange={(event) => setWarehouseFilter(event.target.value)} className="mb-control mb-select">
+            <option value="all">All warehouses</option>
+            {warehouses.map((warehouse) => <option key={warehouse.id} value={warehouse.id}>{warehouse.name}</option>)}
+          </select>
+        </div>
       </div>
 
       {isLoading ? (
-        <p className="mt-6 text-sm text-slate-500">
-          Loading movement history...
-        </p>
+        <div role="status" className="grid gap-2 border-t border-line p-5">
+          <span className="sr-only">Loading movement history...</span>
+          {[0, 1, 2].map((i) => <div key={i} className="mb-skeleton h-12 rounded-lg" />)}
+        </div>
       ) : filteredMovements.length === 0 ? (
-        <div className="mt-6 rounded-2xl bg-slate-50 p-5">
-          <p className="text-sm font-medium text-slate-700">
-            No stock movements found.
-          </p>
-
-          <p className="mt-1 text-xs text-slate-500">
-            Inventory adjustments will appear here.
-          </p>
+        <div className="border-t border-line px-5 py-10 text-center">
+          <p className="text-sm font-medium text-foreground">No stock movements found.</p>
+          <p className="mt-1 text-xs text-muted">Inventory adjustments will appear here.</p>
         </div>
       ) : (
-        <div className="mt-6 overflow-x-auto rounded-2xl border border-slate-200">
-          <div className="min-w-[1200px]">
-            <div className="grid grid-cols-[1.5fr_1.1fr_1fr_0.7fr_0.9fr_1.4fr_1fr] gap-4 bg-slate-50 px-4 py-3 mb-eyebrow">
-              <span>Product</span>
-              <span>Warehouse</span>
-              <span>Type</span>
-              <span>Change</span>
-              <span>Stock</span>
-              <span>Reason / Reference</span>
-              <span>Created</span>
-            </div>
-
-            <div className="divide-y divide-slate-100">
+        <div className="overflow-x-auto border-t border-line">
+          <table className="mb-table min-w-[64rem]">
+            <thead>
+              <tr>
+                <th scope="col">Product</th>
+                <th scope="col">Warehouse</th>
+                <th scope="col">Type</th>
+                <th scope="col" className="text-right">Change</th>
+                <th scope="col" className="text-right">Stock</th>
+                <th scope="col">Reason / Reference</th>
+                <th scope="col">Created</th>
+              </tr>
+            </thead>
+            <tbody>
               {filteredMovements.map((movement) => (
-                <div
-                  key={movement.id}
-                  className="grid grid-cols-[1.5fr_1.1fr_1fr_0.7fr_0.9fr_1.4fr_1fr] gap-4 px-4 py-4 text-sm"
-                >
-                  <div>
-                    <p className="font-semibold text-slate-950">
-                      {movement.product_name}
-                    </p>
-
-                    <p className="mt-1 text-xs text-slate-500">
-                      SKU: {movement.product_sku}
-                    </p>
-                  </div>
-
-                  <div>
-                    <p className="font-medium text-slate-800">
-                      {movement.warehouse_name}
-                    </p>
-
-                    <p className="mt-1 text-xs text-slate-500">
-                      {movement.warehouse_code}
-                    </p>
-                  </div>
-
-                  <span className="inline-flex h-fit w-fit self-start rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
-                    {movement.movement_type_display ||
-                      getStockMovementLabel(movement.movement_type)}
-                  </span>
-
-                  <p
-                    className={
-                      movement.quantity > 0
-                        ? "font-semibold text-green-700"
-                        : "font-semibold text-red-700"
-                    }
-                  >
-                    {formatChange(movement.quantity)}
-                  </p>
-
-                  <p className="font-medium text-slate-800">
-                    {movement.before_quantity}
-                    {" → "}
-                    {movement.after_quantity}
-                  </p>
-
-                  <div>
+                <tr key={movement.id}>
+                  <td>
+                    <p className="font-medium text-foreground">{movement.product_name}</p>
+                    <p className="mt-0.5 font-mono text-xs text-muted">SKU: {movement.product_sku}</p>
+                  </td>
+                  <td>
+                    <p className="font-medium text-slate-800">{movement.warehouse_name}</p>
+                    <p className="mt-0.5 font-mono text-xs text-muted">{movement.warehouse_code}</p>
+                  </td>
+                  <td>
+                    <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700 ring-1 ring-inset ring-slate-200">
+                      {movement.movement_type_display || getStockMovementLabel(movement.movement_type)}
+                    </span>
+                  </td>
+                  <td className="text-right">
+                    <p className={movement.quantity > 0 ? "font-semibold text-success" : "font-semibold text-danger"}>{formatChange(movement.quantity)}</p>
+                  </td>
+                  <td className="text-right whitespace-nowrap">
+                    <p className="font-medium text-slate-800">{movement.before_quantity}{" → "}{movement.after_quantity}</p>
+                  </td>
+                  <td className="max-w-xs">
                     <p className="text-slate-700">{movement.reason || "—"}</p>
-
-                    {movement.reference_id ? (
-                      <p className="mt-1 text-xs text-slate-500">
-                        Ref: {movement.reference_id}
-                      </p>
-                    ) : null}
-
-                    {movement.notes ? (
-                      <p className="mt-1 text-xs text-slate-500">
-                        {movement.notes}
-                      </p>
-                    ) : null}
-                  </div>
-
-                  <div>
-                    <p className="text-slate-600">
-                      {formatDate(movement.created_at)}
-                    </p>
-
-                    {movement.created_by_name ? (
-                      <p className="mt-1 text-xs text-slate-500">
-                        By {movement.created_by_name}
-                      </p>
-                    ) : null}
-                  </div>
-                </div>
+                    {movement.reference_id ? <p className="mt-0.5 font-mono text-xs text-muted">Ref: {movement.reference_id}</p> : null}
+                    {movement.notes ? <p className="mt-0.5 text-xs text-muted">{movement.notes}</p> : null}
+                  </td>
+                  <td className="whitespace-nowrap">
+                    <p className="text-slate-700">{formatDate(movement.created_at)}</p>
+                    {movement.created_by_name ? <p className="mt-0.5 text-xs text-muted">By {movement.created_by_name}</p> : null}
+                  </td>
+                </tr>
               ))}
-            </div>
-          </div>
+            </tbody>
+          </table>
         </div>
       )}
 
       {!isLoading && movements.length > 0 ? (
-        <p className="mt-4 text-xs text-slate-500">
+        <p className="border-t border-line px-5 py-3 text-xs text-muted" data-numeric>
           Showing {filteredMovements.length} of {movements.length} movements.
         </p>
       ) : null}

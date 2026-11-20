@@ -17,6 +17,14 @@ import { StockAdjustmentModal } from "@/features/inventory/components/stock-adju
 import { StockMovementHistory } from "@/features/inventory/components/stock-movement-history";
 import { StockTransfersPanel } from "@/features/inventory/components/stock-transfers-panel";
 import { getMyPermissions } from "@/features/rbac/api";
+import { AlertTriangle, Boxes, Lock, PackageCheck, PackageSearch, Search, SlidersHorizontal } from "lucide-react";
+
+import { Badge } from "@/components/ui/badge";
+import { Button, buttonStyles } from "@/components/ui/button";
+import { Card, CardHeader, StatCard } from "@/components/ui/card";
+import { Input, Select } from "@/components/ui/input";
+import { PageHeader } from "@/components/ui/page-header";
+import { EmptyState, Notice, Skeleton } from "@/components/ui/states";
 import { getApiErrorMessage } from "@/lib/api/errors";
 
 function formatDate(value: string) {
@@ -197,243 +205,116 @@ function AdminInventoryContent({
 
   return (
     <>
-      <main className="mx-auto max-w-7xl px-4 py-10">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="mb-eyebrow">
-              Admin
-            </p>
+      <main className="grid gap-6">
+        <PageHeader eyebrow="Admin" title="Inventory management"
+          description="Monitor stock across warehouses, review reserved inventory, audit movements, and manage transfers."
+          actions={<Link href="/admin" className={buttonStyles({ variant: "secondary" })}>Admin dashboard</Link>} />
 
-            <h1 className="mt-2 text-3xl font-semibold text-slate-950">
-              Inventory management
-            </h1>
+        {error ? <Notice tone="danger">{error}</Notice> : null}
+        {message ? <Notice tone="success">{message}</Notice> : null}
 
-            <p className="mt-2 max-w-2xl text-sm text-slate-600">
-              Monitor stock across warehouses, review reserved inventory, audit
-              movements, and manage transfers.
-            </p>
-          </div>
-
-          <Link
-            href="/admin"
-            className="mb-btn mb-btn-secondary"
-          >
-            Admin dashboard
-          </Link>
-        </div>
-
-        {error ? (
-          <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-            {error}
-          </div>
-        ) : null}
-
-        {message ? (
-          <div className="mt-6 rounded-2xl border border-green-200 bg-green-50 p-4 text-sm text-green-700">
-            {message}
-          </div>
-        ) : null}
-
-        <section className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-3xl border border-slate-200 bg-white p-5">
-            <p className="text-sm text-slate-500">Total stock</p>
-
-            <p className="mt-2 text-3xl font-semibold text-slate-950">
-              {totalQuantity.toLocaleString()}
-            </p>
-
-            <p className="mt-1 text-xs text-slate-500">
-              Across {stocks.length} stock records
-            </p>
-          </div>
-
-          <div className="rounded-3xl border border-slate-200 bg-white p-5">
-            <p className="text-sm text-slate-500">Available</p>
-
-            <p className="mt-2 text-3xl font-semibold text-slate-950">
-              {availableQuantity.toLocaleString()}
-            </p>
-
-            <p className="mt-1 text-xs text-slate-500">Ready for new orders</p>
-          </div>
-
-          <div className="rounded-3xl border border-slate-200 bg-white p-5">
-            <p className="text-sm text-slate-500">Reserved</p>
-
-            <p className="mt-2 text-3xl font-semibold text-slate-950">
-              {reservedQuantity.toLocaleString()}
-            </p>
-
-            <p className="mt-1 text-xs text-slate-500">
-              Reserved by pending orders
-            </p>
-          </div>
-
-          <div className="rounded-3xl border border-slate-200 bg-white p-5">
-            <p className="text-sm text-slate-500">Low stock</p>
-
-            <p className="mt-2 text-3xl font-semibold text-slate-950">
-              {lowStockCount}
-            </p>
-
-            <p className="mt-1 text-xs text-slate-500">Requires attention</p>
-          </div>
+        <section aria-label="Inventory summary" className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+          {isLoading ? [0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-[7.5rem] rounded-2xl" />) : <>
+            <StatCard label="Total stock" value={totalQuantity.toLocaleString()} hint={`Across ${stocks.length} stock records`} icon={<Boxes size={16} />} />
+            <StatCard label="Available" value={availableQuantity.toLocaleString()} hint="Ready for new orders" icon={<PackageCheck size={16} />} />
+            <StatCard label="Reserved" value={reservedQuantity.toLocaleString()} hint="Reserved by pending orders" icon={<Lock size={16} />} />
+            <StatCard label="Low stock" value={lowStockCount} hint="Requires attention" icon={<AlertTriangle size={16} />} tone={lowStockCount ? "brand" : "default"} />
+          </>}
         </section>
 
-        <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-5">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-950">Stock</h2>
-
-            <p className="mt-1 text-sm text-slate-500">
-              Current product inventory across active warehouses.
-            </p>
-          </div>
-
-          <div className="mt-6 grid gap-3 lg:grid-cols-[1fr_240px_auto]">
-            <input
-              type="search"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search product, SKU, or warehouse..."
-              className="mb-control"
-            />
-
-            <select
-              value={warehouseFilter}
-              onChange={(event) => setWarehouseFilter(event.target.value)}
-              className="mb-control mb-select"
-            >
-              <option value="all">All warehouses</option>
-
-              {warehouses.map((warehouse) => (
-                <option key={warehouse.id} value={warehouse.id}>
-                  {warehouse.name} ({warehouse.code})
-                </option>
-              ))}
-            </select>
-
-            <label className="flex h-11 cursor-pointer items-center gap-2 rounded-2xl border border-slate-200 px-4 text-sm font-medium text-slate-700">
-              <input
-                type="checkbox"
-                checked={lowStockOnly}
-                onChange={(event) => setLowStockOnly(event.target.checked)}
-                className="h-4 w-4"
-              />
-              Low stock only
-            </label>
+        <Card padded={false} className="overflow-hidden">
+          <div className="grid gap-4 p-5 sm:p-6">
+            <CardHeader title="Stock" description="Current product inventory across active warehouses." />
+            <div role="search" aria-label="Filter stock" className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_15rem_auto]">
+              <div className="relative">
+                <Search size={17} className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+                <Input type="search" aria-label="Search stock" value={search} onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Search product, SKU, or warehouse..." className="pl-10" />
+              </div>
+              <Select aria-label="Warehouse" value={warehouseFilter} onChange={(event) => setWarehouseFilter(event.target.value)}>
+                <option value="all">All warehouses</option>
+                {warehouses.map((warehouse) => <option key={warehouse.id} value={warehouse.id}>{warehouse.name} ({warehouse.code})</option>)}
+              </Select>
+              <label className="flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border border-line-strong/80 bg-surface px-3.5 text-sm font-medium text-foreground shadow-xs">
+                <input type="checkbox" checked={lowStockOnly} onChange={(event) => setLowStockOnly(event.target.checked)} className="size-4" />
+                Low stock only
+              </label>
+            </div>
           </div>
 
           {isLoading ? (
-            <p className="mt-6 text-sm text-slate-500">Loading inventory...</p>
+            <div role="status" className="grid gap-2 border-t border-line p-5">
+              <span className="sr-only">Loading inventory...</span>
+              {[0, 1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-12 rounded-lg" />)}
+            </div>
           ) : filteredStocks.length === 0 ? (
-            <div className="mt-6 rounded-2xl bg-slate-50 p-5">
-              <p className="text-sm font-medium text-slate-700">
-                No stock records found.
-              </p>
-
-              <p className="mt-1 text-xs text-slate-500">
-                Try changing the search or warehouse filters.
-              </p>
+            <div className="border-t border-line p-5">
+              <EmptyState className="py-10" icon={<PackageSearch size={22} />} title="No stock records found."
+                description="Try changing the search or warehouse filters." />
             </div>
           ) : (
-            <div className="mt-6 overflow-x-auto rounded-2xl border border-slate-200">
-              <div className="min-w-[1160px]">
-                <div className="grid grid-cols-[1.7fr_1.2fr_0.7fr_0.7fr_0.7fr_0.7fr_0.9fr_auto] gap-4 bg-slate-50 px-4 py-3 mb-eyebrow">
-                  <span>Product</span>
-                  <span>Warehouse</span>
-                  <span>Total</span>
-                  <span>Reserved</span>
-                  <span>Available</span>
-                  <span>Threshold</span>
-                  <span>Status</span>
-                  <span />
-                </div>
-
-                <div className="divide-y divide-slate-100">
-                  {filteredStocks.map((stock) => (
-                    <div
-                      key={stock.id}
-                      className="grid grid-cols-[1.7fr_1.2fr_0.7fr_0.7fr_0.7fr_0.7fr_0.9fr_auto] gap-4 px-4 py-4 text-sm"
-                    >
-                      <div>
-                        <p className="font-semibold text-slate-950">
-                          {stock.product_name}
-                        </p>
-
-                        <p className="mt-1 text-xs text-slate-500">
-                          SKU: {stock.product_sku}
-                        </p>
-
-                        <p className="mt-1 text-xs text-slate-400">
-                          Updated {formatDate(stock.last_updated)}
-                        </p>
-                      </div>
-
-                      <div>
-                        <p className="font-medium text-slate-800">
-                          {stock.warehouse_name}
-                        </p>
-
-                        <p className="mt-1 text-xs text-slate-500">
-                          {stock.warehouse_code}
-                        </p>
-                      </div>
-
-                      <p className="font-medium text-slate-900">
-                        {stock.quantity}
-                      </p>
-
-                      <p className="text-slate-600">
-                        {stock.reserved_quantity}
-                      </p>
-
-                      <p className="font-semibold text-slate-950">
-                        {stock.available_quantity}
-                      </p>
-
-                      <p className="text-slate-600">
-                        {stock.low_stock_threshold}
-                      </p>
-
-                      <div>
-                        {stock.is_low_stock ? (
-                          <span className="inline-flex rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700">
-                            Low stock
+            <div className="overflow-x-auto border-t border-line">
+              <table className="mb-table min-w-[60rem]">
+                <thead>
+                  <tr>
+                    <th scope="col">Product</th>
+                    <th scope="col">Warehouse</th>
+                    <th scope="col" className="text-right">Total</th>
+                    <th scope="col" className="text-right">Reserved</th>
+                    <th scope="col" className="text-right">Available</th>
+                    <th scope="col" className="text-right">Threshold</th>
+                    <th scope="col">Status</th>
+                    <th scope="col"><span className="sr-only">Actions</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredStocks.map((stock) => {
+                    const ratio = stock.quantity > 0 ? Math.min(100, (stock.available_quantity / stock.quantity) * 100) : 0;
+                    return (
+                      <tr key={stock.id}>
+                        <td>
+                          <p className="font-medium text-foreground">{stock.product_name}</p>
+                          <p className="mt-0.5 font-mono text-xs text-muted">SKU: {stock.product_sku}</p>
+                          <p className="mt-0.5 text-xs text-muted">Updated {formatDate(stock.last_updated)}</p>
+                        </td>
+                        <td>
+                          <p className="font-medium text-slate-800">{stock.warehouse_name}</p>
+                          <p className="mt-0.5 font-mono text-xs text-muted">{stock.warehouse_code}</p>
+                        </td>
+                        <td className="text-right text-slate-800">{stock.quantity}</td>
+                        <td className="text-right text-muted">{stock.reserved_quantity}</td>
+                        <td className="text-right">
+                          <span className="font-semibold text-foreground">{stock.available_quantity}</span>
+                          <span className="mt-1.5 ml-auto block h-1 w-16 overflow-hidden rounded-full bg-slate-100" aria-hidden="true">
+                            <span className={`block h-full rounded-full ${stock.is_low_stock ? "bg-amber-500" : "bg-emerald-500"}`} style={{ width: `${ratio}%` }} />
                           </span>
-                        ) : (
-                          <span className="inline-flex rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700">
-                            Healthy
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="flex justify-end">
-                        {canManageInventory ? (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setMessage("");
-                              setSelectedStock(stock);
-                            }}
-                            className="mb-btn mb-btn-primary mb-btn-sm"
-                          >
-                            Adjust
-                          </button>
-                        ) : null}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+                        </td>
+                        <td className="text-right text-muted">{stock.low_stock_threshold}</td>
+                        <td>
+                          {stock.is_low_stock ? <Badge tone="warning" dot>Low stock</Badge> : <Badge tone="success" dot>Healthy</Badge>}
+                        </td>
+                        <td className="text-right">
+                          {canManageInventory ? (
+                            <Button size="small" variant="secondary"
+                              onClick={() => { setMessage(""); setSelectedStock(stock); }}>
+                              <SlidersHorizontal size={15} aria-hidden="true" />Adjust
+                            </Button>
+                          ) : null}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           )}
 
           {!isLoading && stocks.length > 0 ? (
-            <p className="mt-4 text-xs text-slate-500">
+            <p className="border-t border-line px-5 py-3 text-xs text-muted" aria-live="polite" data-numeric>
               Showing {filteredStocks.length} of {stocks.length} stock records.
             </p>
           ) : null}
-        </section>
+        </Card>
 
         <StockTransfersPanel
           key={`${userId}:${isSuperuser}`}

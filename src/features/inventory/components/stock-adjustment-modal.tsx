@@ -130,8 +130,8 @@ export function StockAdjustmentModal({
       onClose={onClose}
       dismissible={!isSubmitting}
       labelledBy="stock-adjustment-title"
-      overlayClassName="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4"
-      className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6 shadow-xl"
+      overlayClassName="fixed inset-0 z-[60] flex items-end justify-center bg-ink/45 backdrop-blur-[2px] sm:items-center sm:p-6"
+      className="max-h-[92dvh] w-full max-w-2xl overflow-y-auto rounded-t-3xl border border-line bg-surface p-5 shadow-2xl outline-none sm:rounded-3xl sm:p-6"
     >
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -141,7 +141,7 @@ export function StockAdjustmentModal({
 
             <h2
               id="stock-adjustment-title"
-              className="mt-1 text-2xl font-semibold text-slate-950"
+              className="mt-1 text-2xl font-semibold text-foreground"
             >
               Adjust stock
             </h2>
@@ -150,7 +150,7 @@ export function StockAdjustmentModal({
               {stock.product_name} · {stock.warehouse_name}
             </p>
 
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-1 text-xs text-muted">
               SKU: {stock.product_sku}
             </p>
           </div>
@@ -166,36 +166,36 @@ export function StockAdjustmentModal({
         </div>
 
         <div className="mt-6 grid gap-3 sm:grid-cols-3">
-          <div className="rounded-2xl bg-slate-50 p-4">
-            <p className="text-xs uppercase tracking-wide text-slate-500">
+          <div className="rounded-xl border border-line bg-sunken/60 p-4">
+            <p className="text-xs font-medium text-muted">
               Total
             </p>
-            <p className="mt-1 text-xl font-semibold text-slate-950">
+            <p className="mt-1 text-xl font-semibold text-foreground">
               {stock.quantity}
             </p>
           </div>
 
-          <div className="rounded-2xl bg-slate-50 p-4">
-            <p className="text-xs uppercase tracking-wide text-slate-500">
+          <div className="rounded-xl border border-line bg-sunken/60 p-4">
+            <p className="text-xs font-medium text-muted">
               Reserved
             </p>
-            <p className="mt-1 text-xl font-semibold text-slate-950">
+            <p className="mt-1 text-xl font-semibold text-foreground">
               {stock.reserved_quantity}
             </p>
           </div>
 
-          <div className="rounded-2xl bg-slate-50 p-4">
-            <p className="text-xs uppercase tracking-wide text-slate-500">
+          <div className="rounded-xl border border-line bg-sunken/60 p-4">
+            <p className="text-xs font-medium text-muted">
               Available
             </p>
-            <p className="mt-1 text-xl font-semibold text-slate-950">
+            <p className="mt-1 text-xl font-semibold text-foreground">
               {stock.available_quantity}
             </p>
           </div>
         </div>
 
         {error ? (
-          <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          <div className="mt-5 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900">
             {error}
           </div>
         ) : null}
@@ -254,8 +254,8 @@ export function StockAdjustmentModal({
             />
           </label>
 
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+          <div className="rounded-xl border border-line bg-sunken/60 p-4">
+            <p className="text-xs font-medium text-muted">
               Stock preview
             </p>
 
@@ -264,16 +264,16 @@ export function StockAdjustmentModal({
                 {stock.quantity}
               </span>
 
-              <span className="text-slate-400">→</span>
+              <span className="text-slate-500">→</span>
 
-              <span className="font-semibold text-slate-950">
+              <span className="font-semibold text-foreground">
                 {previewQuantity}
               </span>
 
               {signedQuantity !== 0 ? (
                 <span
                   className={
-                    signedQuantity > 0 ? "text-green-700" : "text-red-700"
+                    signedQuantity > 0 ? "text-green-700" : "text-danger"
                   }
                 >
                   ({signedQuantity > 0 ? "+" : ""}
@@ -296,7 +296,7 @@ export function StockAdjustmentModal({
               className="mt-2 w-full mb-control"
             />
 
-            <span className="mt-1 block text-xs text-slate-500">
+            <span className="mt-1 block text-xs text-muted">
               Optional purchase, return, invoice, or internal reference.
             </span>
           </label>

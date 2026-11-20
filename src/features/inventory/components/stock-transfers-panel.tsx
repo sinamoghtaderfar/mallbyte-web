@@ -38,11 +38,11 @@ function formatDate(value: string | null) {
 }
 
 const statusClasses: Record<StockTransferListItem["status"], string> = {
-  pending: "bg-amber-100 text-amber-700",
-  approved: "bg-violet-100 text-violet-700",
-  in_transit: "bg-blue-100 text-blue-700",
-  completed: "bg-green-100 text-green-700",
-  cancelled: "bg-red-100 text-red-700",
+  pending: "bg-amber-50 text-amber-900 ring-1 ring-inset ring-amber-200",
+  approved: "bg-ink text-white ring-1 ring-inset ring-ink",
+  in_transit: "bg-sky-50 text-sky-900 ring-1 ring-inset ring-sky-200",
+  completed: "bg-emerald-50 text-emerald-800 ring-1 ring-inset ring-emerald-200",
+  cancelled: "bg-rose-50 text-rose-800 ring-1 ring-inset ring-rose-200",
 };
 
 /**
@@ -324,14 +324,14 @@ function StockTransfersPanelContent({
 
   return (
     <>
-      <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-5">
+      <section className="mb-card p-5 sm:p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-slate-950">
+            <h2 className="text-lg font-semibold text-foreground">
               Stock transfers
             </h2>
 
-            <p className="mt-1 max-w-2xl text-sm text-slate-500">
+            <p className="mt-1 max-w-2xl text-sm text-muted">
               Managers request transfers, supervisors approve them, source
               warehouses ship, and destination warehouses confirm receipt.
             </p>
@@ -354,7 +354,7 @@ function StockTransfersPanelContent({
         {error ? (
           <div
             role="alert"
-            className="mt-5 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+            className="mt-5 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900"
           >
             {error}
           </div>
@@ -363,7 +363,7 @@ function StockTransfersPanelContent({
         {message ? (
           <div
             role="status"
-            className="mt-5 rounded-2xl border border-green-200 bg-green-50 p-4 text-sm text-green-700"
+            className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900"
           >
             {message}
           </div>
@@ -374,7 +374,7 @@ function StockTransfersPanelContent({
         warehouseIds.length === 0 &&
         !isLoading &&
         !error ? (
-          <p className="mt-5 rounded-2xl bg-amber-50 p-4 text-sm text-amber-800">
+          <p className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
             No active warehouse assignment found. Ask an administrator to assign
             your warehouse.
           </p>
@@ -411,51 +411,51 @@ function StockTransfersPanelContent({
         </div>
 
         {isLoading ? (
-          <p className="mt-6 text-sm text-slate-500">Loading transfers...</p>
+          <p role="status" className="mt-6 text-sm text-muted">Loading transfers...</p>
         ) : filteredTransfers.length === 0 ? (
-          <p className="mt-6 rounded-2xl bg-slate-50 p-5 text-sm text-slate-600">
+          <p className="mt-6 rounded-xl border border-line bg-sunken/60 p-5 text-sm text-slate-600">
             No stock transfers match these filters.
           </p>
         ) : (
-          <div className="mt-6 overflow-x-auto rounded-2xl border border-slate-200">
-            <table className="w-full min-w-[1200px] text-left text-sm">
-              <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+          <div className="mt-6 overflow-x-auto rounded-xl border border-line">
+            <table className="mb-table min-w-[64rem]">
+              <thead>
                 <tr>
-                  <th scope="col" className="px-4 py-3">
+                  <th scope="col">
                     Product
                   </th>
 
-                  <th scope="col" className="px-4 py-3">
+                  <th scope="col">
                     Route
                   </th>
 
-                  <th scope="col" className="px-4 py-3">
+                  <th scope="col">
                     Qty
                   </th>
 
-                  <th scope="col" className="px-4 py-3">
+                  <th scope="col">
                     Status
                   </th>
 
-                  <th scope="col" className="px-4 py-3">
+                  <th scope="col">
                     Requested by
                   </th>
 
-                  <th scope="col" className="px-4 py-3">
+                  <th scope="col">
                     Approved by
                   </th>
 
-                  <th scope="col" className="px-4 py-3">
+                  <th scope="col">
                     Shipping / Receiving
                   </th>
 
-                  <th scope="col" className="px-4 py-3">
+                  <th scope="col">
                     Actions
                   </th>
                 </tr>
               </thead>
 
-              <tbody className="divide-y divide-slate-100">
+              <tbody>
                 {filteredTransfers.map((transfer) => {
                   const actions = getTransferActions(transfer, {
                     userId,
@@ -473,59 +473,59 @@ function StockTransfersPanelContent({
                     actions.canReceive;
 
                   return (
-                    <tr key={transfer.id} className="align-top">
-                      <td className="px-4 py-4">
-                        <p className="font-semibold text-slate-950">
+                    <tr key={transfer.id} className="[&>td]:align-top">
+                      <td>
+                        <p className="font-semibold text-foreground">
                           {transfer.product_name}
                         </p>
 
-                        <p className="mt-1 text-xs text-slate-500">
+                        <p className="mt-1 text-xs text-muted">
                           {transfer.product_sku}
                         </p>
 
-                        <p className="mt-1 text-xs text-slate-400">
+                        <p className="mt-1 text-xs text-slate-500">
                           #{transfer.id}
                         </p>
 
                         {transfer.reason ? (
-                          <p className="mt-2 max-w-[220px] text-xs text-slate-500">
+                          <p className="mt-2 max-w-[220px] text-xs text-muted">
                             {transfer.reason}
                           </p>
                         ) : null}
                       </td>
 
-                      <td className="px-4 py-4 text-slate-700">
+                      <td className="text-slate-700">
                         <p>{transfer.from_warehouse_name}</p>
 
-                        <p className="my-1 text-xs text-slate-400">↓</p>
+                        <p className="my-1 text-xs text-slate-500">↓</p>
 
                         <p>{transfer.to_warehouse_name}</p>
                       </td>
 
-                      <td className="px-4 py-4 font-semibold">
+                      <td className="font-semibold">
                         {transfer.quantity}
                       </td>
 
-                      <td className="px-4 py-4">
+                      <td>
                         <span
-                          className={`rounded-full px-3 py-1 text-xs font-medium ${statusClasses[transfer.status]}`}
+                          className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium leading-5 ${statusClasses[transfer.status]}`}
                         >
                           {transfer.status_display}
                         </span>
                       </td>
 
-                      <td className="px-4 py-4">
+                      <td>
                         <p>{transfer.requested_by_name || "—"}</p>
 
-                        <p className="mt-1 text-xs text-slate-400">
+                        <p className="mt-1 text-xs text-slate-500">
                           {formatDate(transfer.created_at)}
                         </p>
                       </td>
 
-                      <td className="px-4 py-4">
+                      <td>
                         <p>{transfer.approved_by_name || "—"}</p>
 
-                        <p className="mt-1 text-xs text-slate-400">
+                        <p className="mt-1 text-xs text-slate-500">
                           {transfer.approved_at
                             ? formatDate(transfer.approved_at)
                             : transfer.status === "pending"
@@ -537,7 +537,7 @@ function StockTransfersPanelContent({
                         </p>
                       </td>
 
-                      <td className="px-4 py-4 text-xs text-slate-600">
+                      <td className="text-xs text-slate-600">
                         <p>Tracking: {transfer.tracking_number || "—"}</p>
 
                         <p className="mt-2">
@@ -545,7 +545,7 @@ function StockTransfersPanelContent({
                         </p>
 
                         {transfer.shipped_at ? (
-                          <p className="mt-1 text-slate-400">
+                          <p className="mt-1 text-slate-500">
                             {formatDate(transfer.shipped_at)}
                           </p>
                         ) : null}
@@ -555,13 +555,13 @@ function StockTransfersPanelContent({
                         </p>
 
                         {transfer.received_at ? (
-                          <p className="mt-1 text-slate-400">
+                          <p className="mt-1 text-slate-500">
                             {formatDate(transfer.received_at)}
                           </p>
                         ) : null}
                       </td>
 
-                      <td className="px-4 py-4">
+                      <td>
                         <div className="flex min-w-[120px] flex-wrap gap-2">
                           {actions.canApprove ? (
                             <button
@@ -615,7 +615,7 @@ function StockTransfersPanelContent({
                           ) : null}
 
                           {!hasAction ? (
-                            <span className="text-xs text-slate-400">
+                            <span className="text-xs text-slate-500">
                               {transfer.status === "pending"
                                 ? "Awaiting independent approval"
                                 : transfer.status === "approved"
@@ -650,12 +650,12 @@ function StockTransfersPanelContent({
           onClose={() => { setShippingTransfer(null); setTrackingNumber(""); }}
           dismissible={actionId !== shippingTransfer.id}
           labelledBy="ship-transfer-title"
-          overlayClassName="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4"
+          overlayClassName="fixed inset-0 z-[60] flex items-end justify-center bg-ink/45 backdrop-blur-[2px] sm:items-center sm:p-6"
           className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-xl"
         >
             <h2
               id="ship-transfer-title"
-              className="text-xl font-semibold text-slate-950"
+              className="text-xl font-semibold text-foreground"
             >
               Ship stock transfer
             </h2>
@@ -694,7 +694,7 @@ function StockTransfersPanelContent({
                   setShippingTransfer(null);
                   setTrackingNumber("");
                 }}
-                className="h-11 rounded-2xl border border-slate-200 px-5 text-sm font-medium text-slate-700 disabled:opacity-50"
+                className="h-11 rounded-xl border border-line px-5 text-sm font-medium text-slate-700 disabled:opacity-50"
               >
                 Back
               </button>

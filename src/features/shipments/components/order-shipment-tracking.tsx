@@ -21,15 +21,15 @@ function formatDate(value: string | null | undefined) {
 
 function getStatusClass(status: string) {
   if (status === "delivered") {
-    return "bg-green-100 text-green-700";
+    return "bg-emerald-50 text-emerald-800 ring-1 ring-inset ring-emerald-200";
   }
 
   if (["shipped", "in_transit", "out_for_delivery"].includes(status)) {
-    return "bg-blue-100 text-blue-700";
+    return "bg-sky-50 text-sky-900 ring-1 ring-inset ring-sky-200";
   }
 
   if (["failed", "returned", "cancelled"].includes(status)) {
-    return "bg-red-100 text-red-700";
+    return "bg-rose-50 text-rose-800 ring-1 ring-inset ring-rose-200";
   }
 
   return "bg-yellow-100 text-yellow-700";
@@ -70,12 +70,12 @@ export function OrderShipmentTracking({ orderId }: OrderShipmentTrackingProps) {
 
   if (isLoading) {
     return (
-      <section className="mt-8 rounded-3xl border border-slate-200 p-5">
-        <h2 className="text-lg font-semibold text-slate-950">
+      <section className="mt-8 rounded-3xl border border-line p-5">
+        <h2 className="text-lg font-semibold text-foreground">
           Shipment tracking
         </h2>
 
-        <p className="mt-4 text-sm text-slate-500">
+        <p className="mt-4 text-sm text-muted">
           Loading shipment information...
         </p>
       </section>
@@ -89,28 +89,28 @@ export function OrderShipmentTracking({ orderId }: OrderShipmentTrackingProps) {
           Shipment tracking
         </h2>
 
-        <p className="mt-2 text-sm text-red-700">
+        <p className="mt-2 text-sm text-danger">
           Could not load shipment information.
         </p>
 
-        <p className="mt-1 text-sm text-red-700">{error}</p>
+        <p className="mt-1 text-sm text-danger">{error}</p>
       </section>
     );
   }
 
   if (!shipments.length) {
     return (
-      <section className="mt-8 rounded-3xl border border-slate-200 p-5">
-        <h2 className="text-lg font-semibold text-slate-950">
+      <section className="mt-8 rounded-3xl border border-line p-5">
+        <h2 className="text-lg font-semibold text-foreground">
           Shipment tracking
         </h2>
 
-        <div className="mt-4 rounded-2xl bg-slate-50 p-4">
+        <div className="mt-4 rounded-xl border border-line bg-sunken/60 p-4">
           <p className="text-sm font-medium text-slate-700">
             No shipment has been created yet.
           </p>
 
-          <p className="mt-1 text-xs leading-5 text-slate-500">
+          <p className="mt-1 text-xs leading-5 text-muted">
             Tracking information will appear here after your order is prepared
             for shipping.
           </p>
@@ -122,11 +122,11 @@ export function OrderShipmentTracking({ orderId }: OrderShipmentTrackingProps) {
   return (
     <section className="mt-8 space-y-4">
       <div>
-        <h2 className="text-lg font-semibold text-slate-950">
+        <h2 className="text-lg font-semibold text-foreground">
           Shipment tracking
         </h2>
 
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="mt-1 text-sm text-muted">
           {shipments.length} shipment
           {shipments.length === 1 ? "" : "s"} for this order.
         </p>
@@ -135,15 +135,15 @@ export function OrderShipmentTracking({ orderId }: OrderShipmentTrackingProps) {
       {shipments.map((shipment) => (
         <article
           key={shipment.id}
-          className="rounded-3xl border border-slate-200 p-5"
+          className="rounded-3xl border border-line p-5"
         >
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <h3 className="text-base font-semibold text-slate-950">
+              <h3 className="text-base font-semibold text-foreground">
                 {shipment.seller_name || "Order shipment"}
               </h3>
 
-              <p className="mt-1 text-sm text-slate-500">
+              <p className="mt-1 text-sm text-muted">
                 {shipment.shipment_number}
               </p>
             </div>
@@ -159,9 +159,9 @@ export function OrderShipmentTracking({ orderId }: OrderShipmentTrackingProps) {
             </span>
           </div>
 
-          <div className="mt-5 grid gap-4 rounded-2xl bg-slate-50 p-4 sm:grid-cols-2">
+          <div className="mt-5 grid gap-4 rounded-xl border border-line bg-sunken/60 p-4 sm:grid-cols-2">
             <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+              <p className="text-xs font-medium text-muted">
                 Carrier
               </p>
 
@@ -172,7 +172,7 @@ export function OrderShipmentTracking({ orderId }: OrderShipmentTrackingProps) {
             </div>
 
             <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+              <p className="text-xs font-medium text-muted">
                 Tracking number
               </p>
 
@@ -193,7 +193,7 @@ export function OrderShipmentTracking({ orderId }: OrderShipmentTrackingProps) {
             </div>
 
             <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+              <p className="text-xs font-medium text-muted">
                 Shipped at
               </p>
 
@@ -203,7 +203,7 @@ export function OrderShipmentTracking({ orderId }: OrderShipmentTrackingProps) {
             </div>
 
             <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+              <p className="text-xs font-medium text-muted">
                 Delivered at
               </p>
 
@@ -215,7 +215,7 @@ export function OrderShipmentTracking({ orderId }: OrderShipmentTrackingProps) {
 
           {shipment.events.length ? (
             <div className="mt-6">
-              <h4 className="text-sm font-semibold text-slate-950">
+              <h4 className="text-sm font-semibold text-foreground">
                 Delivery updates
               </h4>
 
@@ -223,7 +223,7 @@ export function OrderShipmentTracking({ orderId }: OrderShipmentTrackingProps) {
                 {shipment.events.map((event) => (
                   <div
                     key={event.id}
-                    className="rounded-2xl border border-slate-200 p-4"
+                    className="rounded-xl border border-line p-4"
                   >
                     <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                       <p className="text-sm font-medium text-slate-900">
@@ -234,7 +234,7 @@ export function OrderShipmentTracking({ orderId }: OrderShipmentTrackingProps) {
                           : getShipmentStatusLabel(event.new_status)}
                       </p>
 
-                      <p className="text-xs text-slate-500">
+                      <p className="text-xs text-muted">
                         {formatDate(event.created_at)}
                       </p>
                     </div>
@@ -249,7 +249,7 @@ export function OrderShipmentTracking({ orderId }: OrderShipmentTrackingProps) {
               </div>
             </div>
           ) : (
-            <p className="mt-5 text-sm text-slate-500">
+            <p className="mt-5 text-sm text-muted">
               No delivery updates yet.
             </p>
           )}

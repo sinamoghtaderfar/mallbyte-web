@@ -15,6 +15,14 @@ import {
   type ShipmentListItem,
   type ShipmentStatus,
 } from "@/features/shipments/api";
+import { Clock3, PackageCheck, Route, Truck } from "lucide-react";
+
+import { StatusBadge } from "@/components/ui/badge";
+import { Button, buttonStyles } from "@/components/ui/button";
+import { Card, CardHeader, StatCard } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
+import { Pagination } from "@/components/ui/pagination";
+import { Notice, Skeleton } from "@/components/ui/states";
 import { getApiErrorMessage } from "@/lib/api/errors";
 import { getSessionGeneration, isCurrentSession } from "@/lib/auth/session-storage";
 import type { PaginatedResponse } from "@/types/api";
@@ -186,320 +194,157 @@ export function AdminShipmentsList() {
   );
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-10">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="mb-eyebrow">
-            Admin
-          </p>
-          <h1 className="mt-2 text-3xl font-semibold text-slate-950">
-            Shipping management
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm text-slate-600">
-            Create shipments for paid orders and manage shipment progress from
-            preparation to delivery.
-          </p>
-        </div>
+    <main className="grid gap-6">
+      <PageHeader eyebrow="Admin" title="Shipping management"
+        description="Create shipments for paid orders and manage shipment progress from preparation to delivery."
+        actions={<Link href="/admin" className={buttonStyles({ variant: "secondary" })}>Admin dashboard</Link>} />
 
-        <Link
-          href="/admin"
-          className="mb-btn mb-btn-secondary"
-        >
-          Admin dashboard
-        </Link>
-      </div>
+      {error ? <Notice tone="danger">{error}</Notice> : null}
+      {message ? <Notice tone="success">{message}</Notice> : null}
 
-      {error ? (
-        <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-          {error}
-        </div>
-      ) : null}
-
-      {message ? (
-        <div className="mt-6 rounded-2xl border border-green-200 bg-green-50 p-4 text-sm text-green-700">
-          {message}
-        </div>
-      ) : null}
-
-      <section className="mt-8 grid gap-4 md:grid-cols-4">
-        <div className="rounded-3xl border border-slate-200 bg-white p-5">
-          <p className="text-sm text-slate-500">Total shipments</p>
-          <p className="mt-2 text-2xl font-semibold text-slate-950">
-            {shipments.length}
-          </p>
-        </div>
-
-        <div className="rounded-3xl border border-slate-200 bg-white p-5">
-          <p className="text-sm text-slate-500">Pending</p>
-          <p className="mt-2 text-2xl font-semibold text-slate-950">
-            {pendingCount}
-          </p>
-        </div>
-
-        <div className="rounded-3xl border border-slate-200 bg-white p-5">
-          <p className="text-sm text-slate-500">In transit</p>
-          <p className="mt-2 text-2xl font-semibold text-slate-950">
-            {inTransitCount}
-          </p>
-        </div>
-
-        <div className="rounded-3xl border border-slate-200 bg-white p-5">
-          <p className="text-sm text-slate-500">Delivered</p>
-          <p className="mt-2 text-2xl font-semibold text-slate-950">
-            {deliveredCount}
-          </p>
-        </div>
+      <section aria-label="Shipment summary" className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        <StatCard label="Total shipments" value={shipments.length} icon={<Truck size={16} />} />
+        <StatCard label="Pending" value={pendingCount} icon={<Clock3 size={16} />} tone={pendingCount ? "brand" : "default"} />
+        <StatCard label="In transit" value={inTransitCount} icon={<Route size={16} />} />
+        <StatCard label="Delivered" value={deliveredCount} icon={<PackageCheck size={16} />} />
       </section>
 
-      <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-5">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-950">
-              Eligible paid orders
-            </h2>
-            <p className="mt-2 text-sm text-slate-600">
-              Create a separate shipment for each eligible seller. Orders remain
-              here while another seller still needs a shipment.
-            </p>
-          </div>
-
-          <label className="w-full space-y-1 text-sm sm:w-56">
-            <span className="font-medium text-slate-700">Carrier</span>
-            <select
-              value={carrier}
-              onChange={(event) =>
-                setCarrier(event.target.value as ShipmentCarrier)
-              }
-              className="w-full mb-control mb-select"
-            >
-              {Object.entries(SHIPMENT_CARRIER_LABELS).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </label>
+      <Card padded={false} className="overflow-hidden">
+        <div className="grid gap-4 p-5 sm:p-6">
+          <CardHeader title="Eligible paid orders"
+            description="Create a separate shipment for each eligible seller. Orders remain here while another seller still needs a shipment."
+            action={<label className="flex items-center gap-2 text-sm">
+              <span className="font-medium text-foreground">Carrier</span>
+              <select value={carrier} onChange={(event) => setCarrier(event.target.value as ShipmentCarrier)} className="mb-control mb-select w-40">
+                {Object.entries(SHIPMENT_CARRIER_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+              </select>
+            </label>} />
         </div>
 
-        <nav aria-label="Eligible order pages" className="mt-6 flex flex-wrap items-center gap-4 text-sm text-slate-700">
-          <span>{eligiblePagination ? `${eligiblePagination.count} eligible orders · Page ${eligibleQuery.page} of ${Math.max(1, Math.ceil(eligiblePagination.count / 20))}` : "Eligible order pages"}</span>
-          <button type="button" disabled={eligibleQuery.page <= 1 || creatingOrderId !== null} onClick={() => refreshEligible(eligibleQuery.page - 1)} className="rounded-xl border px-3 py-2 disabled:opacity-40">Previous eligible orders</button>
-          <button type="button" disabled={!eligiblePagination?.next || eligibleLoading || Boolean(eligibleError) || creatingOrderId !== null} onClick={() => refreshEligible(eligibleQuery.page + 1)} className="rounded-xl border px-3 py-2 disabled:opacity-40">Next eligible orders</button>
-        </nav>
         {eligibleLoading ? (
-          <p className="mt-6 text-sm text-slate-500">
-            Loading eligible orders...
-          </p>
+          <div role="status" className="grid gap-2 border-t border-line p-5">
+            <span className="sr-only">Loading eligible orders...</span>
+            {[0, 1, 2].map((i) => <Skeleton key={i} className="h-14 rounded-lg" />)}
+          </div>
         ) : eligibleError ? (
-          <div role="alert" className="mt-6 rounded-2xl bg-red-50 p-4 text-sm text-red-700">
-            <p>{eligibleError}</p>
-            <button type="button" onClick={() => refreshEligible(eligibleQuery.page)} className="mt-2 underline">Retry eligible orders</button>
+          <div className="border-t border-line p-5">
+            <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-950">
+              <p>{eligibleError}</p>
+              <Button size="small" variant="secondary" onClick={() => refreshEligible(eligibleQuery.page)}>Retry eligible orders</Button>
+            </div>
           </div>
         ) : eligibleOrders.length === 0 ? (
-          <div className="mt-6 rounded-2xl bg-slate-50 p-5">
-            <p className="text-sm font-medium text-slate-700">
-              No eligible paid orders.
-            </p>
-            <p className="mt-1 text-xs text-slate-500">
-              Paid orders will appear here when they are ready for shipment
-              creation.
-            </p>
+          <div className="border-t border-line px-5 py-10 text-center">
+            <p className="text-sm font-medium text-foreground">No eligible paid orders.</p>
+            <p className="mt-1 text-xs text-muted">Paid orders will appear here when they are ready for shipment creation.</p>
           </div>
         ) : (
-          <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200">
-            <div className="hidden grid-cols-[1.2fr_1.2fr_1fr_1fr_1fr_auto] gap-4 bg-slate-50 px-4 py-3 md:grid mb-eyebrow">
-              <span>Order</span>
-              <span>Customer</span>
-              <span>Total</span>
-              <span>Destination</span>
-              <span>Paid</span>
-              <span />
-            </div>
-
-            <div className="divide-y divide-slate-100">
-              {eligibleOrders.map((order) => {
-                const isCreating = creatingOrderId === order.id;
-                const availableSellers = order.eligible_sellers ?? [];
-                const needsChoice = availableSellers.length > 1;
-                const sellerChosen =
-                  !needsChoice || Boolean(selectedSeller[order.id]);
-
-                return (
-                  <div
-                    key={order.id}
-                    className="grid gap-4 px-4 py-4 md:grid-cols-[1.2fr_1.2fr_1fr_1fr_1fr_auto] md:items-center"
-                  >
-                    <div>
-                      <p className="font-semibold text-slate-950">
-                        {order.order_number}
-                      </p>
-                      <p className="mt-1 text-xs text-slate-500">
-                        Order ID: {order.id}
-                      </p>
-                      {needsChoice ? (
-                        <label className="mt-3 block text-xs font-medium text-slate-700">
-                          Seller for {order.order_number}
-                          <select
-                            value={selectedSeller[order.id] ?? ""}
-                            disabled={creatingOrderId !== null}
-                            onChange={(event) =>
-                              setSelectedSeller((previous) => ({
-                                ...previous,
-                                [order.id]: event.target.value,
-                              }))
-                            }
-                            className="mt-1 block h-10 w-full rounded-xl border border-slate-200 bg-white px-2 text-sm"
-                          >
-                            <option value="">Select seller</option>
-                            {availableSellers.map((seller) => (
-                              <option key={seller.id} value={seller.id}>
-                                {seller.name} ({seller.status})
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                      ) : availableSellers.length === 1 ? (
-                        <p className="mt-2 text-xs text-slate-600">
-                          Seller: {availableSellers[0].name}
-                        </p>
-                      ) : null}
-                    </div>
-
-                    <div>
-                      <p className="text-sm font-medium text-slate-800">
-                        {order.user_full_name || order.receiver_name}
-                      </p>
-                      <p className="mt-1 text-xs text-slate-500">
-                        {order.user_email}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p className="text-sm font-medium text-slate-950">
-                        {formatMoney(order.total_amount)}
-                      </p>
-                      <p className="mt-1 text-xs text-slate-500">
-                        Shipping {formatMoney(order.shipping_cost)}
-                      </p>
-                    </div>
-
-                    <p className="text-sm text-slate-600">
-                      {order.city}, {order.province}
-                    </p>
-
-                    <p className="text-sm text-slate-600">
-                      {formatDate(order.paid_at)}
-                    </p>
-
-                    <button
-                      type="button"
-                      disabled={creatingOrderId !== null || !sellerChosen}
-                      onClick={() => void handleCreateShipment(order)}
-                      className="mb-btn mb-btn-primary mb-btn-sm"
-                    >
-                      {isCreating
-                        ? "Creating..."
-                        : `Create ${getShipmentCarrierLabel(carrier)}`}
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
+          <div className="overflow-x-auto border-t border-line">
+            <table className="mb-table min-w-[58rem]">
+              <thead><tr><th scope="col">Order</th><th scope="col">Customer</th><th scope="col" className="text-right">Total</th><th scope="col">Destination</th><th scope="col">Paid</th><th scope="col"><span className="sr-only">Action</span></th></tr></thead>
+              <tbody>
+                {eligibleOrders.map((order) => {
+                  const isCreating = creatingOrderId === order.id;
+                  const availableSellers = order.eligible_sellers ?? [];
+                  const needsChoice = availableSellers.length > 1;
+                  const sellerChosen = !needsChoice || Boolean(selectedSeller[order.id]);
+                  return (
+                    <tr key={order.id} className="[&>td]:align-top">
+                      <td>
+                        <p className="font-mono text-[0.8125rem] font-semibold text-foreground">{order.order_number}</p>
+                        <p className="mt-0.5 text-xs text-muted">Order ID: {order.id}</p>
+                        {needsChoice ? (
+                          <label className="mt-2.5 block text-xs font-medium text-slate-700">
+                            Seller for {order.order_number}
+                            <select value={selectedSeller[order.id] ?? ""} disabled={creatingOrderId !== null}
+                              onChange={(event) => setSelectedSeller((previous) => ({ ...previous, [order.id]: event.target.value }))}
+                              className="mb-control mb-select mt-1 w-56">
+                              <option value="">Select seller</option>
+                              {availableSellers.map((seller) => <option key={seller.id} value={seller.id}>{seller.name} ({seller.status})</option>)}
+                            </select>
+                          </label>
+                        ) : availableSellers.length === 1 ? (
+                          <p className="mt-1.5 text-xs text-slate-700">Seller: {availableSellers[0].name}</p>
+                        ) : null}
+                      </td>
+                      <td>
+                        <p className="font-medium text-slate-800">{order.user_full_name || order.receiver_name}</p>
+                        <p className="mt-0.5 text-xs text-muted">{order.user_email}</p>
+                      </td>
+                      <td className="text-right">
+                        <p className="font-medium text-foreground">{formatMoney(order.total_amount)}</p>
+                        <p className="mt-0.5 text-xs text-muted">Shipping {formatMoney(order.shipping_cost)}</p>
+                      </td>
+                      <td className="text-slate-700">{order.city}, {order.province}</td>
+                      <td className="whitespace-nowrap text-muted">{formatDate(order.paid_at)}</td>
+                      <td className="text-right">
+                        <Button size="small" disabled={creatingOrderId !== null || !sellerChosen} loading={isCreating}
+                          onClick={() => void handleCreateShipment(order)}>
+                          {isCreating ? "Creating..." : `Create ${getShipmentCarrierLabel(carrier)}`}
+                        </Button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
-      </section>
+        <Pagination className="border-t border-line px-5 py-3" label="Eligible order pages"
+          summary={eligiblePagination ? `${eligiblePagination.count} eligible orders · Page ${eligibleQuery.page} of ${Math.max(1, Math.ceil(eligiblePagination.count / 20))}` : "Eligible order pages"}
+          canPrevious={eligibleQuery.page > 1 && creatingOrderId === null}
+          canNext={Boolean(eligiblePagination?.next) && !eligibleLoading && !eligibleError && creatingOrderId === null}
+          previousLabel="Previous eligible orders" nextLabel="Next eligible orders"
+          onPrevious={() => refreshEligible(eligibleQuery.page - 1)} onNext={() => refreshEligible(eligibleQuery.page + 1)} />
+      </Card>
 
-      <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-5">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="text-lg font-semibold text-slate-950">Shipments</h2>
-
-          <select
-            value={statusFilter}
-            onChange={(event) =>
-              setStatusFilter(event.target.value as "all" | ShipmentStatus)
-            }
-            className="mb-control mb-select"
-          >
-            <option value="all">All statuses</option>
-            {statuses.map((status) => (
-              <option key={status} value={status}>
-                {getShipmentStatusLabel(status)}
-              </option>
-            ))}
-          </select>
+      <Card padded={false} className="overflow-hidden">
+        <div className="p-5 sm:p-6">
+          <CardHeader title="Shipments" description="Every shipment created from paid orders, newest first."
+            action={<select aria-label="Shipment status" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as "all" | ShipmentStatus)} className="mb-control mb-select w-44">
+              <option value="all">All statuses</option>
+              {statuses.map((status) => <option key={status} value={status}>{getShipmentStatusLabel(status)}</option>)}
+            </select>} />
         </div>
 
         {isLoading ? (
-          <p className="mt-6 text-sm text-slate-500">Loading shipments...</p>
+          <div role="status" className="grid gap-2 border-t border-line p-5">
+            <span className="sr-only">Loading shipments...</span>
+            {[0, 1, 2].map((i) => <Skeleton key={i} className="h-14 rounded-lg" />)}
+          </div>
         ) : filteredShipments.length === 0 ? (
-          <p className="mt-6 text-sm text-slate-500">No shipments found.</p>
+          <p className="border-t border-line px-5 py-10 text-center text-sm text-muted">No shipments found.</p>
         ) : (
-          <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200">
-            <div className="hidden grid-cols-[1.2fr_1fr_1fr_1fr_1fr_auto] gap-4 bg-slate-50 px-4 py-3 md:grid mb-eyebrow">
-              <span>Shipment</span>
-              <span>Order</span>
-              <span>Status</span>
-              <span>Carrier</span>
-              <span>Created</span>
-              <span />
-            </div>
-
-            <div className="divide-y divide-slate-100">
-              {filteredShipments.map((shipment) => (
-                <div
-                  key={shipment.id}
-                  className="grid gap-4 px-4 py-4 md:grid-cols-[1.2fr_1fr_1fr_1fr_1fr_auto] md:items-center"
-                >
-                  <div>
-                    <Link
-                      href={`/admin/shipments/${shipment.id}`}
-                      className="font-semibold text-slate-950 hover:underline"
-                    >
-                      {shipment.shipment_number}
-                    </Link>
-                    <p className="mt-1 text-xs text-slate-500">
-                      {shipment.user_email}
-                    </p>
-                  </div>
-
-                  <div className="text-sm text-slate-600">
-                    <p>{shipment.order_number}</p>
-                    <p className="mt-1 text-xs text-slate-500">
-                      {shipment.seller_name ?? "Legacy order shipment"}
-                    </p>
-                  </div>
-
-                  <span className="w-fit rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
-                    {shipment.status_display ||
-                      getShipmentStatusLabel(shipment.status)}
-                  </span>
-
-                  <div>
-                    <p className="text-sm text-slate-600">
-                      {shipment.carrier_display ||
-                        getShipmentCarrierLabel(shipment.carrier)}
-                    </p>
-                    <p className="mt-1 text-xs text-slate-500">
-                      {formatMoney(shipment.shipping_cost)}
-                    </p>
-                  </div>
-
-                  <p className="text-sm text-slate-600">
-                    {formatDate(shipment.created_at)}
-                  </p>
-
-                  <Link
-                    href={`/admin/shipments/${shipment.id}`}
-                    className="mb-btn mb-btn-primary mb-btn-sm"
-                  >
-                    Manage
-                  </Link>
-                </div>
-              ))}
-            </div>
+          <div className="overflow-x-auto border-t border-line">
+            <table className="mb-table min-w-[54rem]">
+              <thead><tr><th scope="col">Shipment</th><th scope="col">Order</th><th scope="col">Status</th><th scope="col">Carrier</th><th scope="col">Created</th><th scope="col"><span className="sr-only">Action</span></th></tr></thead>
+              <tbody>
+                {filteredShipments.map((shipment) => (
+                  <tr key={shipment.id}>
+                    <td>
+                      <Link href={`/admin/shipments/${shipment.id}`} className="font-mono text-[0.8125rem] font-semibold text-foreground underline-offset-4 hover:underline">{shipment.shipment_number}</Link>
+                      <p className="mt-0.5 text-xs text-muted">{shipment.user_email}</p>
+                    </td>
+                    <td>
+                      <p className="font-mono text-[0.8125rem] text-slate-700">{shipment.order_number}</p>
+                      <p className="mt-0.5 text-xs text-muted">{shipment.seller_name ?? "Legacy order shipment"}</p>
+                    </td>
+                    <td><StatusBadge status={shipment.status} label={shipment.status_display || getShipmentStatusLabel(shipment.status)} /></td>
+                    <td>
+                      <p className="text-slate-700">{shipment.carrier_display || getShipmentCarrierLabel(shipment.carrier)}</p>
+                      <p className="mt-0.5 text-xs text-muted" data-numeric>{formatMoney(shipment.shipping_cost)}</p>
+                    </td>
+                    <td className="whitespace-nowrap text-muted">{formatDate(shipment.created_at)}</td>
+                    <td className="text-right">
+                      <Link href={`/admin/shipments/${shipment.id}`} className={buttonStyles({ variant: "secondary", size: "small" })}>Manage</Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
-      </section>
+      </Card>
     </main>
   );
 }

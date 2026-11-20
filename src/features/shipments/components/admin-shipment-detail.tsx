@@ -13,6 +13,16 @@ import {
   markShipmentShipped,
   type ShipmentDetail,
 } from "@/features/shipments/api";
+import { ArrowLeft, CircleCheck, ExternalLink, PackageCheck, Truck } from "lucide-react";
+
+import { StatusBadge, statusTone } from "@/components/ui/badge";
+import { Button, buttonStyles } from "@/components/ui/button";
+import { Card, CardHeader } from "@/components/ui/card";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { DetailList, Timeline } from "@/components/ui/data-display";
+import { Field, Input, Textarea } from "@/components/ui/input";
+import { PageHeader } from "@/components/ui/page-header";
+import { Notice, Skeleton } from "@/components/ui/states";
 import { getApiErrorMessage } from "@/lib/api/errors";
 
 function formatMoney(value: string) {
@@ -39,6 +49,7 @@ export function AdminShipmentDetail() {
   const [isWorking, setIsWorking] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [confirmCancel, setConfirmCancel] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -117,25 +128,19 @@ export function AdminShipmentDetail() {
 
   if (isLoading) {
     return (
-      <main className="mx-auto max-w-6xl px-4 py-10">
-        <p className="text-sm text-slate-500">Loading shipment...</p>
+      <main className="grid gap-6" aria-busy="true">
+        <p role="status" className="sr-only">Loading shipment...</p>
+        <Skeleton className="h-24 max-w-lg" />
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]"><Skeleton className="h-96 rounded-2xl" /><Skeleton className="h-96 rounded-2xl" /></div>
       </main>
     );
   }
 
   if (error && !shipment) {
     return (
-      <main className="mx-auto max-w-6xl px-4 py-10">
-        <Link
-          href="/admin/shipments"
-          className="text-sm font-medium text-slate-600 hover:text-slate-950"
-        >
-          ← Back to shipments
-        </Link>
-
-        <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-          {error}
-        </div>
+      <main className="grid max-w-2xl gap-4">
+        <Notice tone="danger" title="Could not load this shipment">{error}</Notice>
+        <div><Link href="/admin/shipments" className={buttonStyles({ variant: "secondary" })}><ArrowLeft size={15} aria-hidden="true" />Back to shipments</Link></div>
       </main>
     );
   }
@@ -152,293 +157,124 @@ export function AdminShipmentDetail() {
     "out_for_delivery",
   ].includes(shipment.status);
   const canCancel = !["delivered", "cancelled"].includes(shipment.status);
+  const hasAction = canMarkReady || canMarkShipped || canMarkDelivered || canCancel;
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-10">
-      <Link
-        href="/admin/shipments"
-        className="text-sm font-medium text-slate-600 hover:text-slate-950"
-      >
-        ← Back to shipments
-      </Link>
-
-      <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="mb-eyebrow">
-            Shipment
-          </p>
-          <h1 className="mt-2 text-3xl font-semibold text-slate-950">
-            {shipment.shipment_number}
-          </h1>
-          <p className="mt-2 text-sm text-slate-600">
-            Order {shipment.order_number} · {shipment.user_email}
-          </p>
-          <p className="mt-2 text-sm font-medium text-slate-800">
-            {shipment.seller_name
-              ? `Seller: ${shipment.seller_name}`
-              : "Legacy order shipment"}
-            {shipment.seller_status
-              ? ` · Fulfillment: ${shipment.seller_status.replaceAll("_", " ")}`
-              : ""}
-          </p>
-        </div>
-
-        <span className="w-fit rounded-full bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700">
-          {shipment.status_display || getShipmentStatusLabel(shipment.status)}
-        </span>
+    <main className="grid gap-6">
+      <div className="grid gap-4">
+        <Link href="/admin/shipments" className="inline-flex w-fit items-center gap-1.5 text-sm font-medium text-muted underline-offset-4 hover:text-foreground hover:underline">
+          <ArrowLeft size={15} aria-hidden="true" />Back to shipments
+        </Link>
+        <PageHeader eyebrow="Shipment"
+          title={<span className="font-mono text-[1.625rem] tracking-tight sm:text-[1.875rem]">{shipment.shipment_number}</span>}
+          description={<>
+            Order <span className="font-mono text-foreground">{shipment.order_number}</span> · {shipment.user_email}
+            <span className="mt-1 block font-medium text-slate-800">
+              {shipment.seller_name ? `Seller: ${shipment.seller_name}` : "Legacy order shipment"}
+              {shipment.seller_status ? ` · Fulfillment: ${shipment.seller_status.replaceAll("_", " ")}` : ""}
+            </span>
+          </>}
+          actions={<StatusBadge status={shipment.status} label={shipment.status_display || getShipmentStatusLabel(shipment.status)} className="px-3 py-1 text-sm" />} />
       </div>
 
-      {error ? (
-        <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-          {error}
-        </div>
-      ) : null}
+      {error ? <Notice tone="danger">{error}</Notice> : null}
+      {message ? <Notice tone="success">{message}</Notice> : null}
 
-      {message ? (
-        <div className="mt-6 rounded-2xl border border-green-200 bg-green-50 p-4 text-sm text-green-700">
-          {message}
-        </div>
-      ) : null}
-
-      <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_360px]">
-        <section className="space-y-6">
-          <div className="rounded-3xl border border-slate-200 bg-white p-6">
-            <h2 className="text-lg font-semibold text-slate-950">
-              Delivery address
-            </h2>
-
-            <dl className="mt-5 grid gap-4 text-sm sm:grid-cols-2">
-              <div>
-                <dt className="text-slate-500">Receiver</dt>
-                <dd className="mt-1 font-medium text-slate-950">
-                  {shipment.receiver_name}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-slate-500">Phone</dt>
-                <dd className="mt-1 font-medium text-slate-950">
-                  {shipment.receiver_phone}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-slate-500">City</dt>
-                <dd className="mt-1 font-medium text-slate-950">
-                  {shipment.city}, {shipment.province}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-slate-500">Postal code</dt>
-                <dd className="mt-1 font-medium text-slate-950">
-                  {shipment.postal_code}
-                </dd>
-              </div>
-              <div className="sm:col-span-2">
-                <dt className="text-slate-500">Address</dt>
-                <dd className="mt-1 font-medium text-slate-950">
-                  {shipment.address}
-                </dd>
-              </div>
-            </dl>
-          </div>
-
-          <div className="rounded-3xl border border-slate-200 bg-white p-6">
-            <h2 className="text-lg font-semibold text-slate-950">
-              Shipment events
-            </h2>
-
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+        <section className="grid min-w-0 gap-6" aria-label="Shipment details">
+          <Card>
+            <CardHeader title="Shipment events" description="Status changes recorded for this shipment, oldest first." />
             {shipment.events.length === 0 ? (
-              <p className="mt-4 text-sm text-slate-500">
-                No shipment events yet.
-              </p>
+              <p className="mt-4 text-sm text-muted">No shipment events yet.</p>
             ) : (
-              <div className="mt-5 space-y-4">
-                {shipment.events.map((event) => (
-                  <div
-                    key={event.id}
-                    className="rounded-2xl border border-slate-200 p-4"
-                  >
-                    <p className="text-sm font-medium text-slate-950">
-                      {event.old_status
-                        ? `${getShipmentStatusLabel(event.old_status)} → ${getShipmentStatusLabel(event.new_status)}`
-                        : getShipmentStatusLabel(event.new_status)}
-                    </p>
-                    <p className="mt-1 text-xs text-slate-500">
-                      {formatDateTime(event.created_at)}
-                      {event.created_by_name
-                        ? ` · ${event.created_by_name}`
-                        : ""}
-                    </p>
-                    {event.message ? (
-                      <p className="mt-2 text-sm text-slate-600">
-                        {event.message}
-                      </p>
-                    ) : null}
-                  </div>
-                ))}
-              </div>
+              <Timeline className="mt-5" items={shipment.events.map((event, index) => ({
+                id: event.id,
+                title: event.old_status
+                  ? `${getShipmentStatusLabel(event.old_status)} → ${getShipmentStatusLabel(event.new_status)}`
+                  : getShipmentStatusLabel(event.new_status),
+                meta: `${formatDateTime(event.created_at)}${event.created_by_name ? ` · ${event.created_by_name}` : ""}`,
+                description: event.message || undefined,
+                tone: index === shipment.events.length - 1 ? statusTone(event.new_status) : "neutral",
+              }))} />
             )}
-          </div>
+          </Card>
+
+          <Card>
+            <CardHeader title="Delivery address" />
+            <DetailList className="mt-5" items={[
+              { label: "Receiver", value: shipment.receiver_name },
+              { label: "Phone", value: shipment.receiver_phone, mono: true },
+              { label: "City", value: `${shipment.city}, ${shipment.province}` },
+              { label: "Postal code", value: shipment.postal_code, mono: true },
+              { label: "Address", value: shipment.address, wide: true },
+            ]} />
+          </Card>
         </section>
 
-        <aside className="space-y-6">
-          <div className="rounded-3xl border border-slate-200 bg-white p-6">
-            <h2 className="text-lg font-semibold text-slate-950">
-              Shipment summary
-            </h2>
+        <aside className="grid gap-6 lg:sticky lg:top-24">
+          <Card className={hasAction ? "border-ink/15 ring-1 ring-ink/5" : ""}>
+            <CardHeader title="Admin action" description="Each change is recorded as a shipment event." />
+            <div className="mt-5 grid gap-4">
+              <Field label="Note" htmlFor="shipment-note">
+                <Textarea id="shipment-note" value={note} onChange={(event) => setNote(event.target.value)} rows={3} placeholder="Add a short shipment note." />
+              </Field>
+              {canMarkShipped ? (
+                <>
+                  <Field label="Tracking number" htmlFor="shipment-tracking-number">
+                    <Input id="shipment-tracking-number" value={trackingNumber} onChange={(event) => setTrackingNumber(event.target.value)} className="font-mono" />
+                  </Field>
+                  <Field label="Tracking URL" htmlFor="shipment-tracking-url">
+                    <Input id="shipment-tracking-url" type="url" value={trackingUrl} onChange={(event) => setTrackingUrl(event.target.value)} placeholder="https://..." />
+                  </Field>
+                </>
+              ) : null}
+              <div className="grid gap-2">
+                {canMarkReady ? <Button variant="secondary" disabled={isWorking} onClick={() => void runAction("ready")}><PackageCheck size={16} aria-hidden="true" />Mark ready</Button> : null}
+                {canMarkShipped ? <Button disabled={isWorking} onClick={() => void runAction("shipped")}><Truck size={16} aria-hidden="true" />Mark shipped</Button> : null}
+                {canMarkDelivered ? <Button disabled={isWorking} onClick={() => void runAction("delivered")}><CircleCheck size={16} aria-hidden="true" />Mark delivered</Button> : null}
+                {canCancel ? (
+                  <Button variant="secondary" disabled={isWorking} onClick={() => setConfirmCancel(true)} className="text-rose-700 hover:border-rose-300 hover:bg-rose-50">
+                    Cancel shipment
+                  </Button>
+                ) : null}
+                {!hasAction ? (
+                  <p className="rounded-xl border border-line bg-sunken/60 p-4 text-sm text-muted">No shipment action is available for the current status.</p>
+                ) : null}
+              </div>
+            </div>
+          </Card>
 
-            <dl className="mt-5 space-y-4 text-sm">
-              <div className="flex items-center justify-between gap-4">
-                <dt className="text-slate-500">Carrier</dt>
-                <dd className="font-semibold text-slate-950">
-                  {shipment.carrier_display || shipment.carrier}
-                </dd>
-              </div>
-              <div className="flex items-center justify-between gap-4">
-                <dt className="text-slate-500">Shipping cost</dt>
-                <dd className="font-semibold text-slate-950">
-                  {formatMoney(shipment.shipping_cost)}
-                </dd>
-              </div>
+          <Card>
+            <CardHeader title="Shipment summary" />
+            <dl className="mt-4 grid gap-3 text-sm">
+              <div className="flex items-center justify-between gap-4"><dt className="text-muted">Carrier</dt><dd className="font-medium text-foreground">{shipment.carrier_display || shipment.carrier}</dd></div>
+              <div className="flex items-center justify-between gap-4"><dt className="text-muted">Shipping cost</dt><dd className="font-medium text-foreground" data-numeric>{formatMoney(shipment.shipping_cost)}</dd></div>
               <div className="flex items-start justify-between gap-4">
-                <dt className="text-slate-500">Tracking</dt>
+                <dt className="text-muted">Tracking</dt>
                 <dd className="text-right">
-                  <p className="font-semibold text-slate-950">
-                    {shipment.tracking_number || "—"}
-                  </p>
+                  <p className="font-mono font-medium text-foreground">{shipment.tracking_number || "—"}</p>
                   {shipment.tracking_url ? (
-                    <a
-                      href={shipment.tracking_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="mt-1 inline-block text-xs font-medium text-slate-600 underline hover:text-slate-950"
-                    >
-                      Open tracking
+                    <a href={shipment.tracking_url} target="_blank" rel="noreferrer" className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-brand underline-offset-4 hover:underline">
+                      Open tracking<ExternalLink size={12} aria-hidden="true" />
                     </a>
                   ) : null}
                 </dd>
               </div>
-              <div className="flex items-center justify-between gap-4">
-                <dt className="text-slate-500">Shipped at</dt>
-                <dd className="font-semibold text-slate-950">
-                  {formatDateTime(shipment.shipped_at)}
-                </dd>
-              </div>
-              <div className="flex items-center justify-between gap-4">
-                <dt className="text-slate-500">Delivered at</dt>
-                <dd className="font-semibold text-slate-950">
-                  {formatDateTime(shipment.delivered_at)}
-                </dd>
-              </div>
-              <div className="flex items-center justify-between gap-4">
-                <dt className="text-slate-500">Cancelled at</dt>
-                <dd className="font-semibold text-slate-950">
-                  {formatDateTime(shipment.cancelled_at)}
-                </dd>
-              </div>
+              <div className="flex items-center justify-between gap-4"><dt className="text-muted">Shipped at</dt><dd className="text-right font-medium text-foreground">{formatDateTime(shipment.shipped_at)}</dd></div>
+              <div className="flex items-center justify-between gap-4"><dt className="text-muted">Delivered at</dt><dd className="text-right font-medium text-foreground">{formatDateTime(shipment.delivered_at)}</dd></div>
+              <div className="flex items-center justify-between gap-4"><dt className="text-muted">Cancelled at</dt><dd className="text-right font-medium text-foreground">{formatDateTime(shipment.cancelled_at)}</dd></div>
             </dl>
-          </div>
-
-          <div className="rounded-3xl border border-slate-200 bg-white p-6">
-            <h2 className="text-lg font-semibold text-slate-950">
-              Admin action
-            </h2>
-
-            <label className="mt-5 block space-y-2 text-sm">
-              <span className="font-medium text-slate-700">Note</span>
-              <textarea
-                value={note}
-                onChange={(event) => setNote(event.target.value)}
-                rows={3}
-                placeholder="Add a short shipment note."
-                className="w-full mb-control"
-              />
-            </label>
-
-            {canMarkShipped ? (
-              <div className="mt-4 space-y-3">
-                <label className="block space-y-2 text-sm">
-                  <span className="font-medium text-slate-700">
-                    Tracking number
-                  </span>
-                  <input
-                    value={trackingNumber}
-                    onChange={(event) => setTrackingNumber(event.target.value)}
-                    className="w-full mb-control"
-                  />
-                </label>
-
-                <label className="block space-y-2 text-sm">
-                  <span className="font-medium text-slate-700">
-                    Tracking URL
-                  </span>
-                  <input
-                    type="url"
-                    value={trackingUrl}
-                    onChange={(event) => setTrackingUrl(event.target.value)}
-                    placeholder="https://..."
-                    className="w-full mb-control"
-                  />
-                </label>
-              </div>
-            ) : null}
-
-            <div className="mt-5 space-y-3">
-              {canMarkReady ? (
-                <button
-                  type="button"
-                  disabled={isWorking}
-                  onClick={() => void runAction("ready")}
-                  className="flex w-full mb-btn mb-btn-secondary"
-                >
-                  Mark ready
-                </button>
-              ) : null}
-
-              {canMarkShipped ? (
-                <button
-                  type="button"
-                  disabled={isWorking}
-                  onClick={() => void runAction("shipped")}
-                  className="flex w-full mb-btn mb-btn-primary"
-                >
-                  Mark shipped
-                </button>
-              ) : null}
-
-              {canMarkDelivered ? (
-                <button
-                  type="button"
-                  disabled={isWorking}
-                  onClick={() => void runAction("delivered")}
-                  className="flex w-full mb-btn mb-btn-primary"
-                >
-                  Mark delivered
-                </button>
-              ) : null}
-
-              {canCancel ? (
-                <button
-                  type="button"
-                  disabled={isWorking}
-                  onClick={() => void runAction("cancel")}
-                  className="flex w-full mb-btn mb-btn-secondary text-rose-700 hover:bg-rose-50"
-                >
-                  Cancel shipment
-                </button>
-              ) : null}
-
-              {!canMarkReady &&
-              !canMarkShipped &&
-              !canMarkDelivered &&
-              !canCancel ? (
-                <p className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600">
-                  No shipment action is available for the current status.
-                </p>
-              ) : null}
-            </div>
-          </div>
+          </Card>
         </aside>
       </div>
+
+      {confirmCancel ? (
+        <ConfirmDialog title={`Cancel shipment ${shipment.shipment_number}?`}
+          description="The shipment stops here and the cancellation is recorded with your note. This cannot be reversed from this page."
+          confirmLabel="Yes, cancel shipment" cancelLabel="Keep shipment" tone="danger" busy={isWorking}
+          onCancel={() => setConfirmCancel(false)}
+          onConfirm={() => { void runAction("cancel").finally(() => setConfirmCancel(false)); }} />
+      ) : null}
     </main>
   );
 }

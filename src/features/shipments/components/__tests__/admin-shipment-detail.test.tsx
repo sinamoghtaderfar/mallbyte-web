@@ -319,6 +319,9 @@ describe("AdminShipmentDetail", () => {
     await screen.findByText("SHP-20260917-447F30");
     await user.type(screen.getByLabelText("Note"), "Cancelled by admin");
     await user.click(screen.getByRole("button", { name: "Cancel shipment" }));
+    await user.click(
+      await screen.findByRole("button", { name: "Yes, cancel shipment" }),
+    );
 
     await waitFor(() => {
       expect(mockedCancelShipment).toHaveBeenCalledWith(2, {
