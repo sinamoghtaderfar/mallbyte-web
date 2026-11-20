@@ -6,6 +6,11 @@ import { OrderReturnBadge } from "@/features/returns/components/order-return-bad
 import Link from "next/link";
 import { ChangeEvent, useEffect, useMemo, useState } from "react";
 
+import { ChevronRight, Package, Search } from "lucide-react";
+
+import { StatusBadge } from "@/components/ui/badge";
+import { buttonStyles } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/states";
 import { getApiErrorMessage } from "@/lib/api/errors";
 import type { PaginatedResponse } from "@/types/api";
 
@@ -46,21 +51,6 @@ function formatDate(value: string) {
   return new Date(value).toLocaleString();
 }
 
-function getBadgeClass(status: string) {
-  if (status.includes("cancel")) {
-    return "bg-red-100 text-red-700";
-  }
-
-  if (status.includes("deliver") || status.includes("paid")) {
-    return "bg-green-100 text-green-700";
-  }
-
-  if (status.includes("ship") || status.includes("process")) {
-    return "bg-blue-100 text-blue-700";
-  }
-
-  return "bg-yellow-100 text-yellow-700";
-}
 
 // OrderViewSet currently supports pagination, but no server-side filtering or
 // ordering. Keep these controls explicitly scoped to the loaded page.
@@ -203,8 +193,10 @@ function OrdersListContent() {
 
   if (isLoading) {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm">
-        <p className="text-sm text-slate-500">Loading orders...</p>
+      <div role="status" className="space-y-4">
+        <span className="sr-only">Loading orders...</span>
+        <Skeleton className="h-10 w-48" />
+        {[0, 1, 2].map((i) => <Skeleton key={i} className="h-24 rounded-2xl" />)}
       </div>
     );
   }
@@ -238,16 +230,17 @@ function OrdersListContent() {
 
   if (!data.count) {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm">
-        <h1 className="text-2xl font-semibold text-slate-950">No orders yet</h1>
+      <div className="flex flex-col items-center rounded-3xl border border-dashed border-line-strong px-6 py-16 text-center">
+        <span className="flex size-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-700" aria-hidden="true"><Package size={24} strokeWidth={1.6} /></span>
+        <h1 className="mb-display mt-6 text-[2.25rem] text-ink">No orders yet</h1>
 
-        <p className="mt-2 text-sm text-slate-500">
+        <p className="mt-2 text-sm text-muted">
           Your orders will appear here after checkout.
         </p>
 
         <Link
           href="/products"
-          className="mt-6 mb-btn mb-btn-primary"
+          className={buttonStyles({ className: "mt-6 rounded-full" })}
         >
           Browse products
         </Link>
@@ -256,44 +249,65 @@ function OrdersListContent() {
   }
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[320px_1fr]">
-      <aside className="h-fit rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <p className="mb-eyebrow">
-          Filter this page
-        </p>
+    <div>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="mb-eyebrow">Your account</p>
+          <h1 className="mb-display mt-2 text-[2.5rem] text-ink">Orders</h1>
+          <p className="mt-1 text-sm text-muted">
+            {filteredOrders.length} of {orders.length} orders on this page ·{" "}
+            {data.count} orders in your history.
+          </p>
+        </div>
+        {hasActiveFilters ? (
+          <span className="rounded-full bg-ink px-3 py-1 text-xs font-medium text-white">
+            Filters active
+          </span>
+        ) : null}
+      </div>
 
-        <h2 className="mt-3 text-2xl font-semibold tracking-tight text-slate-950">
-          Find orders
-        </h2>
+      <dl className="mt-6 grid grid-cols-3 divide-x divide-line overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
+        <div className="p-4 sm:p-5">
+          <dt className="text-xs text-muted sm:text-sm">Orders (all pages)</dt>
+          <dd data-numeric className="mt-1.5 text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">{data.count}</dd>
+        </div>
+        <div className="p-4 sm:p-5">
+          <dt className="text-xs text-muted sm:text-sm">Pending (this page)</dt>
+          <dd data-numeric className="mt-1.5 text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">{pendingOrders}</dd>
+        </div>
+        <div className="p-4 sm:p-5">
+          <dt className="text-xs text-muted sm:text-sm">Total amount (this page)</dt>
+          <dd data-numeric className="mt-1.5 text-xl font-semibold tracking-tight text-slate-950 [overflow-wrap:anywhere] sm:text-2xl">{formatPrice(totalSpent)}</dd>
+        </div>
+      </dl>
 
-        <p className="mt-2 text-sm leading-6 text-slate-500">
-          Search and sort the orders on this page. Use page navigation to browse
-          your full history. Filters do not search other pages.
-        </p>
-
-        <div className="mt-6 space-y-4">
+      <section aria-label="Filter this page" className="mt-6 rounded-2xl border border-line bg-surface p-4 shadow-sm">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-[1.4fr_1fr_1fr_1fr_auto] xl:items-end">
           <label className="block">
-            <span className="text-sm font-medium text-slate-700">
+            <span className="text-xs font-medium text-slate-700">
               Search orders
             </span>
-            <input
-              name="search"
-              value={filters.search}
-              onChange={handleFilterChange}
-              placeholder="MBA-1001"
-              className="mt-2 w-full mb-control"
-            />
+            <span className="relative mt-1 block">
+              <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" aria-hidden="true" />
+              <input
+                name="search"
+                value={filters.search}
+                onChange={handleFilterChange}
+                placeholder="MBA-1001"
+                className="w-full mb-control pl-9"
+              />
+            </span>
           </label>
 
           <label className="block">
-            <span className="text-sm font-medium text-slate-700">
+            <span className="text-xs font-medium text-slate-700">
               Order status
             </span>
             <select
               name="status"
               value={filters.status}
               onChange={handleFilterChange}
-              className="mt-2 w-full mb-control mb-select"
+              className="mt-1 w-full mb-control mb-select"
             >
               <option value="">All statuses</option>
 
@@ -306,14 +320,14 @@ function OrdersListContent() {
           </label>
 
           <label className="block">
-            <span className="text-sm font-medium text-slate-700">
+            <span className="text-xs font-medium text-slate-700">
               Payment status
             </span>
             <select
               name="payment_status"
               value={filters.payment_status}
               onChange={handleFilterChange}
-              className="mt-2 w-full mb-control mb-select"
+              className="mt-1 w-full mb-control mb-select"
             >
               <option value="">All payment statuses</option>
 
@@ -326,14 +340,14 @@ function OrdersListContent() {
           </label>
 
           <label className="block">
-            <span className="text-sm font-medium text-slate-700">
+            <span className="text-xs font-medium text-slate-700">
               Sort this page
             </span>
             <select
               name="sort"
               value={filters.sort}
               onChange={handleFilterChange}
-              className="mt-2 w-full mb-control mb-select"
+              className="mt-1 w-full mb-control mb-select"
             >
               <option value="newest">Newest first</option>
               <option value="oldest">Oldest first</option>
@@ -350,153 +364,81 @@ function OrdersListContent() {
             Clear filters
           </button>
         </div>
-      </aside>
+        <p className="mt-3 text-xs text-muted">Search and sort the orders on this page. Use page navigation to browse your full history. Filters do not search other pages.</p>
+      </section>
 
-      <section>
-        <div className="mb-6 grid gap-4 sm:grid-cols-3">
-          <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="mb-eyebrow">
-              Orders (all pages)
-            </p>
-            <p className="mt-3 text-2xl font-semibold text-slate-950">
-              {data.count}
-            </p>
-          </div>
-
-          <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="mb-eyebrow">
-              Pending (this page)
-            </p>
-            <p className="mt-3 text-2xl font-semibold text-slate-950">
-              {pendingOrders}
+      <section aria-label="Order list" className="mt-6">
+        {!filteredOrders.length ? (
+          <div className="rounded-2xl border border-dashed border-line-strong p-8 text-center">
+            <h2 className="text-lg font-semibold text-slate-950">
+              No orders on this page match your filters
+            </h2>
+            <p className="mt-2 text-sm text-muted">
+              Try changing the filters, clearing them, or browsing another
+              page.
             </p>
           </div>
-
-          <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="mb-eyebrow">
-              Total amount (this page)
-            </p>
-            <p className="mt-3 text-2xl font-semibold text-slate-950">
-              {formatPrice(totalSpent)}
-            </p>
-          </div>
-        </div>
-
-        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold text-slate-950">Orders</h1>
-              <p className="mt-1 text-sm text-slate-500">
-                {filteredOrders.length} of {orders.length} orders on this page ·{" "}
-                {data.count} orders in your history.
-              </p>
-            </div>
-
-            {hasActiveFilters ? (
-              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
-                Filters active
-              </span>
-            ) : null}
-          </div>
-
-          {!filteredOrders.length ? (
-            <div className="rounded-3xl border border-dashed border-slate-300 p-5 sm:p-8">
-              <h2 className="text-xl font-semibold text-slate-950">
-                No orders on this page match your filters
-              </h2>
-              <p className="mt-2 text-sm text-slate-500">
-                Try changing the filters, clearing them, or browsing another
-                page.
-              </p>
-            </div>
-          ) : (
-            <div className="divide-y divide-slate-100">
-              {filteredOrders.map((order) => (
+        ) : (
+          <ul className="space-y-3">
+            {filteredOrders.map((order) => (
+              <li key={order.id}>
                 <Link
-                  key={order.id}
                   href={`/orders/${order.id}`}
-                  className="block py-5 transition hover:bg-slate-50 sm:-mx-4 sm:rounded-2xl sm:px-4"
+                  className="group grid gap-4 rounded-2xl border border-line bg-surface p-5 shadow-sm transition hover:border-line-strong hover:shadow-md sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
                 >
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <div className="flex flex-wrap items-center gap-3">
-                        <h2 className="text-base font-semibold text-slate-950">
-                          {order.order_number}
-                        </h2>
-
-                        <span
-                          className={[
-                            "rounded-full px-3 py-1 text-xs font-medium",
-                            getBadgeClass(order.status),
-                          ].join(" ")}
-                        >
-                          {order.status_display}
-                        </span>
-
-                        <span
-                          className={[
-                            "rounded-full px-3 py-1 text-xs font-medium",
-                            getBadgeClass(order.payment_status),
-                          ].join(" ")}
-                        >
-                          {order.payment_status_display}
-                        </span>
-                      </div>
-
-                      <p className="mt-2 text-sm text-slate-500">
-                        {formatDate(order.created_at)}
-                      </p>
-
-                      <p className="mt-1 text-sm text-slate-500">
-                        {order.items_count} item
-                        {order.items_count === 1 ? "" : "s"}
-                      </p>
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="font-mono text-[0.9375rem] font-semibold text-slate-950">
+                        {order.order_number}
+                      </h2>
+                      <StatusBadge status={order.status} label={order.status_display} />
+                      <StatusBadge status={order.payment_status} label={order.payment_status_display} />
                     </div>
 
-                    <div className="text-left sm:text-right">
-                      <p className="text-lg font-semibold text-slate-950">
-                        {formatPrice(order.total_amount)}
-                      </p>
-                      <p className="mt-1 text-sm text-slate-500">
-                        <span className="mb-2 block">
-                          <OrderReturnBadge
-                            orderId={order.id}
-                            orderNumber={order.order_number}
-                          />
-                        </span>
-                        View details →
-                      </p>
-                    </div>
+                    <p className="mt-2 text-sm text-muted">
+                      {formatDate(order.created_at)}
+                      <span className="mx-2 text-slate-300" aria-hidden="true">·</span>
+                      {order.items_count} item
+                      {order.items_count === 1 ? "" : "s"}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-4 sm:justify-end">
+                    <span className="block"><OrderReturnBadge orderId={order.id} orderNumber={order.order_number} /></span>
+                    <p data-numeric className="text-lg font-semibold tracking-tight text-slate-950">
+                      {formatPrice(order.total_amount)}
+                    </p>
+                    <span className="hidden text-sm text-muted sm:inline-flex sm:items-center sm:gap-1 sm:group-hover:text-ink">View details <ChevronRight size={15} aria-hidden="true" /></span>
                   </div>
                 </Link>
-              ))}
-            </div>
-          )}
-          <nav
-            aria-label="Order pages"
-            className="mt-6 flex items-center justify-between gap-3 border-t border-slate-200 pt-5"
+              </li>
+            ))}
+          </ul>
+        )}
+        <nav
+          aria-label="Order pages"
+          className="mt-6 flex items-center justify-between gap-3 border-t border-line pt-5"
+        >
+          <button
+            type="button"
+            disabled={!data.previous}
+            onClick={() => setPage((value) => Math.max(1, value - 1))}
+            className="mb-btn mb-btn-secondary mb-btn-sm"
           >
-            <button
-              type="button"
-              disabled={!data.previous}
-              onClick={() => setPage((value) => Math.max(1, value - 1))}
-              className="rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-700 disabled:opacity-40"
-            >
-              Previous
-            </button>
-            <p className="text-sm text-slate-600">
-              Page {page} of {Math.max(1, Math.ceil(data.count / 20))}
-            </p>
-            <button
-              type="button"
-              disabled={!data.next}
-              onClick={() => setPage((value) => value + 1)}
-              className="rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-700 disabled:opacity-40"
-            >
-              Next
-            </button>
-          </nav>
-        </div>
+            Previous
+          </button>
+          <p className="text-sm text-muted">
+            Page {page} of {Math.max(1, Math.ceil(data.count / 20))}
+          </p>
+          <button
+            type="button"
+            disabled={!data.next}
+            onClick={() => setPage((value) => value + 1)}
+            className="mb-btn mb-btn-secondary mb-btn-sm"
+          >
+            Next
+          </button>
+        </nav>
       </section>
     </div>
   );

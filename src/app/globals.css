@@ -356,3 +356,7 @@ button:not(:disabled), summary {
 .account-content main > :is(.max-w-5xl, .max-w-6xl, .max-w-7xl) {
   max-width: none;
 }
+.account-content main > .mx-auto,
+.workspace-content main > .mx-auto {
+  margin-inline-start: 0;
+}

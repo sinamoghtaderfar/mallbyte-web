@@ -1,5 +1,7 @@
 "use client";
 
+import { StatusBadge } from "@/components/ui/badge";
+import { Breadcrumbs } from "@/components/ui/page-header";
 import { OrderReturnHistory } from "@/features/returns/components/order-return-history";
 
 import {
@@ -192,15 +194,13 @@ function OrderDetailContent() {
   }
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
-      <section className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm">
+    <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem]">
+      <section className="min-w-0 rounded-2xl border border-line bg-surface p-5 shadow-sm sm:p-8">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <p className="mb-eyebrow">
-              Order
-            </p>
+            <Breadcrumbs items={[{ href: "/orders", label: "Orders" }, { label: "Order" }]} />
 
-            <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">
+            <h1 className="mt-3 font-mono text-2xl font-semibold tracking-tight text-slate-950 sm:text-[1.75rem]">
               {order.order_number}
             </h1>
 
@@ -210,23 +210,8 @@ function OrderDetailContent() {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <span
-              className={[
-                "rounded-full px-4 py-2 text-sm font-medium",
-                getBadgeClass(order.status),
-              ].join(" ")}
-            >
-              {order.status_display}
-            </span>
-
-            <span
-              className={[
-                "rounded-full px-4 py-2 text-sm font-medium",
-                getBadgeClass(order.payment_status),
-              ].join(" ")}
-            >
-              {order.payment_status_display}
-            </span>
+            <StatusBadge status={order.status} label={order.status_display} />
+            <StatusBadge status={order.payment_status} label={order.payment_status_display} />
           </div>
         </div>
 
@@ -242,8 +227,8 @@ function OrderDetailContent() {
           </div>
         ) : null}
 
-        <div className="mt-8 rounded-3xl border border-slate-200 p-5">
-          <h2 className="text-lg font-semibold text-slate-950">
+        <div className="mt-8 rounded-2xl border border-line bg-sunken/40 p-5 sm:p-6">
+          <h2 className="text-base font-semibold text-slate-950">
             Order progress
           </h2>
 
@@ -252,41 +237,36 @@ function OrderDetailContent() {
               This order has been cancelled.
             </div>
           ) : (
-            <div className="mt-5 grid gap-3 sm:grid-cols-5">
-              {statusSteps.map((step) => {
+            <ol className="mt-6 grid grid-cols-5 gap-1">
+              {statusSteps.map((step, index) => {
                 const completed = isStepCompleted(order.status, step.value);
+                const next = statusSteps[index + 1];
+                const lineDone = next ? isStepCompleted(order.status, next.value) : false;
 
                 return (
-                  <div
-                    key={step.value}
-                    className={[
-                      "rounded-2xl border p-4 text-sm",
-                      completed
-                        ? "border-green-200 bg-green-50 text-green-700"
-                        : "border-slate-200 bg-slate-50 text-slate-500",
-                    ].join(" ")}
-                  >
-                    <div
-                      className={[
-                        "mb-3 h-3 w-3 rounded-full",
-                        completed ? "bg-green-500" : "bg-slate-300",
-                      ].join(" ")}
-                    />
-                    <p className="font-medium">{step.label}</p>
-                  </div>
+                  <li key={step.value} className="relative flex flex-col items-center text-center" aria-current={completed && !lineDone ? "step" : undefined}>
+                    {next ? <span aria-hidden="true" className={`absolute left-1/2 top-3 h-0.5 w-full ${lineDone ? "bg-ink" : "bg-slate-200"}`} /> : null}
+                    <span aria-hidden="true" className={`relative z-10 flex size-6 items-center justify-center rounded-full ring-4 ring-surface ${completed ? "bg-ink text-white" : "border-2 border-slate-300 bg-surface"}`}>
+                      {completed ? <svg viewBox="0 0 12 12" className="size-3" fill="none" stroke="currentColor" strokeWidth="2"><path d="m2.5 6.2 2.3 2.3 4.7-5" /></svg> : null}
+                    </span>
+                    <p className={`mt-2.5 text-xs font-medium sm:text-sm ${completed ? "text-slate-950" : "text-slate-500"}`}>{step.label}<span className="sr-only">{completed ? " (completed)" : " (pending)"}</span></p>
+                  </li>
                 );
               })}
-            </div>
+            </ol>
           )}
         </div>
 
-        <div className="mt-8 divide-y divide-slate-100">
+        <h2 className="mt-8 text-base font-semibold text-slate-950">Items</h2>
+        <div className="mt-2 divide-y divide-line">
           {order.items.map((item) => (
             <div
               key={item.id}
               className="flex flex-col gap-3 py-5 sm:flex-row sm:items-center sm:justify-between"
             >
-              <div>
+              <div className="flex min-w-0 gap-4">
+                <span aria-hidden="true" className="flex size-14 shrink-0 items-center justify-center rounded-xl bg-sunken text-lg font-semibold uppercase text-slate-500">{item.product_name.slice(0, 1)}</span>
+                <div className="min-w-0">
                 <Link
                   href={`/products/${item.product_id || item.product}`}
                   className="text-base font-semibold text-slate-950 underline-offset-4 hover:underline"
@@ -303,6 +283,7 @@ function OrderDetailContent() {
                 <p className="mt-1 text-sm text-slate-500">
                   Warehouse: {item.warehouse_name || "Not assigned"}
                 </p>
+                </div>
               </div>
 
               <div className="text-left sm:text-right">
@@ -344,17 +325,18 @@ function OrderDetailContent() {
         ) : null}
 
         {order.status_history.length ? (
-          <div className="mt-8 rounded-3xl border border-slate-200 p-5">
-            <h2 className="text-lg font-semibold text-slate-950">
+          <div className="mt-8 rounded-2xl border border-line p-5 sm:p-6">
+            <h2 className="text-base font-semibold text-slate-950">
               Status history
             </h2>
 
-            <div className="mt-5 space-y-4">
+            <ol className="mt-5 space-y-0 border-l border-line pl-5">
               {order.status_history.map((history) => (
-                <div
+                <li
                   key={history.id}
-                  className="rounded-2xl border border-slate-200 p-4"
+                  className="relative pb-5 last:pb-0"
                 >
+                  <span aria-hidden="true" className="absolute -left-[1.6rem] top-1 size-2.5 rounded-full bg-ink ring-4 ring-surface" />
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <p className="text-sm font-semibold text-slate-950">
                       {history.old_status || "Created"} → {history.new_status}
@@ -376,9 +358,9 @@ function OrderDetailContent() {
                       Changed by {history.changed_by_name}
                     </p>
                   ) : null}
-                </div>
+                </li>
               ))}
-            </div>
+            </ol>
           </div>
         ) : null}
         <OrderShipmentTracking key={order.id} orderId={order.id} />
@@ -431,7 +413,7 @@ function OrderDetailContent() {
         </div>
       </section>
 
-      <aside className="h-fit rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+      <aside className="h-fit rounded-2xl border border-line bg-surface p-6 shadow-sm lg:sticky lg:top-36">
         <h2 className="text-lg font-semibold text-slate-950">Summary</h2>
 
         <div className="mt-5 space-y-3 border-t border-slate-100 pt-5">
