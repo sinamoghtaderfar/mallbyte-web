@@ -8,6 +8,15 @@ import {
   type AdminSellerStatus,
   getAdminSellers,
 } from "@/features/admin-sellers/api";
+import { BadgeCheck, Clock3, Store } from "lucide-react";
+
+import { StatusBadge } from "@/components/ui/badge";
+import { Button, buttonStyles } from "@/components/ui/button";
+import { Card, CardHeader, StatCard } from "@/components/ui/card";
+import { Select } from "@/components/ui/input";
+import { PageHeader } from "@/components/ui/page-header";
+import { Pagination } from "@/components/ui/pagination";
+import { Notice, Skeleton } from "@/components/ui/states";
 import { getApiErrorMessage } from "@/lib/api/errors";
 
 const statusLabels: Record<AdminSellerStatus, string> = {
@@ -117,174 +126,69 @@ export function AdminSellersList() {
   ).length;
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-10">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="mb-eyebrow">
-            Admin
-          </p>
-          <h1 className="mt-2 text-3xl font-semibold text-slate-950">
-            Seller management
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm text-slate-600">
-            Review seller applications, approve verified stores, and keep track
-            of rejected or suspended sellers.
-          </p>
-        </div>
+    <main className="grid gap-6">
+      <PageHeader eyebrow="Admin" title="Seller management"
+        description="Review seller applications, approve verified stores, and keep track of rejected or suspended sellers."
+        actions={<Link href="/admin/returns" className={buttonStyles({ variant: "secondary" })}>Return management</Link>} />
 
-        <Link
-          href="/admin/returns"
-          className="mb-btn mb-btn-secondary"
-        >
-          Return management
-        </Link>
-      </div>
-
-      <section className="mt-8 grid gap-4 md:grid-cols-3">
-        <div className="rounded-3xl border border-slate-200 bg-white p-5">
-          <p className="text-sm text-slate-500">Matching sellers (all pages)</p>
-          <p className="mt-2 text-2xl font-semibold text-slate-950">
-            {pagination.count}
-          </p>
-        </div>
-        <div className="rounded-3xl border border-slate-200 bg-white p-5">
-          <p className="text-sm text-slate-500">Pending review (this page)</p>
-          <p className="mt-2 text-2xl font-semibold text-slate-950">
-            {pendingCount}
-          </p>
-        </div>
-        <div className="rounded-3xl border border-slate-200 bg-white p-5">
-          <p className="text-sm text-slate-500">Approved sellers (this page)</p>
-          <p className="mt-2 text-2xl font-semibold text-slate-950">
-            {approvedCount}
-          </p>
-        </div>
+      <section aria-label="Seller summary" className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-3 sm:gap-4">
+        <StatCard label="Matching sellers (all pages)" value={pagination.count} icon={<Store size={16} />} />
+        <StatCard label="Pending review (this page)" value={pendingCount} icon={<Clock3 size={16} />} tone={pendingCount ? "brand" : "default"} />
+        <StatCard label="Approved sellers (this page)" value={approvedCount} icon={<BadgeCheck size={16} />} />
       </section>
 
-      <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-5">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="text-lg font-semibold text-slate-950">
-            Seller applications
-          </h2>
-
-          <select
-            aria-label="Seller status"
-            value={statusFilter}
-            onChange={(event) =>
-              changeQuery({
-                page: 1,
-                status: event.target.value as "all" | AdminSellerStatus,
-              })
-            }
-            className="mb-control mb-select"
-          >
-            <option value="all">All statuses</option>
-            {Object.entries(statusLabels).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
+      <Card padded={false} className="overflow-hidden">
+        <div className="p-5 sm:p-6">
+          <CardHeader title="Seller applications" description="Open an application to verify documents and decide."
+            action={<Select aria-label="Seller status" value={statusFilter} className="w-48"
+              onChange={(event) => changeQuery({ page: 1, status: event.target.value as "all" | AdminSellerStatus })}>
+              <option value="all">All statuses</option>
+              {Object.entries(statusLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+            </Select>} />
         </div>
 
         {isLoading ? (
-          <p className="mt-6 text-sm text-slate-500">Loading sellers...</p>
+          <div role="status" className="grid gap-2 border-t border-line p-5">
+            <span className="sr-only">Loading sellers...</span>
+            {[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-12 rounded-lg" />)}
+          </div>
         ) : error ? (
-          <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-            <p>{error}</p>
-            <button
-              type="button"
-              onClick={() => setRetry((value) => value + 1)}
-              className="mt-3 underline"
-            >
-              Retry sellers
-            </button>
+          <div className="border-t border-line p-5">
+            <Notice tone="danger" action={<Button size="small" variant="secondary" onClick={() => setRetry((value) => value + 1)}>Retry sellers</Button>}>{error}</Notice>
           </div>
         ) : sellers.length === 0 ? (
-          <p className="mt-6 text-sm text-slate-500">
-            No seller applications found.
-          </p>
+          <p className="border-t border-line px-5 py-10 text-center text-sm text-muted">No seller applications found.</p>
         ) : (
-          <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200">
-            <div className="hidden grid-cols-[1.2fr_1fr_1fr_1fr_1fr_auto] gap-4 bg-slate-50 px-4 py-3 md:grid mb-eyebrow">
-              <span>Store</span>
-              <span>Owner</span>
-              <span>Status</span>
-              <span>Sales</span>
-              <span>Created</span>
-              <span />
-            </div>
-
-            <div className="divide-y divide-slate-100">
-              {sellers.map((seller) => (
-                <div
-                  key={seller.id}
-                  className="grid gap-4 px-4 py-4 md:grid-cols-[1.2fr_1fr_1fr_1fr_1fr_auto] md:items-center"
-                >
-                  <div>
-                    <Link
-                      href={`/admin/sellers/${seller.id}`}
-                      className="font-semibold text-slate-950 hover:underline"
-                    >
-                      {getSellerStoreLabel(seller)}
-                    </Link>
-                    <p className="mt-1 text-xs text-slate-500">
-                      {seller.business_email}
-                    </p>
-                  </div>
-
-                  <p className="text-sm text-slate-600">
-                    {getSellerOwnerLabel(seller)}
-                  </p>
-
-                  <span className="w-fit rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
-                    {statusLabels[seller.status] ?? seller.status}
-                  </span>
-
-                  <p className="text-sm font-medium text-slate-950">
-                    {formatMoney(seller.total_sales)}
-                  </p>
-
-                  <p className="text-sm text-slate-600">
-                    {formatDate(seller.created_at)}
-                  </p>
-
-                  <Link
-                    href={`/admin/sellers/${seller.id}`}
-                    className="mb-btn mb-btn-primary mb-btn-sm"
-                  >
-                    Review
-                  </Link>
-                </div>
-              ))}
-            </div>
+          <div className="overflow-x-auto border-t border-line">
+            <table className="mb-table min-w-[46rem]">
+              <thead><tr><th scope="col">Store</th><th scope="col">Owner</th><th scope="col">Status</th><th scope="col" className="text-right">Sales</th><th scope="col">Created</th><th scope="col"><span className="sr-only">Action</span></th></tr></thead>
+              <tbody>
+                {sellers.map((seller) => (
+                  <tr key={seller.id}>
+                    <td>
+                      <Link href={`/admin/sellers/${seller.id}`} className="font-medium text-foreground underline-offset-4 hover:underline">{getSellerStoreLabel(seller)}</Link>
+                      <p className="mt-0.5 text-xs text-muted">{seller.business_email}</p>
+                    </td>
+                    <td className="text-slate-700">{getSellerOwnerLabel(seller)}</td>
+                    <td><StatusBadge status={seller.status} label={statusLabels[seller.status] ?? seller.status} /></td>
+                    <td className="text-right font-medium text-foreground">{formatMoney(seller.total_sales)}</td>
+                    <td className="whitespace-nowrap text-muted">{formatDate(seller.created_at)}</td>
+                    <td className="text-right">
+                      <Link href={`/admin/sellers/${seller.id}`} className={buttonStyles({ variant: "secondary", size: "small" })}>Review</Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
-        <nav
-          aria-label="Seller pages"
-          className="mt-6 flex items-center justify-between gap-3 text-sm text-slate-700"
-        >
-          <button
-            type="button"
-            disabled={query.page === 1 || isLoading}
-            onClick={() => changeQuery({ ...query, page: query.page - 1 })}
-            className="rounded-xl border px-4 py-2 disabled:opacity-50"
-          >
-            Previous sellers
-          </button>
-          <span>
-            Page {query.page} of {Math.max(1, Math.ceil(pagination.count / 20))}
-          </span>
-          <button
-            type="button"
-            disabled={!pagination.next || isLoading || Boolean(error)}
-            onClick={() => changeQuery({ ...query, page: query.page + 1 })}
-            className="rounded-xl border px-4 py-2 disabled:opacity-50"
-          >
-            Next sellers
-          </button>
-        </nav>
-      </section>
+        <Pagination className="border-t border-line px-5 py-3" label="Seller pages"
+          summary={`Page ${query.page} of ${Math.max(1, Math.ceil(pagination.count / 20))}`}
+          canPrevious={query.page !== 1 && !isLoading} canNext={Boolean(pagination.next) && !isLoading && !error}
+          previousLabel="Previous sellers" nextLabel="Next sellers"
+          onPrevious={() => changeQuery({ ...query, page: query.page - 1 })}
+          onNext={() => changeQuery({ ...query, page: query.page + 1 })} />
+      </Card>
     </main>
   );
 }

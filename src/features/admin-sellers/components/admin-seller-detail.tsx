@@ -144,23 +144,23 @@ export function AdminSellerDetail() {
 
   if (isLoading) {
     return (
-      <main className="mx-auto max-w-6xl px-4 py-10">
-        <p className="text-sm text-slate-500">Loading seller...</p>
+      <main className="min-w-0">
+        <p className="text-sm text-muted">Loading seller...</p>
       </main>
     );
   }
 
   if (error && !seller) {
     return (
-      <main className="mx-auto max-w-6xl px-4 py-10">
+      <main className="min-w-0">
         <Link
           href="/admin/sellers"
-          className="text-sm font-medium text-slate-600 hover:text-slate-950"
+          className="inline-flex items-center text-sm font-medium text-muted underline-offset-4 hover:text-foreground hover:underline"
         >
           ← Back to sellers
         </Link>
 
-        <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+        <div className="mt-6 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900">
           {error}
         </div>
       </main>
@@ -174,10 +174,10 @@ export function AdminSellerDetail() {
   const canReview = seller.status === "pending";
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-10">
+    <main className="min-w-0">
       <Link
         href="/admin/sellers"
-        className="text-sm font-medium text-slate-600 hover:text-slate-950"
+        className="inline-flex items-center text-sm font-medium text-muted underline-offset-4 hover:text-foreground hover:underline"
       >
         ← Back to sellers
       </Link>
@@ -187,7 +187,7 @@ export function AdminSellerDetail() {
           <p className="mb-eyebrow">
             Seller application
           </p>
-          <h1 className="mt-2 text-3xl font-semibold text-slate-950">
+          <h1 className="mt-2 text-2xl font-semibold tracking-[-0.02em] text-foreground sm:text-[1.75rem]">
             {getSellerStoreLabel(seller)}
           </h1>
           <p className="mt-2 text-sm text-slate-600">
@@ -195,90 +195,90 @@ export function AdminSellerDetail() {
           </p>
         </div>
 
-        <span className="w-fit rounded-full bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700">
+        <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-700 ring-1 ring-inset ring-slate-200">
           {statusLabels[seller.status] ?? seller.status}
         </span>
       </div>
 
       {error ? (
-        <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+        <div className="mt-6 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900">
           {error}
         </div>
       ) : null}
 
       {actionMessage ? (
-        <div className="mt-6 rounded-2xl border border-green-200 bg-green-50 p-4 text-sm text-green-700">
+        <div className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
           {actionMessage}
         </div>
       ) : null}
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_360px]">
-        <section className="rounded-3xl border border-slate-200 bg-white p-6">
-          <h2 className="text-lg font-semibold text-slate-950">
+      <div className="mt-8 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+        <section className="mb-card p-5 sm:p-6">
+          <h2 className="text-lg font-semibold text-foreground">
             Business details
           </h2>
 
           <dl className="mt-5 grid gap-4 text-sm sm:grid-cols-2">
             <div>
-              <dt className="text-slate-500">Business email</dt>
-              <dd className="mt-1 font-medium text-slate-950">
+              <dt className="text-muted">Business email</dt>
+              <dd className="mt-1 font-medium text-foreground">
                 {seller.business_email}
               </dd>
             </div>
             <div>
-              <dt className="text-slate-500">Phone</dt>
-              <dd className="mt-1 font-medium text-slate-950">
+              <dt className="text-muted">Phone</dt>
+              <dd className="mt-1 font-medium text-foreground">
                 {seller.business_phone || seller.phone || "—"}
               </dd>
             </div>
             <div>
-              <dt className="text-slate-500">Commission</dt>
-              <dd className="mt-1 font-medium text-slate-950">
+              <dt className="text-muted">Commission</dt>
+              <dd className="mt-1 font-medium text-foreground">
                 {seller.commission_rate}%
               </dd>
             </div>
             <div>
-              <dt className="text-slate-500">Balance</dt>
-              <dd className="mt-1 font-medium text-slate-950">
+              <dt className="text-muted">Balance</dt>
+              <dd className="mt-1 font-medium text-foreground">
                 {formatMoney(seller.balance)}
               </dd>
             </div>
             <div>
-              <dt className="text-slate-500">Total sales</dt>
-              <dd className="mt-1 font-medium text-slate-950">
+              <dt className="text-muted">Total sales</dt>
+              <dd className="mt-1 font-medium text-foreground">
                 {formatMoney(seller.total_sales)}
               </dd>
             </div>
             <div>
-              <dt className="text-slate-500">Total orders</dt>
-              <dd className="mt-1 font-medium text-slate-950">
+              <dt className="text-muted">Total orders</dt>
+              <dd className="mt-1 font-medium text-foreground">
                 {seller.total_orders}
               </dd>
             </div>
             <div>
-              <dt className="text-slate-500">Created</dt>
-              <dd className="mt-1 font-medium text-slate-950">
+              <dt className="text-muted">Created</dt>
+              <dd className="mt-1 font-medium text-foreground">
                 {formatDateTime(seller.created_at)}
               </dd>
             </div>
             <div>
-              <dt className="text-slate-500">Verified</dt>
-              <dd className="mt-1 font-medium text-slate-950">
+              <dt className="text-muted">Verified</dt>
+              <dd className="mt-1 font-medium text-foreground">
                 {formatDateTime(seller.verified_at)}
               </dd>
             </div>
           </dl>
 
           {seller.rejection_reason ? (
-            <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+            <div className="mt-6 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900">
               <p className="font-medium">Rejection reason</p>
               <p className="mt-1">{seller.rejection_reason}</p>
             </div>
           ) : null}
         </section>
 
-        <aside className="rounded-3xl border border-slate-200 bg-white p-6">
-          <h2 className="text-lg font-semibold text-slate-950">Admin review</h2>
+        <aside className="mb-card p-5 sm:p-6">
+          <h2 className="text-lg font-semibold text-foreground">Admin review</h2>
 
           {canReview ? (
             <>
@@ -320,7 +320,7 @@ export function AdminSellerDetail() {
               </button>
             </>
           ) : (
-            <p className="mt-3 rounded-2xl bg-slate-50 p-4 text-sm text-slate-600">
+            <p className="mt-3 rounded-xl border border-line bg-sunken/60 p-4 text-sm text-slate-600">
               No review action is available for the current seller status.
             </p>
           )}

@@ -83,7 +83,7 @@ const statusConfig: Record<
   rejected: {
     label: "Return rejected",
     description: "The return request was rejected.",
-    className: "bg-red-50 text-red-700",
+    className: "bg-red-50 text-danger",
   },
   cancelled: {
     label: "Return cancelled",
@@ -220,21 +220,21 @@ export function OrderReturnStatusCard({
   }
 
   return (
-    <div className="mt-6 rounded-3xl border border-slate-200 bg-slate-50 p-6">
+    <div className="mt-6 rounded-3xl border border-line bg-slate-50 p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="mb-eyebrow">
             Return status
           </p>
 
-          <h2 className="mt-2 text-xl font-semibold text-slate-950">
+          <h2 className="mt-2 text-xl font-semibold text-foreground">
             {config.label}
           </h2>
 
           <p className="mt-1 text-sm text-slate-600">{config.description}</p>
 
           {returnRequest.request_number ? (
-            <p className="mt-2 text-sm text-slate-500">
+            <p className="mt-2 text-sm text-muted">
               Request {returnRequest.request_number}
             </p>
           ) : null}

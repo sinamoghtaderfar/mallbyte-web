@@ -90,8 +90,8 @@ export function SellerProductsList() {
 
   if (isLoading) {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm">
-        <p className="text-sm text-slate-500">Loading seller products...</p>
+      <div className="mb-card p-5 sm:p-6 sm:p-8 shadow-sm">
+        <p className="text-sm text-muted">Loading seller products...</p>
         {pager}
       </div>
     );
@@ -103,7 +103,7 @@ export function SellerProductsList() {
         <h1 className="text-xl font-semibold text-red-800">
           Could not load seller products
         </h1>
-        <p className="mt-2 text-sm text-red-700">{error}</p>
+        <p className="mt-2 text-sm text-danger">{error}</p>
         <button type="button" onClick={() => { requestVersion.current += 1; setIsLoading(true); setRetry((value) => value + 1); }} className="mt-4 rounded-xl border px-3 py-2 text-sm">Retry products</button>
         {pager}
 
@@ -125,11 +125,11 @@ export function SellerProductsList() {
             Seller products
           </p>
 
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
+          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-foreground">
             Manage products
           </h1>
 
-          <p className="mt-3 text-sm leading-6 text-slate-500">
+          <p className="mt-3 text-sm leading-6 text-muted">
             View products submitted by your seller account and create new ones.
           </p>
         </div>
@@ -146,10 +146,10 @@ export function SellerProductsList() {
 
       {!products.length ? (
         <div className="mt-8 rounded-3xl border border-dashed border-slate-300 p-5 sm:p-8">
-          <h2 className="text-xl font-semibold text-slate-950">
+          <h2 className="text-xl font-semibold text-foreground">
             No products yet
           </h2>
-          <p className="mt-2 text-sm text-slate-500">
+          <p className="mt-2 text-sm text-muted">
             Create your first seller product and submit it for approval.
           </p>
         </div>
@@ -178,7 +178,7 @@ export function SellerProductsList() {
                         <div className="min-w-0">
                           <Link
                             href={`/seller/products/${product.id}`}
-                            className="text-sm font-medium text-slate-950 underline-offset-4 hover:underline"
+                            className="text-sm font-medium text-foreground underline-offset-4 hover:underline"
                           >
                             {product.name}
                           </Link>

@@ -5,6 +5,13 @@ import { useEffect, useMemo, useState } from "react";
 
 import { getOrders } from "@/features/orders/api";
 import type { OrderListItem } from "@/features/orders/types";
+import { StatusBadge } from "@/components/ui/badge";
+import { buttonStyles } from "@/components/ui/button";
+import { Card, CardHeader } from "@/components/ui/card";
+import { Select } from "@/components/ui/input";
+import { PageHeader } from "@/components/ui/page-header";
+import { formatAmount } from "@/components/ui/price";
+import { Notice, Skeleton } from "@/components/ui/states";
 import { getApiErrorMessage } from "@/lib/api/errors";
 
 export default function AdminOrdersPage() {
@@ -48,105 +55,64 @@ export default function AdminOrdersPage() {
   }, [orders, filter]);
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-10">
-      <div>
-        <p className="mb-eyebrow">
-          Admin
-        </p>
+    <main className="grid gap-6">
+      <PageHeader eyebrow="Admin" title="Order management"
+        description="Review orders and manage their fulfillment through Shipping and Returns."
+        actions={<>
+          <Link href="/admin/shipments" className={buttonStyles()}>Manage shipments</Link>
+          <Link href="/admin/returns" className={buttonStyles({ variant: "secondary" })}>Manage returns</Link>
+        </>} />
 
-        <h1 className="mt-2 text-3xl font-semibold text-slate-950">
-          Order management
-        </h1>
-
-        <p className="mt-2 text-sm text-slate-600">
-          Review orders and manage their fulfillment through Shipping and
-          Returns.
-        </p>
-      </div>
-
-      <div className="mt-6 flex flex-wrap gap-3">
-        <Link
-          href="/admin/shipments"
-          className="mb-btn mb-btn-primary"
-        >
-          Manage shipments
-        </Link>
-
-        <Link
-          href="/admin/returns"
-          className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700"
-        >
-          Manage returns
-        </Link>
-      </div>
-
-      <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-5">
-        <label className="block max-w-xs text-sm font-medium text-slate-700">
-          Order status
-          <select
-            value={filter}
-            onChange={(event) => setFilter(event.target.value)}
-            className="mt-2 block h-11 w-full rounded-xl border border-slate-200 px-3"
-          >
-            <option value="all">All orders</option>
-            <option value="pending_payment">Pending payment</option>
-            <option value="paid">Paid</option>
-            <option value="processing">Processing</option>
-            <option value="shipped">Shipped</option>
-            <option value="delivered">Delivered</option>
-            <option value="cancelled">Cancelled</option>
-            <option value="refunded">Refunded</option>
-          </select>
-        </label>
+      <Card padded={false} className="overflow-hidden">
+        <div className="flex flex-wrap items-end justify-between gap-3 p-5 sm:p-6">
+          <CardHeader title="Orders" description="Filtering applies to the loaded orders." />
+          <label className="grid gap-1.5 text-sm font-medium text-foreground">
+            Order status
+            <Select value={filter} onChange={(event) => setFilter(event.target.value)} className="w-52">
+              <option value="all">All orders</option>
+              <option value="pending_payment">Pending payment</option>
+              <option value="paid">Paid</option>
+              <option value="processing">Processing</option>
+              <option value="shipped">Shipped</option>
+              <option value="delivered">Delivered</option>
+              <option value="cancelled">Cancelled</option>
+              <option value="refunded">Refunded</option>
+            </Select>
+          </label>
+        </div>
 
         {isLoading ? (
-          <p className="mt-6 text-sm text-slate-500">Loading orders...</p>
+          <div role="status" className="grid gap-2 border-t border-line p-5">
+            <span className="sr-only">Loading orders...</span>
+            {[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-12 rounded-lg" />)}
+          </div>
         ) : error ? (
-          <p role="alert" className="mt-6 text-sm text-red-700">
-            {error}
-          </p>
+          <div className="border-t border-line p-5"><Notice tone="danger">{error}</Notice></div>
         ) : filteredOrders.length === 0 ? (
-          <p className="mt-6 text-sm text-slate-500">No orders found.</p>
+          <p className="border-t border-line px-5 py-10 text-center text-sm text-muted">No orders found.</p>
         ) : (
-          <div className="mt-6 overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="border-b border-slate-200 text-slate-500">
+          <div className="overflow-x-auto border-t border-line">
+            <table className="mb-table min-w-[44rem]">
+              <thead>
                 <tr>
-                  <th className="py-3">Order</th>
-                  <th className="py-3">Status</th>
-                  <th className="py-3">Payment</th>
-                  <th className="py-3">Total</th>
-                  <th className="py-3">Date</th>
-                  <th className="py-3">Actions</th>
+                  <th scope="col">Order</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Payment</th>
+                  <th scope="col" className="text-right">Total</th>
+                  <th scope="col">Date</th>
+                  <th scope="col"><span className="sr-only">Actions</span></th>
                 </tr>
               </thead>
-
               <tbody>
                 {filteredOrders.map((order) => (
-                  <tr key={order.id} className="border-b border-slate-100">
-                    <td className="py-4 font-medium text-slate-950">
-                      {order.order_number}
-                    </td>
-
-                    <td className="py-4">{order.status_display}</td>
-
-                    <td className="py-4">{order.payment_status_display}</td>
-
-                    <td className="py-4">
-                      {Number(order.total_amount).toLocaleString()} IRR
-                    </td>
-
-                    <td className="py-4 text-slate-500">
-                      {new Date(order.created_at).toLocaleDateString()}
-                    </td>
-
-                    <td className="py-4">
-                      <Link
-                        href={`/orders/${order.id}`}
-                        className="font-medium text-ember-700 underline-offset-4 hover:underline"
-                      >
-                        View order
-                      </Link>
+                  <tr key={order.id}>
+                    <td className="font-mono text-[0.8125rem] font-semibold text-foreground">{order.order_number}</td>
+                    <td><StatusBadge status={order.status} label={order.status_display} /></td>
+                    <td><StatusBadge status={order.payment_status} label={order.payment_status_display} /></td>
+                    <td className="text-right font-medium text-foreground">{formatAmount(order.total_amount)}</td>
+                    <td className="whitespace-nowrap text-muted">{new Date(order.created_at).toLocaleDateString()}</td>
+                    <td className="text-right">
+                      <Link href={`/orders/${order.id}`} className={buttonStyles({ variant: "secondary", size: "small" })}>View order</Link>
                     </td>
                   </tr>
                 ))}
@@ -154,7 +120,7 @@ export default function AdminOrdersPage() {
             </table>
           </div>
         )}
-      </section>
+      </Card>
     </main>
   );
 }
