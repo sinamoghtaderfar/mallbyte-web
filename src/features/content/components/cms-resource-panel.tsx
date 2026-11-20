@@ -1,27 +1,55 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Archive, Edit3, Eye, Plus, RefreshCcw, Search, Send, Trash2 } from "lucide-react";
+import { Archive, Edit3, Eye, FileStack, Plus, RefreshCcw, Search, Send, Trash2 } from "lucide-react";
+
+import { Badge, StatusBadge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { TableFrame } from "@/components/ui/data-display";
+import { Input } from "@/components/ui/input";
+import { Pagination } from "@/components/ui/pagination";
+import { EmptyState, Notice, Skeleton } from "@/components/ui/states";
+import { getApiErrorMessage } from "@/lib/api/errors";
+
 import { deleteCms, listCms, transitionCms } from "../api";
 import { CMS_RESOURCES, recordLabel } from "../definitions";
 import { summarizeText } from "../safety";
 import type { CmsRecord, CmsResource } from "../types";
-import { useCmsAccess } from "./cms-route";
 import { CmsEditor } from "./cms-editor";
 import { CmsPreview } from "./cms-preview";
-import { getApiErrorMessage } from "@/lib/api/errors";
+import { useCmsAccess } from "./cms-route";
+
+type RowAction = "publish" | "archive" | "delete";
+
+const columnLabels: Record<string, string> = {
+  page_type: "Type", is_visible: "Visible", updated_at: "Updated", is_active: "Active", is_featured: "Featured",
+  category_name: "Category", page_title: "Page",
+};
+function columnLabel(key: string) {
+  const text = columnLabels[key] ?? key.replaceAll("_", " ");
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
 
 function readCell(item: CmsRecord, name: string) {
   const val = item[name];
   if (name === "is_visible" || typeof val === "boolean") {
-    return <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${val ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-600"}`}>{val ? "Yes" : "No"}</span>;
+    return <Badge tone={val ? "success" : "neutral"}>{val ? "Yes" : "No"}</Badge>;
   }
-  if (name === "status") {
-    return <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${val === "published" ? "bg-emerald-50 text-emerald-700" : val === "archived" ? "bg-slate-200 text-slate-700" : "bg-amber-50 text-amber-700"}`}>{String(val)}</span>;
+  if (name === "status") return <StatusBadge status={String(val)} label={String(val)} />;
+  if (name === "updated_at" && typeof val === "string") {
+    return <time dateTime={val} className="whitespace-nowrap">{new Date(val).toLocaleDateString()}</time>;
   }
-  if (name === "updated_at" && typeof val === "string") return <time dateTime={val}>{new Date(val).toLocaleDateString()}</time>;
+  if (typeof val === "number") return <span data-numeric>{val}</span>;
   return summarizeText(val ?? "—", 72);
 }
+
+const actionCopy: Record<RowAction, { title: (label: string) => string; description: string; confirm: string; done: string }> = {
+  publish: { title: (l) => `Publish "${l}"?`, description: "It becomes visible on the storefront according to its schedule and placement.", confirm: "Publish", done: "published" },
+  archive: { title: (l) => `Archive "${l}"?`, description: "It is removed from the storefront but kept in the library.", confirm: "Archive", done: "archived" },
+  delete: { title: (l) => `Permanently delete "${l}"?`, description: "This cannot be undone.", confirm: "Delete permanently", done: "deleted" },
+};
 
 export function CmsResourcePanel({ resource }: { resource: CmsResource }) {
   const definition = CMS_RESOURCES[resource];
@@ -38,6 +66,7 @@ export function CmsResourcePanel({ resource }: { resource: CmsResource }) {
   const [notice, setNotice] = useState("");
   const [editor, setEditor] = useState<CmsRecord | "new" | null>(null);
   const [preview, setPreview] = useState<CmsRecord | null>(null);
+  const [pending, setPending] = useState<{ row: CmsRecord; action: RowAction } | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -59,46 +88,100 @@ export function CmsResourcePanel({ resource }: { resource: CmsResource }) {
     return term ? items.filter((row) => JSON.stringify(row).toLowerCase().includes(term)) : items;
   }, [items, query]);
   function refresh() { setLoading(true); setNotice(""); setVersion((v) => v + 1); }
-  async function runAction(row: CmsRecord, action: "publish" | "archive" | "delete") {
+  async function runAction(row: CmsRecord, action: RowAction) {
     const label = recordLabel(resource, row);
-    if (!window.confirm(action === "delete" ? `Permanently delete "${label}"? This cannot be undone.` : `${action === "publish" ? "Publish" : "Archive"} "${label}"?`)) return;
     setWorking(row.id); setError(""); setNotice("");
     try {
       if (action === "delete") await deleteCms(resource, definition.routeKey(row));
       else if (resource === "pages" || resource === "banners" || resource === "announcements") await transitionCms(resource, definition.routeKey(row), action);
       refresh();
-      setNotice(`Successfully ${action === "delete" ? "deleted" : action === "publish" ? "published" : "archived"} ${label}.`);
+      setNotice(`Successfully ${actionCopy[action].done} ${label}.`);
     } catch (reason) { setError(getApiErrorMessage(reason)); }
-    finally { setWorking(null); }
+    finally { setWorking(null); setPending(null); }
   }
 
-  return <section className="space-y-5" aria-labelledby="cms-resource-title">
+  const iconButton = "inline-flex size-10 items-center justify-center rounded-lg border border-line bg-surface text-slate-600 transition-colors hover:border-line-strong hover:text-foreground disabled:opacity-45";
+  const newButton = access.canEdit
+    ? <Button onClick={() => setEditor("new")}><Plus size={16} aria-hidden="true" />New {definition.singular.toLowerCase()}</Button>
+    : null;
+
+  return <section className="grid min-w-0 gap-5" aria-labelledby="cms-resource-title">
     <div className="flex flex-wrap items-end justify-between gap-4">
-      <div><p className="text-xs font-bold uppercase tracking-[0.18em] text-cyan-700">Content library</p><h2 id="cms-resource-title" className="mt-1 text-2xl font-bold tracking-tight text-slate-950">{definition.title}</h2><p className="mt-1 text-sm text-slate-500">{definition.description}</p></div>
-      <div className="flex gap-2"><button type="button" onClick={refresh} disabled={loading} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 disabled:opacity-50"><RefreshCcw size={16} />Refresh</button>{access.canEdit && <button type="button" onClick={() => setEditor("new")} className="gap-2 mb-btn mb-btn-primary"><Plus size={16} />New {definition.singular}</button>}</div>
+      <div className="min-w-0">
+        <p className="mb-eyebrow">Content library</p>
+        <h2 id="cms-resource-title" className="mt-1.5 text-xl font-semibold tracking-tight text-foreground sm:text-[1.375rem]">{definition.title}</h2>
+        <p className="mt-1 text-sm text-muted">{definition.description}</p>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <Button variant="secondary" onClick={refresh} disabled={loading}><RefreshCcw size={16} aria-hidden="true" />Refresh</Button>
+        {newButton}
+      </div>
     </div>
-    <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="relative w-full max-w-sm"><Search size={17} className="absolute left-3 top-3 text-slate-400"/><input type="search" aria-label={`Filter ${definition.title}`} placeholder="Filter visible rows…" value={query} onChange={(e) => setQuery(e.target.value)} className="w-full rounded-xl border border-slate-200 py-2.5 pl-10 pr-3 text-sm focus:outline-cyan-700"/></div>
-      <p className="text-xs text-slate-500">{total} total · page {page} · search filters current page</p>
-    </div>
-    {error && <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">{error} <button className="ml-3 underline" type="button" onClick={refresh}>Retry</button></div>}
-    {notice && <p role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">{notice}</p>}
-    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-      {loading && <p role="status" className="p-6 text-sm text-slate-500">Loading content…</p>}
-      {!loading && visibleItems.length === 0 && <div className="p-10 text-center"><p className="font-semibold text-slate-800">No records on this page</p><p className="mt-2 text-sm text-slate-500">Create content or change the filter.</p></div>}
-      {!loading && visibleItems.length > 0 && <div className="overflow-x-auto"><table className="w-full min-w-[700px] text-left text-sm"><thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wider text-slate-500"><tr>{definition.columns.map((key) => <th key={key} scope="col" className="px-4 py-3 font-semibold">{key.replaceAll("_", " ")}</th>)}<th scope="col" className="px-4 py-3 text-right font-semibold">Actions</th></tr></thead><tbody className="divide-y divide-slate-100">{visibleItems.map((row) => {
-        const publiclyActive = row.status === "published" || (row.status === undefined && row.is_active === true);
-        const canModify = access.canEdit && (!publiclyActive || access.canPublish);
-        return <tr key={row.id} className="hover:bg-slate-50"><td className="px-4 py-4 font-medium text-slate-900">{readCell(row, definition.columns[0])}</td>{definition.columns.slice(1).map((key) => <td key={key} className="px-4 py-4 text-slate-600">{readCell(row, key)}</td>)}<td className="px-4 py-4"><div className="flex justify-end gap-2">
-          <button aria-label={`Preview ${recordLabel(resource, row)}`} title="Private preview" onClick={() => setPreview(row)} className="rounded-lg border border-slate-200 p-2 text-slate-600 hover:text-cyan-800"><Eye size={15}/></button>
-          {canModify && <button aria-label={`Edit ${recordLabel(resource, row)}`} title="Edit" onClick={() => setEditor(row)} className="rounded-lg border border-slate-200 p-2 text-slate-600 hover:border-cyan-300 hover:text-cyan-800"><Edit3 size={15}/></button>}
-          {definition.publishable && access.canPublish && row.status !== "published" && <button aria-label={`Publish ${recordLabel(resource, row)}`} title="Publish" disabled={working === row.id} onClick={() => void runAction(row, "publish")} className="rounded-lg border border-emerald-200 p-2 text-emerald-700 disabled:opacity-50"><Send size={15}/></button>}
-          {definition.publishable && access.canPublish && row.status === "published" && <button aria-label={`Archive ${recordLabel(resource, row)}`} title="Archive" disabled={working === row.id} onClick={() => void runAction(row, "archive")} className="rounded-lg border border-amber-200 p-2 text-amber-700 disabled:opacity-50"><Archive size={15}/></button>}
-          {canModify && <button aria-label={`Delete ${recordLabel(resource, row)}`} title="Delete" disabled={working === row.id} onClick={() => void runAction(row, "delete")} className="p-2 mb-btn mb-btn-secondary text-rose-700 hover:bg-rose-50"><Trash2 size={15}/></button>}
-        </div></td></tr>;
-      })}</tbody></table></div>}
-    </div>
-    <div className="flex items-center justify-end gap-3"><button type="button" onClick={() => { setPage((v) => Math.max(1, v - 1)); setLoading(true); }} disabled={loading || page === 1} className="rounded-xl border border-slate-300 px-4 py-2 text-sm disabled:opacity-40">Previous</button><span className="text-sm text-slate-600">Page {page}</span><button type="button" onClick={() => { setPage((v) => v + 1); setLoading(true); }} disabled={loading || !hasNext} className="rounded-xl border border-slate-300 px-4 py-2 text-sm disabled:opacity-40">Next</button></div>
+
+    <Card className="p-3 sm:p-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="relative w-full sm:max-w-sm">
+          <Search size={17} className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+          <Input type="search" aria-label={`Filter ${definition.title}`} placeholder="Filter this page…" value={query}
+            onChange={(e) => setQuery(e.target.value)} className="pl-10" />
+        </div>
+        <p className="px-1 text-xs text-muted" data-numeric>{total} total · page {page} · filter applies to the loaded page</p>
+      </div>
+    </Card>
+
+    {error && <Notice tone="danger" title="Content could not be loaded or changed" action={<Button size="small" variant="secondary" onClick={refresh}>Retry</Button>}>{error}</Notice>}
+    {notice && <Notice tone="success">{notice}</Notice>}
+
+    {loading
+      ? <div className="mb-card grid gap-px overflow-hidden" aria-busy="true">
+        <p role="status" className="sr-only">Loading content…</p>
+        {[0, 1, 2, 3, 4].map((i) => <div key={i} className="flex items-center gap-4 px-4 py-4"><Skeleton className="h-4 flex-1" /><Skeleton className="h-4 w-20" /><Skeleton className="h-6 w-24 rounded-full" /></div>)}
+      </div>
+      : visibleItems.length === 0
+        ? <EmptyState icon={<FileStack size={24} />}
+          title={query ? "No matches on this page" : "No records on this page"}
+          description={query ? "Clear the filter or move to another page." : access.canEdit ? `Create the first ${definition.singular.toLowerCase()} to get started.` : "Nothing has been created here yet."}
+          action={query ? <Button variant="secondary" onClick={() => setQuery("")}>Clear filter</Button> : newButton} />
+        : <TableFrame>
+          <table className="mb-table min-w-[44rem]">
+            <thead><tr>
+              {definition.columns.map((key) => <th key={key} scope="col">{columnLabel(key)}</th>)}
+              <th scope="col" className="text-right">Actions</th>
+            </tr></thead>
+            <tbody>{visibleItems.map((row) => {
+              const publiclyActive = row.status === "published" || (row.status === undefined && row.is_active === true);
+              const canModify = access.canEdit && (!publiclyActive || access.canPublish);
+              const label = recordLabel(resource, row);
+              return <tr key={row.id}>
+                <td className="max-w-[18rem] font-medium text-foreground [overflow-wrap:anywhere]">{readCell(row, definition.columns[0])}</td>
+                {definition.columns.slice(1).map((key) => <td key={key} className="text-slate-600">{readCell(row, key)}</td>)}
+                <td>
+                  <div className="flex justify-end gap-1.5">
+                    <button type="button" aria-label={`Preview ${label}`} title="Private preview" onClick={() => setPreview(row)} className={iconButton}><Eye size={16} aria-hidden="true" /></button>
+                    {canModify && <button type="button" aria-label={`Edit ${label}`} title="Edit" onClick={() => setEditor(row)} className={iconButton}><Edit3 size={16} aria-hidden="true" /></button>}
+                    {definition.publishable && access.canPublish && row.status !== "published" && <button type="button" aria-label={`Publish ${label}`} title="Publish" disabled={working === row.id} onClick={() => setPending({ row, action: "publish" })} className={`${iconButton} text-emerald-700 hover:border-emerald-300 hover:text-emerald-800`}><Send size={16} aria-hidden="true" /></button>}
+                    {definition.publishable && access.canPublish && row.status === "published" && <button type="button" aria-label={`Archive ${label}`} title="Archive" disabled={working === row.id} onClick={() => setPending({ row, action: "archive" })} className={`${iconButton} text-amber-800 hover:border-amber-300`}><Archive size={16} aria-hidden="true" /></button>}
+                    {canModify && <button type="button" aria-label={`Delete ${label}`} title="Delete" disabled={working === row.id} onClick={() => setPending({ row, action: "delete" })} className={`${iconButton} text-rose-700 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-800`}><Trash2 size={16} aria-hidden="true" /></button>}
+                  </div>
+                </td>
+              </tr>;
+            })}</tbody>
+          </table>
+        </TableFrame>}
+
+    <Pagination label={`${definition.title} pages`} summary={`Page ${page}`}
+      canPrevious={page > 1} canNext={hasNext} disabled={loading}
+      onPrevious={() => { setPage((v) => Math.max(1, v - 1)); setLoading(true); }}
+      onNext={() => { setPage((v) => v + 1); setLoading(true); }} />
+
+    {pending && <ConfirmDialog
+      title={actionCopy[pending.action].title(recordLabel(resource, pending.row))}
+      description={actionCopy[pending.action].description}
+      confirmLabel={actionCopy[pending.action].confirm}
+      tone={pending.action === "delete" ? "danger" : "primary"}
+      busy={working === pending.row.id}
+      onCancel={() => setPending(null)}
+      onConfirm={() => void runAction(pending.row, pending.action)} />}
     {preview && <CmsPreview resource={resource} row={preview} onClose={() => setPreview(null)} />}
     {editor !== null && <CmsEditor resource={resource} definition={definition} initial={editor === "new" ? null : editor} onClose={() => setEditor(null)} onSaved={() => { setEditor(null); refresh(); }} canPublish={access.canPublish} />}
   </section>;

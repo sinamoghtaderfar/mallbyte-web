@@ -2,7 +2,13 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { ArrowUpRight, BookOpen, FileText, Images, Layers, ListTree, Megaphone, MessageCircleQuestion, PanelTop, ShieldCheck } from "lucide-react";
+import {
+  ArrowUpRight, Check, FileText, Images, Layers, ListTree, Lock, Megaphone, MessageCircleQuestion, PanelTop,
+} from "lucide-react";
+
+import { buttonStyles } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
+
 import { CMS_RESOURCES, RESOURCE_ORDER } from "../definitions";
 import type { CmsResource } from "../types";
 import { CmsResourcePanel } from "./cms-resource-panel";
@@ -16,16 +22,44 @@ const iconMap = {
 export function CmsWorkspace() {
   const [resource, setResource] = useState<CmsResource>("pages");
   const access = useCmsAccess();
-  return <main className="min-h-[85vh] bg-[#f5f7fa] px-4 py-8 sm:py-12">
-    <div className="mx-auto max-w-7xl">
-      <div className="mb-8 flex flex-wrap items-end justify-between gap-3"><div><div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-cyan-700"><BookOpen size={16}/>MallByte / Editorial</div><h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">Content management</h1><p className="mt-2 text-sm text-slate-600">Publish trustworthy storefront content without changing application code.</p></div><Link href="/" className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700">View storefront<ArrowUpRight size={16}/></Link></div>
-      <div className="mb-6 flex flex-wrap gap-2 text-xs"><span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-slate-600"><ShieldCheck size={14}/>Role permissions</span><span className="rounded-full bg-white px-3 py-2 text-slate-700">{access.canView ? "View drafts" : "Public view"}</span><span className="rounded-full bg-white px-3 py-2 text-slate-700">{access.canEdit ? "Can edit" : "Read-only"}</span><span className="rounded-full bg-white px-3 py-2 text-slate-700">{access.canPublish ? "Can publish" : "No publishing permission"}</span></div>
-      <div className="grid items-start gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
-        <nav aria-label="CMS sections" className="grid grid-cols-2 gap-2 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm sm:grid-cols-4 lg:grid-cols-1">
-          {RESOURCE_ORDER.map((key) => { const Icon = iconMap[key]; return <button type="button" key={key} onClick={() => setResource(key)} aria-current={resource === key ? "page" : undefined} className={`flex items-center gap-3 rounded-xl px-3 py-3 text-left text-xs font-semibold transition sm:text-sm ${resource === key ? "bg-slate-950 text-white" : "text-slate-600 hover:bg-slate-100"}`}><Icon size={17} className="shrink-0"/>{CMS_RESOURCES[key].title}</button>; })}
-        </nav>
-        <CmsResourcePanel resource={resource} key={resource}/>
-      </div>
+  const capabilities = [
+    { label: "View drafts", granted: access.canView },
+    { label: "Edit content", granted: access.canEdit },
+    { label: "Publish", granted: access.canPublish },
+  ];
+
+  return <main className="grid gap-6 sm:gap-8">
+    <PageHeader eyebrow="Editorial" title="Content management"
+      description="Publish trustworthy storefront content without changing application code. Content renders as plain text; HTML is never executed."
+      actions={<Link href="/" className={buttonStyles({ variant: "secondary" })}>View storefront<ArrowUpRight size={16} aria-hidden="true" /></Link>} />
+
+    <section aria-label="Your content permissions" className="flex flex-wrap items-center gap-2 text-sm">
+      <span className="mr-1 text-muted">Your role:</span>
+      {capabilities.map((item) => <span key={item.label}
+        className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${item.granted ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-line bg-surface text-slate-600"}`}>
+        {item.granted ? <Check size={13} aria-hidden="true" /> : <Lock size={12} aria-hidden="true" />}
+        {item.label}<span className="sr-only">{item.granted ? ": allowed" : ": not allowed"}</span>
+      </span>)}
+    </section>
+
+    <div className="grid items-start gap-6 lg:grid-cols-[15rem_minmax(0,1fr)]">
+      <nav aria-label="CMS sections" className="-mx-1 overflow-x-auto px-1 mb-scrollbar-none lg:sticky lg:top-24 lg:mx-0 lg:overflow-visible lg:px-0">
+        <p className="mb-eyebrow mb-2 hidden px-3 lg:block">Library</p>
+        <ul className="flex min-w-max gap-1 rounded-xl border border-line bg-slate-100/70 p-1 lg:min-w-0 lg:flex-col lg:border-0 lg:bg-transparent lg:p-0">
+          {RESOURCE_ORDER.map((key) => {
+            const Icon = iconMap[key];
+            const active = resource === key;
+            return <li key={key}>
+              <button type="button" onClick={() => setResource(key)} aria-current={active ? "page" : undefined}
+                className={`flex min-h-10 w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm font-medium whitespace-nowrap transition-colors lg:min-h-11 ${active ? "bg-surface text-foreground shadow-sm ring-1 ring-line" : "text-slate-600 hover:bg-slate-100 hover:text-foreground"}`}>
+                <Icon size={17} className={`shrink-0 ${active ? "text-brand" : "text-slate-500"}`} aria-hidden="true" />
+                {CMS_RESOURCES[key].title}
+              </button>
+            </li>;
+          })}
+        </ul>
+      </nav>
+      <CmsResourcePanel resource={resource} key={resource} />
     </div>
   </main>;
 }
