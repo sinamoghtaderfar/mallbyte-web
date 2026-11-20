@@ -2,16 +2,21 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowUpRight, CreditCard, Landmark, Package, RotateCcw } from "lucide-react";
+import { ArrowUpRight, CreditCard, Download, Landmark, Package, RotateCcw } from "lucide-react";
 
+import { Button, buttonStyles } from "@/components/ui/button";
+import { Card, CardHeader, StatCard } from "@/components/ui/card";
+import { Select } from "@/components/ui/input";
+import { PageHeader } from "@/components/ui/page-header";
+import { EmptyState, Notice } from "@/components/ui/states";
 import { getApiErrorMessage } from "@/lib/api/errors";
-import { downloadChartCsv } from "../finance-utils";
+
 import { getAdminInsights } from "../api";
-import { FinancialNav } from "./financial-nav";
+import { downloadChartCsv } from "../finance-utils";
 import type { Period } from "../types";
+import { FinancialNav } from "./financial-nav";
 import {
-  FinancialAreaChart, InsightHeader, Metric, money, Notice, Panel,
-  PeriodPicker, RetryButton,
+  CHART_COLORS, DashboardSkeleton, FinancialAreaChart, money, periodLabel, PeriodPicker, RefreshButton, Toolbar,
 } from "./insight-kit";
 
 type Payload = Awaited<ReturnType<typeof getAdminInsights>>;
@@ -60,88 +65,94 @@ export function AdminAnalytics() {
     setError("");
   }
 
+  const currencies = data?.dashboard.financial.currencies ?? [];
+
   return (
-    <main className="min-h-screen bg-slate-50/80 px-4 py-8 sm:py-10">
-      <div className="mx-auto max-w-7xl space-y-6">
-        <FinancialNav />
-        <InsightHeader eyebrow="Platform performance" title="Analytics overview"
-          description="Explore captured cash flow, refunds and order activity with currency-separated financial reporting."
-          backHref="/admin/financial" actions={<PeriodPicker value={period} onChange={changePeriod} disabled={loading} />} />
+    <main className="grid gap-6">
+      <PageHeader eyebrow="Platform performance" title="Analytics overview"
+        description="Explore captured cash flow, refunds and order activity with currency-separated financial reporting." />
+      <FinancialNav />
 
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-slate-500">Reporting currency</span>
-            <select aria-label="Reporting currency" value={currency} disabled={!data?.dashboard.financial.currencies.length}
-              onChange={(e) => setCurrency(e.target.value)}
-              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900">
-              {!currency && <option value="">No currency yet</option>}
-              {data?.dashboard.financial.currencies.map((row) => <option key={row.currency} value={row.currency}>{row.currency}</option>)}
-            </select>
-          </div>
-          <RetryButton onClick={refresh} disabled={loading} />
-        </div>
-        {loading && <p role="status" className="text-sm text-slate-500">Updating analytics…</p>}
-        {error && <Notice variant="error">{error}. <button className="font-semibold underline" onClick={refresh}>Try again</button></Notice>}
+      <Toolbar label="Report filters" end={<RefreshButton onClick={refresh} busy={loading && Boolean(data)} disabled={loading} />}>
+        <PeriodPicker value={period} onChange={changePeriod} disabled={loading} />
+        <label className="flex items-center gap-2 text-sm text-muted">
+          <span className="whitespace-nowrap">Currency</span>
+          <Select aria-label="Reporting currency" value={currency} disabled={!currencies.length}
+            onChange={(e) => setCurrency(e.target.value)} className="w-32">
+            {!currency && <option value="">No currency yet</option>}
+            {currencies.map((row) => <option key={row.currency} value={row.currency}>{row.currency}</option>)}
+          </Select>
+        </label>
+      </Toolbar>
 
-        {data && (
-          <>
-            <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Platform key metrics">
-              <Metric title="Captured cash" value={bucket ? money(bucket.captured_amount, bucket.currency) : "—"}
-                subtitle="Verified captures in selected period" icon={<CreditCard size={19} />} />
-              <Metric title="Refunded cash" value={bucket ? money(bucket.refunded_amount, bucket.currency) : "—"}
-                subtitle="Refunds recognized in selected period" icon={<RotateCcw size={19} />} />
-              <Metric title="Net cash flow" value={bucket ? money(bucket.net_cash_flow, bucket.currency) : "—"}
-                subtitle="Captures minus refunds; not profit" icon={<Landmark size={19} />} />
-              <Metric title="Orders" value={data.dashboard.orders.total_orders.toLocaleString("en-US")}
-                subtitle="All statuses, selected period" icon={<Package size={19} />} />
-            </section>
-            <div className="grid gap-5 xl:grid-cols-[minmax(0,1.65fr)_minmax(300px,1fr)]">
-              <Panel title="Financial activity" subtitle="Daily captures and refunded amounts; the axes follow the selected currency.">
-                <div className="mb-4 flex flex-wrap gap-4 text-xs text-slate-500">
-                  <span><i className="mr-2 inline-block h-2.5 w-2.5 rounded-full bg-cyan-600" />Captured</span>
-                  <span><i className="mr-2 inline-block h-2.5 w-2.5 rounded-full bg-amber-500" />Refunded</span>
-                </div>
-                <FinancialAreaChart points={points} currency={currency} primaryName="Captured" secondaryName="Refunded" />
-                {points.length > 0 && <button type="button" onClick={() => downloadChartCsv(points, currency, "Captured", "Refunded", "admin-cashflow")}
-                  className="mt-4 mb-btn mb-btn-secondary mb-btn-sm">Download displayed chart CSV</button>}
-              </Panel>
-              <Panel title="Cash-flow composition" subtitle="Selected currency only; amounts are not combined across currencies.">
-                {bucket ? (
-                  <div className="space-y-5">
-                    {[
-                      ["Captured", bucket.captured_amount, "bg-cyan-600"],
-                      ["Refunded", bucket.refunded_amount, "bg-amber-500"],
-                    ].map(([label, value, color]) => {
-                      const cap = Math.max(Number(bucket.captured_amount), 0);
-                      const ratio = cap ? Math.min(100, Math.max(0, (Number(value) / cap) * 100)) : 0;
-                      return (
-                        <div key={label}>
-                          <div className="mb-2 flex justify-between gap-2 text-sm"><span className="text-slate-500">{label}</span><strong className="text-slate-900">{money(value, currency)}</strong></div>
-                          <div className="h-2 overflow-hidden rounded-full bg-slate-100"><div className={`h-full rounded-full ${color}`} style={{ width: `${label === "Captured" && cap > 0 ? 100 : ratio}%` }} /></div>
+      {error && <Notice tone="danger" title="Analytics could not be loaded" action={<Button size="small" variant="secondary" onClick={refresh}>Try again</Button>}>{error}</Notice>}
+      {loading && !data && <DashboardSkeleton label="Updating analytics…" />}
+
+      {data && (
+        <>
+          <section className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 sm:gap-4 xl:grid-cols-4" aria-label="Platform key metrics">
+            <StatCard label="Captured cash" value={bucket ? money(bucket.captured_amount, bucket.currency) : "—"}
+              hint={`Verified captures · ${periodLabel(period)}`} icon={<CreditCard size={16} />} tone="ink" />
+            <StatCard label="Refunded cash" value={bucket ? money(bucket.refunded_amount, bucket.currency) : "—"}
+              hint="Refunds recognized in period" icon={<RotateCcw size={16} />} />
+            <StatCard label="Net cash flow" value={bucket ? money(bucket.net_cash_flow, bucket.currency) : "—"}
+              hint="Captures minus refunds; not profit" icon={<Landmark size={16} />} />
+            <StatCard label="Orders" value={data.dashboard.orders.total_orders.toLocaleString("en-US")}
+              hint="All statuses, selected period" icon={<Package size={16} />} />
+          </section>
+
+          <div className="grid gap-6 xl:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)]">
+            <Card>
+              <CardHeader title="Financial activity" description="Daily captures and refunded amounts in the selected currency."
+                action={points.length > 0 && <Button size="small" variant="secondary"
+                  onClick={() => downloadChartCsv(points, currency, "Captured", "Refunded", "admin-cashflow")}>
+                  <Download size={15} aria-hidden="true" />Download displayed chart CSV</Button>} />
+              <div className="mt-5"><FinancialAreaChart points={points} currency={currency} primaryName="Captured" secondaryName="Refunded" /></div>
+            </Card>
+            <Card>
+              <CardHeader title="Cash-flow composition" description="Selected currency only; amounts are never combined across currencies." />
+              {bucket ? (
+                <div className="mt-5 grid gap-5">
+                  {([
+                    ["Captured", bucket.captured_amount, CHART_COLORS.ember],
+                    ["Refunded", bucket.refunded_amount, CHART_COLORS.ink],
+                  ] as const).map(([label, value, color]) => {
+                    const cap = Math.max(Number(bucket.captured_amount), 0);
+                    const ratio = cap ? Math.min(100, Math.max(0, (Number(value) / cap) * 100)) : 0;
+                    const width = label === "Captured" && cap > 0 ? 100 : ratio;
+                    return (
+                      <div key={label}>
+                        <div className="mb-2 flex justify-between gap-2 text-sm">
+                          <span className="text-muted">{label}</span>
+                          <strong data-numeric className="font-semibold text-foreground">{money(value, currency)}</strong>
                         </div>
-                      );
-                    })}
-                    <div className="rounded-2xl bg-slate-50 p-5">
-                      <p className="text-sm text-slate-500">Verified payment events</p>
-                      <p className="mt-2 text-2xl font-semibold text-slate-950">{bucket.captured_payments_count}</p>
-                    </div>
-                    <Link href="/admin/finance" className="inline-flex items-center gap-2 text-sm font-semibold text-cyan-700 hover:underline">
-                      Open seller balances <ArrowUpRight size={16} />
-                    </Link>
+                        <div className="h-2 overflow-hidden rounded-full bg-slate-100" role="presentation">
+                          <div className="h-full rounded-full" style={{ width: `${width}%`, background: color }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <div className="rounded-xl border border-line bg-sunken/60 p-4">
+                    <p className="text-sm text-muted">Verified payment events</p>
+                    <p data-numeric className="mt-1.5 text-2xl font-semibold tracking-tight text-foreground">{bucket.captured_payments_count}</p>
                   </div>
-                ) : <p className="text-sm text-slate-500">No cash-flow events in this period.</p>}
-              </Panel>
-            </div>
-            {data.dashboard.financial.data_quality?.has_warnings &&
-              <Notice variant="warning">Financial data quality checks found possible missing event dates, duplicate captures or order mismatches. Review the internal reconciliation report before using these figures.</Notice>}
-            <Notice variant="info">This view uses the Backend&apos;s financial cash-flow contract. Values are grouped by currency and are not platform profit, seller payout, or independent bank reconciliation.</Notice>
-            <div className="flex flex-wrap gap-3">
-              <Link href="/admin/monitoring" className="mb-btn mb-btn-primary">Financial monitoring</Link>
-              <Link href="/admin/finance" className="bg-white mb-btn mb-btn-secondary">Reconciliation and balances</Link>
-            </div>
-          </>
-        )}
-      </div>
+                  <Link href="/admin/finance" className="inline-flex items-center gap-1.5 text-sm font-medium text-brand underline-offset-4 hover:underline">
+                    Open seller balances <ArrowUpRight size={15} aria-hidden="true" />
+                  </Link>
+                </div>
+              ) : <EmptyState className="mt-5 py-10" title="No cash-flow events" description="Nothing was captured or refunded in this period." />}
+            </Card>
+          </div>
+
+          {data.dashboard.financial.data_quality?.has_warnings &&
+            <Notice tone="warning" title="Data quality warnings">Financial data quality checks found possible missing event dates, duplicate captures or order mismatches. Review the internal reconciliation report before using these figures.</Notice>}
+          <Notice tone="info">This view uses the Backend&apos;s financial cash-flow contract. Values are grouped by currency and are not platform profit, seller payout, or independent bank reconciliation.</Notice>
+          <div className="flex flex-wrap gap-2">
+            <Link href="/admin/monitoring" className={buttonStyles()}>Financial monitoring</Link>
+            <Link href="/admin/finance" className={buttonStyles({ variant: "secondary" })}>Reconciliation and balances</Link>
+          </div>
+        </>
+      )}
     </main>
   );
 }

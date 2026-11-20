@@ -39,10 +39,10 @@ export function ObservabilityRoute({children}:{children:ReactNode}) {
     }).catch(() => { if (active) {setError(true);setCurrent(null);} });
     return () => {active=false;};
   },[bootstrapped,authenticated,id,retry]);
-  if (!bootstrapped || authLoading) return <p role="status" className="mx-auto max-w-7xl p-10 text-slate-500">Checking your session…</p>;
+  if (!bootstrapped || authLoading) return <p role="status" className="py-10 text-sm text-muted">Checking your session…</p>;
   if (!authenticated || id==null) return <AccessDenied description="Sign in to open Observability." />;
-  if (error) return <main role="alert" className="mx-auto max-w-3xl p-10"><p>Cannot verify Observability permissions.</p><button onClick={()=>setRetry(n=>n+1)} className="mt-4 rounded-lg border px-4 py-2">Retry</button></main>;
-  if (current?.id !== id) return <p role="status" className="mx-auto max-w-7xl p-10 text-slate-500">Loading Observability permissions…</p>;
+  if (error) return <main role="alert" className="max-w-2xl rounded-2xl border border-rose-200 bg-rose-50 p-5 text-rose-950"><p className="font-semibold">Cannot verify Observability permissions.</p><p className="mt-1 text-sm">The permission service is unavailable. Nothing was changed.</p><button onClick={()=>setRetry(n=>n+1)} className="mt-4 mb-btn mb-btn-secondary">Retry</button></main>;
+  if (current?.id !== id) return <p role="status" className="py-10 text-sm text-muted">Loading Observability permissions…</p>;
   if (!current.access.view) return <AccessDenied description="Your account does not have view_observability permission." />;
   // A keyed subtree prevents records fetched for a previous account leaking across sessions.
   return <Context.Provider value={current.access}><div key={id}>{children}</div></Context.Provider>;

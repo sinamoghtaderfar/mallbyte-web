@@ -45,10 +45,10 @@ export function WorkflowRoute({ children }: { children: ReactNode }) {
     return () => { active = false; };
   }, [bootstrapped, loggedIn, id, retry]);
 
-  if (!bootstrapped || loading) return <p className="p-10 text-slate-500" role="status">Checking access…</p>;
+  if (!bootstrapped || loading) return <p className="py-10 text-sm text-muted" role="status">Checking access…</p>;
   if (!loggedIn || id == null) return <AccessDenied description="Sign in to access Observability workflows." />;
-  if (error) return <main className="p-10" role="alert"><p>Could not verify access.</p><button className="mt-3 rounded-xl border px-4 py-2" onClick={() => setRetry((n) => n + 1)}>Retry</button></main>;
-  if (!gate || gate.id !== id) return <p className="p-10 text-slate-500">Loading permissions…</p>;
+  if (error) return <main className="max-w-2xl rounded-2xl border border-rose-200 bg-rose-50 p-5 text-rose-950" role="alert"><p className="font-semibold">Could not verify access.</p><p className="mt-1 text-sm">The permission service is unavailable. Nothing was changed.</p><button className="mt-4 mb-btn mb-btn-secondary" onClick={() => setRetry((n) => n + 1)}>Retry</button></main>;
+  if (!gate || gate.id !== id) return <p role="status" className="py-10 text-sm text-muted">Loading permissions…</p>;
   if (!gate.access.viewIncidents && !gate.access.viewOps) return <AccessDenied description="Ask an admin to assign an Observability role." />;
   return <Context.Provider value={gate.access}><div key={id}>{children}</div></Context.Provider>;
 }

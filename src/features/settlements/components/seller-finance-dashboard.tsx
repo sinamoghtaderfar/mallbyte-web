@@ -2,6 +2,15 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { ArrowDownLeft, ArrowLeft, ArrowUpRight, Clock3, Download, Undo2, Wallet } from "lucide-react";
+
+import { Badge, StatusBadge } from "@/components/ui/badge";
+import { Button, buttonStyles } from "@/components/ui/button";
+import { Card, CardHeader, StatCard } from "@/components/ui/card";
+import { Select } from "@/components/ui/input";
+import { PageHeader } from "@/components/ui/page-header";
+import { EmptyState, Notice, Skeleton } from "@/components/ui/states";
+import { DashboardSkeleton, RefreshButton, Toolbar } from "@/features/insights/components/insight-kit";
 import { getApiErrorMessage } from "@/lib/api/errors";
 import {
   downloadFinancialCsv,
@@ -101,97 +110,87 @@ export function SellerFinanceDashboard() {
   const selected = statement?.currencies.find((value) => value.currency === currency);
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-10">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="text-sm font-semibold uppercase tracking-wider text-slate-500">Seller finances</p>
-          <h1 className="mt-2 text-3xl font-semibold text-slate-950">Financial statement</h1>
-          <p className="mt-2 text-sm text-slate-600">Confirmed seller ledger entries and payout eligibility.</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Link href="/seller/analytics" className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium">Sales analytics</Link>
-          <button type="button" onClick={refresh} disabled={loading}
-            className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium disabled:opacity-50">Refresh</button>
-          <button type="button" onClick={() => void exportCsv()} disabled={exporting || !statement}
-            className="mb-btn mb-btn-primary">
-            {exporting ? "Exporting..." : "Export CSV"}
-          </button>
-        </div>
-      </div>
+    <main className="grid gap-6">
+      <PageHeader eyebrow="Seller finances" title="Financial statement"
+        description="Confirmed seller ledger entries and payout eligibility."
+        crumbs={[{ href: "/seller/dashboard", label: "Seller overview" }, { label: "Finance" }]}
+        actions={<>
+          <Link href="/seller/analytics" className={buttonStyles({ variant: "secondary" })}>Sales analytics</Link>
+          <RefreshButton onClick={refresh} busy={loading && Boolean(statement)} disabled={loading} />
+          <Button onClick={() => void exportCsv()} disabled={exporting || !statement} loading={exporting}>
+            {!exporting && <Download size={15} aria-hidden="true" />}{exporting ? "Exporting..." : "Export CSV"}
+          </Button>
+        </>} />
 
-      {error && <div role="alert" className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>}
-      {loading && !statement ? <p role="status" className="mt-8 text-slate-600">Loading financial statement...</p> : null}
+      {error && <Notice tone="danger" action={<Button size="small" variant="secondary" onClick={refresh}>Retry</Button>}>{error}</Notice>}
+      {loading && !statement ? <DashboardSkeleton label="Loading financial statement..." /> : null}
       {statement ? (
         <>
           {statement.currencies.length ? (
             <>
-              <div className="mt-8 flex items-center gap-3">
-                <label htmlFor="seller-finance-currency" className="text-sm font-medium text-slate-700">Currency</label>
-                <select id="seller-finance-currency" value={currency} onChange={(e) => {
+              <Toolbar label="Statement currency">
+                <label htmlFor="seller-finance-currency" className="text-sm font-medium text-foreground">Currency</label>
+                <Select id="seller-finance-currency" className="w-32" value={currency} onChange={(e) => {
                   setEligibility(null);
                   setEligibilityLoading(true);
                   setEligibilityError("");
                   setCurrency(e.target.value);
-                }}
-                  className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm">
+                }}>
                   {statement.currencies.map((entry) => <option key={entry.currency} value={entry.currency}>{entry.currency}</option>)}
-                </select>
-              </div>
-              {selected && <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                {([
-                  ["Sales credits", selected.sales],
-                  ["Refund reversals", selected.refunds],
-                  ["Payouts", selected.payouts],
-                  ["Ledger balance", selected.balance],
-                ] as const).map(([label, value]) => (
-                  <div key={label} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</p>
-                    <p className="mt-3 break-all text-xl font-semibold text-slate-950">{displayMoney(value, currency)}</p>
-                  </div>
-                ))}
-              </div>}
-              <section className="mt-5 rounded-2xl border border-slate-200 bg-white p-6">
-                <h2 className="text-lg font-semibold text-slate-950">Payout eligibility</h2>
-                {eligibilityLoading && <p className="mt-3 text-sm text-slate-500">Checking available amount...</p>}
-                {eligibilityError && <p role="alert" className="mt-3 text-sm text-red-700">{eligibilityError}</p>}
-                {eligibility && eligibility.currency === currency && (
-                  <div className="mt-4 flex flex-wrap items-end justify-between gap-5">
-                    <div>
-                      <p className="text-sm text-slate-600">Withdrawable amount (informational only)</p>
-                      <p className="mt-1 text-2xl font-bold text-slate-950">{displayMoney(eligibility.withdrawable_amount, currency)}</p>
+                </Select>
+              </Toolbar>
+              {selected && <section aria-label="Ledger totals" className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 sm:gap-4 lg:grid-cols-4">
+                <StatCard label="Sales credits" value={displayMoney(selected.sales, currency)} icon={<ArrowDownLeft size={16} />} />
+                <StatCard label="Refund reversals" value={displayMoney(selected.refunds, currency)} icon={<Undo2 size={16} />} />
+                <StatCard label="Payouts" value={displayMoney(selected.payouts, currency)} icon={<ArrowUpRight size={16} />} />
+                <StatCard label="Ledger balance" value={displayMoney(selected.balance, currency)} icon={<Wallet size={16} />} tone="ink" />
+              </section>}
+              <Card>
+                <CardHeader title="Payout eligibility" description="What the ledger currently allows you to withdraw after the release hold." />
+                <div className="mt-5" aria-live="polite">
+                  {eligibilityLoading && <div role="status" className="grid gap-2"><span className="sr-only">Checking available amount...</span><Skeleton className="h-4 w-56" /><Skeleton className="h-8 w-40" /></div>}
+                  {eligibilityError && <Notice tone="danger">{eligibilityError}</Notice>}
+                  {eligibility && eligibility.currency === currency && (
+                    <div className="flex flex-wrap items-end justify-between gap-5 rounded-xl border border-line bg-sunken/50 p-4 sm:p-5">
+                      <div>
+                        <p className="text-sm text-muted">Withdrawable amount (informational only)</p>
+                        <p data-numeric className="mt-1 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">{displayMoney(eligibility.withdrawable_amount, currency)}</p>
+                      </div>
+                      <Badge tone="neutral"><Clock3 size={12} aria-hidden="true" />Release hold: {eligibility.hold_days} days</Badge>
                     </div>
-                    <p className="text-sm text-slate-500">Release hold: {eligibility.hold_days} days</p>
-                  </div>
-                )}
-                <p className="mt-4 text-xs text-slate-500">No bank transfer is initiated from this page.</p>
-              </section>
+                  )}
+                </div>
+                <p className="mt-4 text-xs text-muted">No bank transfer is initiated from this page.</p>
+              </Card>
             </>
           ) : (
-            <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-8 text-sm text-slate-600">
-              No ledger entries yet. Complete a test checkout and payment to populate the statement.
-            </div>
+            <EmptyState icon={<Wallet size={24} />} title="No ledger entries yet"
+              description="Complete a test checkout and payment to populate the statement."
+              action={<Link href="/seller/products" className={buttonStyles({ variant: "secondary" })}>Manage products</Link>} />
           )}
-          <section className="mt-7 rounded-2xl border border-slate-200 bg-white p-6">
-            <h2 className="text-lg font-semibold text-slate-950">Recent ledger activity</h2>
-            {statement.recent_entries.length === 0 ? <p className="mt-4 text-sm text-slate-500">No activity yet.</p> : (
-              <div className="mt-4 overflow-x-auto">
-                <table className="w-full min-w-[550px] text-left text-sm">
-                  <thead className="border-b border-slate-200 text-slate-500"><tr><th className="py-3">Date</th><th>Type</th><th>Amount</th></tr></thead>
+          <Card padded={false} className="overflow-hidden">
+            <CardHeader className="p-5 sm:p-6" title="Recent ledger activity" description="Most recent confirmed ledger entries across currencies." />
+            {statement.recent_entries.length === 0 ? <p className="border-t border-line px-5 py-6 text-sm text-muted sm:px-6">No activity yet.</p> : (
+              <div className="overflow-x-auto border-t border-line">
+                <table className="mb-table min-w-[30rem]">
+                  <thead><tr><th scope="col">Date</th><th scope="col">Type</th><th scope="col" className="text-right">Amount</th></tr></thead>
                   <tbody>{statement.recent_entries.map((entry, index) => (
-                    <tr key={`${entry.occurred_at}-${entry.kind}-${index}`} className="border-b border-slate-100">
-                      <td className="py-3 text-slate-600">{displayDate(entry.occurred_at)}</td>
-                      <td className="capitalize text-slate-700">{entry.kind}</td>
-                      <td className="font-medium text-slate-950">{displayMoney(entry.amount, entry.currency)}</td>
+                    <tr key={`${entry.occurred_at}-${entry.kind}-${index}`}>
+                      <td className="whitespace-nowrap text-muted">{displayDate(entry.occurred_at)}</td>
+                      <td><StatusBadge status={entry.kind} /></td>
+                      <td className="text-right font-semibold text-foreground">{displayMoney(entry.amount, entry.currency)}</td>
                     </tr>
                   ))}</tbody>
                 </table>
               </div>
             )}
-          </section>
-          <p className="mt-5 text-xs text-slate-500">{statement.notice}</p>
+          </Card>
+          <p className="text-xs leading-5 text-muted">{statement.notice}</p>
         </>
       ) : null}
-      <Link className="mt-8 inline-block text-sm font-medium text-slate-700 underline" href="/seller/dashboard">Back to seller dashboard</Link>
+      <Link className="inline-flex w-fit items-center gap-1.5 text-sm font-medium text-slate-700 underline-offset-4 hover:text-foreground hover:underline" href="/seller/dashboard">
+        <ArrowLeft size={15} aria-hidden="true" />Back to seller dashboard
+      </Link>
     </main>
   );
 }

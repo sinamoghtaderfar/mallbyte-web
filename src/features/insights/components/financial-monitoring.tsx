@@ -1,30 +1,33 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { Activity, AlertTriangle, CheckCircle2, Clock3, FileSearch, Play, ShieldCheck } from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
+import { Activity, AlertTriangle, CheckCircle2, Clock3, FileSearch, Play, ShieldCheck, X } from "lucide-react";
 
+import { Badge, type Tone } from "@/components/ui/badge";
+import { Button, buttonStyles } from "@/components/ui/button";
+import { Card, CardHeader, StatCard } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
+import { Pagination } from "@/components/ui/pagination";
+import { EmptyState, Notice } from "@/components/ui/states";
 import { getMyPermissions } from "@/features/rbac/api";
 import { useAuthStore } from "@/features/auth/auth-store";
 import { getApiErrorMessage } from "@/lib/api/errors";
-import { extractFindings } from "../finance-utils";
+
 import { findAuditRunByKey, getAuditHistory, getAuditRunDetail, startManualAudit } from "../api";
+import { extractFindings } from "../finance-utils";
 import type { AuditRunDetail } from "../types";
 import { FinancialNav } from "./financial-nav";
-import { InsightHeader, Metric, Notice, Panel, readableDate, RetryButton } from "./insight-kit";
+import { DashboardSkeleton, readableDate, RefreshButton } from "./insight-kit";
+
+const auditTones: Record<string, Tone> = { clean: "success", warnings: "warning", error: "danger", running: "info" };
+
+function AuditStatus({ status }: { status: string }) {
+  return <Badge tone={auditTones[status] ?? "neutral"} dot>{status}</Badge>;
+}
 
 type History = Awaited<ReturnType<typeof getAuditHistory>>;
 const PAGE_SIZE = 10;
-
-function AuditStatus({ status }: { status: string }) {
-  const styles: Record<string, string> = {
-    clean: "bg-emerald-50 text-emerald-700",
-    warnings: "bg-amber-50 text-amber-800",
-    error: "bg-rose-50 text-rose-700",
-    running: "bg-sky-50 text-sky-700",
-  };
-  return <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${styles[status] ?? "bg-slate-100 text-slate-700"}`}>{status}</span>;
-}
 
 export function FinancialMonitoring() {
   const userId = useAuthStore((s) => s.user?.id);
@@ -154,103 +157,120 @@ export function FinancialMonitoring() {
   const alertPages = Math.max(1, Math.ceil((alerts?.count ?? 0) / PAGE_SIZE));
   const findings = detail ? extractFindings(detail.summary) : [];
 
+  function closeDetail() { setRequestedDetail(null); setDetail(null); setDetailError(""); setDetailLoading(false); }
+
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-8 sm:py-10">
-      <div className="mx-auto max-w-7xl space-y-6">
-        <FinancialNav />
-        <InsightHeader eyebrow="Financial controls" title="Audit monitoring"
-          description="Inspect persistent internal reconciliation runs, alerts and permissions. No processor or bank settlement is verified here."
-          backHref="/admin/financial" actions={
-            <div className="flex flex-wrap gap-2">
-              <Link href="/admin/finance" className="rounded-xl border border-white/25 px-4 py-2.5 text-xs font-semibold text-white hover:bg-white/10">Current reconciliation</Link>
-              {canRun && <button type="button" onClick={() => void runAudit()} disabled={running || queuedKey !== null}
-                className="inline-flex items-center gap-2 rounded-xl bg-cyan-400 px-4 py-2.5 text-xs font-bold text-slate-950 hover:bg-cyan-300 disabled:opacity-50"><Play size={14}/>{running ? "Queueing…" : queuedKey ? "Audit queued" : "Run manual audit"}</button>}
-            </div>
-          } />
-        <div className="flex justify-end"><RetryButton onClick={refresh} disabled={loading || running} /></div>
-        {loading && <p role="status" className="text-sm text-slate-500">Loading audit history…</p>}
-        {error && <Notice variant="error">{error}. <button type="button" onClick={refresh} className="font-semibold underline">Try again</button></Notice>}
-        {actionMessage && <p role="status" aria-live="polite" className="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">{actionMessage}</p>}
-        {history && (
-          <>
-            <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Audit metrics">
-              <Metric title="Audit runs" value={runs?.count.toLocaleString("en-US") ?? "0"} subtitle="Saved history" icon={<Activity size={19}/>} />
-              <Metric title="Open alert types" value={alerts?.count.toLocaleString("en-US") ?? "0"} subtitle="Distinct active checks" icon={<AlertTriangle size={19}/>} />
-              <Metric title="Latest status on this page" value={runs?.results[0]?.status ?? "—"} subtitle="Most recent displayed run" icon={<ShieldCheck size={19}/>} />
-              <Metric title="Findings in latest displayed run" value={runs?.results[0] ? String(runs.results[0].findings_count) : "—"} subtitle="Overlapping findings possible" icon={<CheckCircle2 size={19}/>} />
-            </section>
-            <div className="grid gap-5 xl:grid-cols-[minmax(0,1.6fr)_minmax(300px,1fr)]">
-              <Panel title="Audit history" subtitle="Open any saved run to see individual checks.">
-                {runs?.results.length ? (
-                  <div className="overflow-x-auto">
-                    <table className="w-full min-w-[520px] text-left text-sm">
-                      <thead><tr className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500"><th scope="col" className="pb-3">Date</th><th scope="col" className="pb-3">Source</th><th scope="col" className="pb-3">Status</th><th scope="col" className="pb-3">Findings</th><th scope="col" className="pb-3 text-right">Details</th></tr></thead>
-                      <tbody>{runs.results.map((run) => (
-                        <tr key={run.id} className="border-b border-slate-100 text-slate-700">
-                          <td className="py-4 text-xs">{readableDate(run.created_at)}</td>
-                          <td className="py-4 capitalize">{run.source}</td>
-                          <td className="py-4"><AuditStatus status={run.status}/></td>
-                          <td className="py-4 font-semibold">{run.findings_count}</td>
-                          <td className="py-4 text-right"><button type="button" aria-label={`Inspect audit ${run.id}`} onClick={() => inspectRun(run.id)} className="font-semibold text-cyan-700 hover:underline">Inspect</button></td>
-                        </tr>
-                      ))}</tbody>
-                    </table>
-                  </div>
-                ) : <p className="text-sm text-slate-500">No saved audit runs. The Celery worker and Beat schedule must be configured for automated audits.</p>}
-                <div className="mt-5 flex items-center justify-between gap-3 text-xs text-slate-500">
-                  <span>Page {page} of {totalPages}</span>
-                  <div className="flex gap-2">
-                    <button type="button" className="rounded-lg border border-slate-200 px-3 py-2 disabled:opacity-40" disabled={page <= 1 || loading} onClick={() => { setLoading(true); setPage((p) => p - 1); }}>Previous</button>
-                    <button type="button" className="rounded-lg border border-slate-200 px-3 py-2 disabled:opacity-40" disabled={page >= totalPages || loading} onClick={() => { setLoading(true); setPage((p) => p + 1); }}>Next</button>
-                  </div>
+    <main className="grid gap-6">
+      <MonitoringHeader canRun={canRun} running={running} queued={queuedKey !== null} onRun={() => void runAudit()}
+        refresh={<RefreshButton onClick={refresh} busy={loading && Boolean(history)} disabled={loading || running} />} />
+      <FinancialNav />
+      {error && <Notice tone="danger" title="Audit history unavailable" action={<Button size="small" variant="secondary" onClick={refresh}>Try again</Button>}>{error}</Notice>}
+      {actionMessage && <p role="status" aria-live="polite" className="flex items-start gap-2.5 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm leading-6 text-sky-950"><Clock3 size={17} className="mt-0.5 shrink-0" aria-hidden="true" />{actionMessage}</p>}
+      {loading && !history && <DashboardSkeleton label="Loading audit history…" />}
+      {loading && history && <p role="status" className="sr-only">Loading audit history…</p>}
+      {history && (
+        <>
+          <section className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 sm:gap-4 xl:grid-cols-4" aria-label="Audit metrics">
+            <StatCard label="Audit runs" value={runs?.count.toLocaleString("en-US") ?? "0"} hint="Saved history" icon={<Activity size={16} />} />
+            <StatCard label="Open alert types" value={alerts?.count.toLocaleString("en-US") ?? "0"} hint="Distinct active checks" icon={<AlertTriangle size={16} />} tone={alerts?.count ? "brand" : "default"} />
+            <StatCard label="Latest status on this page" value={runs?.results[0]?.status ?? "—"} hint="Most recent displayed run" icon={<ShieldCheck size={16} />} />
+            <StatCard label="Findings in latest displayed run" value={runs?.results[0] ? String(runs.results[0].findings_count) : "—"} hint="Overlapping findings possible" icon={<CheckCircle2 size={16} />} />
+          </section>
+
+          <div className="grid gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+            <Card padded={false} className="overflow-hidden">
+              <CardHeader className="p-5 sm:p-6" title="Audit history" description="Open any saved run to see individual checks." />
+              {runs?.results.length ? (
+                <div className="overflow-x-auto border-t border-line">
+                  <table className="mb-table min-w-[34rem]">
+                    <thead><tr><th scope="col">Date</th><th scope="col">Source</th><th scope="col">Status</th><th scope="col" className="text-right">Findings</th><th scope="col" className="text-right">Details</th></tr></thead>
+                    <tbody>{runs.results.map((run) => (
+                      <tr key={run.id} className={requestedDetail?.id === run.id ? "[&>td]:!bg-ember-50/60" : ""}>
+                        <td className="whitespace-nowrap text-muted">{readableDate(run.created_at)}</td>
+                        <td className="capitalize">{run.source}</td>
+                        <td><AuditStatus status={run.status} /></td>
+                        <td className="text-right font-semibold" data-numeric>{run.findings_count}</td>
+                        <td className="text-right"><Button size="small" variant="quiet" aria-label={`Inspect audit ${run.id}`} onClick={() => inspectRun(run.id)}>Inspect</Button></td>
+                      </tr>
+                    ))}</tbody>
+                  </table>
                 </div>
-              </Panel>
-              <Panel title="Open financial alerts" subtitle="Active issues requiring investigation; does not include resolved alerts.">
+              ) : <EmptyState className="mx-5 mb-5 py-10" icon={<FileSearch size={22} />} title="No saved audit runs" description="The Celery worker and Beat schedule must be configured for automated audits." />}
+              <Pagination className="border-t border-line px-5 py-3" label="Audit history pages" summary={`Page ${page} of ${totalPages}`}
+                canPrevious={page > 1} canNext={page < totalPages} disabled={loading}
+                onPrevious={() => { setLoading(true); setPage((p) => p - 1); }} onNext={() => { setLoading(true); setPage((p) => p + 1); }} />
+            </Card>
+
+            <Card padded={false} className="overflow-hidden">
+              <CardHeader className="p-5 sm:p-6" title="Open financial alerts" description="Active issues requiring investigation; resolved alerts are excluded." />
+              <div className="px-5 pb-5 sm:px-6">
                 {alerts?.results.length ? (
-                  <div className="space-y-3">
+                  <ul className="grid gap-2.5">
                     {alerts.results.map((alert) => (
-                      <article key={alert.code} className="rounded-2xl border border-amber-200 bg-amber-50/60 p-4">
+                      <li key={alert.code} className="rounded-xl border border-amber-200 bg-amber-50/70 p-3.5">
                         <div className="flex items-start justify-between gap-3">
-                          <span className="break-words text-xs font-semibold capitalize text-amber-950">{alert.code.replaceAll("_", " ")}</span>
-                          <span className="shrink-0 rounded-full bg-amber-200 px-2.5 py-1 text-xs font-bold text-amber-950">{alert.findings_count}</span>
+                          <span className="text-sm font-medium capitalize text-amber-950 [overflow-wrap:anywhere]">{alert.code.replaceAll("_", " ")}</span>
+                          <Badge tone="warning"><span data-numeric>{alert.findings_count}</span><span className="sr-only"> findings</span></Badge>
                         </div>
-                        <p className="mt-2 text-xs text-amber-800">Last seen: {readableDate(alert.last_seen_at)}</p>
-                      </article>
+                        <p className="mt-1.5 text-xs text-amber-900">Last seen: {readableDate(alert.last_seen_at)}</p>
+                      </li>
                     ))}
-                  </div>
+                  </ul>
                 ) : (
-                  <div className="rounded-2xl bg-emerald-50 p-5 text-emerald-800"><CheckCircle2 size={20}/><p className="mt-2 text-sm font-semibold">No open findings</p><p className="mt-1 text-xs">This does not verify external settlement.</p></div>
-                )}
-                <div className="mt-5 flex items-center justify-between gap-3 text-xs text-slate-500">
-                  <span>Alert page {alertPage} of {alertPages}</span>
-                  <div className="flex gap-2">
-                    <button type="button" disabled={alertPage <= 1 || loading} onClick={() => { setLoading(true); setAlertPage((p) => p - 1); }} className="rounded-lg border border-slate-200 px-3 py-2 disabled:opacity-40">Previous</button>
-                    <button type="button" disabled={alertPage >= alertPages || loading} onClick={() => { setLoading(true); setAlertPage((p) => p + 1); }} className="rounded-lg border border-slate-200 px-3 py-2 disabled:opacity-40">Next</button>
+                  <div className="flex gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-900">
+                    <CheckCircle2 size={20} className="shrink-0" aria-hidden="true" />
+                    <div><p className="text-sm font-semibold">No open findings</p><p className="mt-0.5 text-xs">This does not verify external settlement.</p></div>
                   </div>
-                </div>
-              </Panel>
+                )}
+              </div>
+              <Pagination className="border-t border-line px-5 py-3" label="Alert pages" summary={`Alert page ${alertPage} of ${alertPages}`}
+                canPrevious={alertPage > 1} canNext={alertPage < alertPages} disabled={loading}
+                onPrevious={() => { setLoading(true); setAlertPage((p) => p - 1); }} onNext={() => { setLoading(true); setAlertPage((p) => p + 1); }} />
+            </Card>
+          </div>
+          <Notice tone="info">Only database consistency is examined. &quot;Clean&quot; does not mean a bank or payment provider has independently reconciled funds.</Notice>
+        </>
+      )}
+      {(detailLoading || detailError || detail) && (
+        <Card aria-labelledby="audit-detail-title">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 id="audit-detail-title" className="text-base font-semibold tracking-tight text-foreground">Selected audit run</h2>
+              <p className="mt-1 text-sm text-muted">Individual internal reconciliation checks for this run.</p>
             </div>
-            <Notice>Only database consistency is examined. &quot;Clean&quot; does not mean a bank or payment provider has independently reconciled funds.</Notice>
-          </>
-        )}
-        {(detailLoading || detailError || detail) && (
-          <Panel title="Selected audit run" extra={<button type="button" className="text-sm text-slate-600 underline" onClick={() => { setRequestedDetail(null); setDetail(null); setDetailError(""); setDetailLoading(false); }}>Close</button>}>
-            {detailLoading && <p role="status" className="text-sm text-slate-500">Loading run details…</p>}
-            {detailError && <Notice variant="error">{detailError}. <button type="button" onClick={() => { if (requestedDetail) inspectRun(requestedDetail.id); }} className="font-semibold underline">Retry audit details</button></Notice>}
-            {detail && <div className="space-y-5">
-              <div className="flex flex-wrap items-center gap-3 text-sm text-slate-600"><AuditStatus status={detail.status}/><span>Run #{detail.id}</span><Clock3 size={15}/><span>{readableDate(detail.finished_at)}</span></div>
-              {detail.error && <Notice variant="error">Audit failed: {detail.error}</Notice>}
+            <Button size="small" variant="secondary" onClick={closeDetail}><X size={15} aria-hidden="true" />Close</Button>
+          </div>
+          <div className="mt-5 grid gap-5">
+            {detailLoading && <p role="status" className="text-sm text-muted">Loading run details…</p>}
+            {detailError && <Notice tone="danger" action={<Button size="small" variant="secondary" onClick={() => { if (requestedDetail) inspectRun(requestedDetail.id); }}>Retry audit details</Button>}>{detailError}</Notice>}
+            {detail && <>
+              <div className="flex flex-wrap items-center gap-3 text-sm text-muted"><AuditStatus status={detail.status} /><span className="font-medium text-foreground">Run #{detail.id}</span><span className="inline-flex items-center gap-1.5"><Clock3 size={14} aria-hidden="true" />{readableDate(detail.finished_at)}</span></div>
+              {detail.error && <Notice tone="danger">Audit failed: {detail.error}</Notice>}
               {findings.length ? (
-                <div className="overflow-x-auto"><table className="w-full min-w-[460px] text-left text-sm"><caption className="sr-only">Internal reconciliation checks</caption>
-                  <thead><tr className="border-b border-slate-200 text-slate-500"><th scope="col" className="py-2">Check</th><th scope="col" className="py-2">Findings</th><th scope="col" className="py-2">Sample IDs</th></tr></thead>
-                  <tbody>{findings.map((finding) => <tr className="border-b border-slate-100" key={finding.code}><td className="py-3 capitalize">{finding.code.replaceAll("_", " ")}</td><td className="py-3 font-semibold">{finding.count}</td><td className="py-3 text-xs text-slate-500">{finding.samples || "—"}</td></tr>)}</tbody>
+                <div className="overflow-x-auto rounded-xl border border-line"><table className="mb-table min-w-[30rem]"><caption className="sr-only">Internal reconciliation checks</caption>
+                  <thead><tr><th scope="col">Check</th><th scope="col" className="text-right">Findings</th><th scope="col">Sample IDs</th></tr></thead>
+                  <tbody>{findings.map((finding) => <tr key={finding.code}><td className="capitalize">{finding.code.replaceAll("_", " ")}</td><td className="text-right font-semibold" data-numeric>{finding.count}</td><td className="font-mono text-xs text-muted">{finding.samples || "—"}</td></tr>)}</tbody>
                 </table></div>
-              ) : <p className="flex items-center gap-2 text-sm text-slate-500"><FileSearch size={16}/>No individual findings saved for this run.</p>}
-              <details className="rounded-xl border border-slate-200 p-4"><summary className="cursor-pointer text-sm font-semibold text-slate-700">Show raw audit JSON</summary><pre className="mt-3 max-h-80 overflow-auto rounded-xl bg-slate-950 p-4 text-xs text-slate-100">{JSON.stringify(detail.summary, null, 2)}</pre></details>
-            </div>}
-          </Panel>
-        )}
-      </div>
+              ) : <p className="flex items-center gap-2 text-sm text-muted"><FileSearch size={16} aria-hidden="true" />No individual findings saved for this run.</p>}
+              <details className="rounded-xl border border-line"><summary className="flex min-h-11 items-center px-4 text-sm font-medium text-slate-700 hover:text-foreground">Show raw audit JSON</summary><pre className="max-h-80 overflow-auto rounded-b-xl border-t border-line bg-ink p-4 font-mono text-xs leading-5 text-slate-100">{JSON.stringify(detail.summary, null, 2)}</pre></details>
+            </>}
+          </div>
+        </Card>
+      )}
     </main>
+  );
+}
+
+function MonitoringHeader({ canRun, running, queued, onRun, refresh }: {
+  canRun: boolean; running: boolean; queued: boolean; onRun: () => void; refresh: ReactNode;
+}) {
+  return (
+    <PageHeader eyebrow="Financial controls" title="Audit monitoring"
+      description="Inspect persistent internal reconciliation runs, alerts and permissions. No processor or bank settlement is verified here."
+      actions={<>
+        {refresh}
+        <Link href="/admin/finance" className={buttonStyles({ variant: "secondary" })}>Current reconciliation</Link>
+        {canRun && <Button onClick={onRun} disabled={running || queued} loading={running}>{!running && <Play size={15} aria-hidden="true" />}{running ? "Queueing…" : queued ? "Audit queued" : "Run manual audit"}</Button>}
+      </>} />
   );
 }
