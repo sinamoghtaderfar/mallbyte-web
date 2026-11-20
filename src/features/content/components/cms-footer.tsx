@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { workspaceFor } from "@/components/layout/workspace-nav";
 import { Brand } from "@/components/layout/brand";
 import { useEffect, useState } from "react";
 import { fetchPublicNavigation } from "../api";
@@ -25,6 +27,20 @@ export function CmsFooter() {
   }, []);
   const fallback = [{ id: -1, label: "Products", url: "/products", open_in_new_tab: false }, { id: -2, label: "FAQ", url: "/faq", open_in_new_tab: false }, { id: -3, label: "Support", url: "/support", open_in_new_tab: false }];
   const links = items.length ? items : fallback;
+  const pathname = usePathname() ?? "";
+  const ctx = workspaceFor(pathname);
+  if (ctx === "seller" || ctx === "admin") {
+    // Workspaces get a quiet utility footer; the same footer links remain available.
+    return <footer className="mt-auto border-t border-line bg-surface">
+      <div className="mx-auto flex max-w-[88rem] flex-col gap-2 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+        <p className="text-xs text-muted">© {new Date().getFullYear()} MallByte · {ctx === "seller" ? "Seller studio" : "Operations workspace"}</p>
+        <nav aria-label="Footer links" className="flex flex-wrap gap-x-5">{links.map((item) => {
+          const href = safeContentUrl(item.url);
+          return href && <Link key={item.id} href={href} target={item.open_in_new_tab ? "_blank" : undefined} rel={item.open_in_new_tab ? "noopener noreferrer" : undefined} className="inline-flex min-h-10 items-center text-xs text-muted hover:text-ink">{item.label}</Link>;
+        })}</nav>
+      </div>
+    </footer>;
+  }
   return <footer className="mt-auto bg-ink text-slate-300">
     <div className="mx-auto max-w-[88rem] px-4 pb-10 pt-16 sm:px-6 lg:px-8">
       <div className="grid gap-12 lg:grid-cols-[1.3fr_2fr]">

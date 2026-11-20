@@ -147,15 +147,15 @@ export function FinancialAreaChart({ points, currency, primaryName, secondaryNam
         <AreaChart data={points} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
           <defs>
             <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#0891b2" stopOpacity={0.22} />
-              <stop offset="100%" stopColor="#0891b2" stopOpacity={0} />
+              <stop offset="0%" stopColor="#c93d0b" stopOpacity={0.22} />
+              <stop offset="100%" stopColor="#c93d0b" stopOpacity={0} />
             </linearGradient>
           </defs>
-          <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="#e2e8f0" />
-          <XAxis dataKey="date" tickFormatter={(value: string) => value.slice(5)} tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: "#64748b" }} minTickGap={20} />
-          <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: "#64748b" }} width={65} tickFormatter={(value: number) => new Intl.NumberFormat("en", { notation: "compact" }).format(value)} />
-          <Tooltip formatter={(value, name) => [money(Number(value ?? 0), currency), name === "primary" ? primaryName : secondaryName]} contentStyle={{ borderRadius: 16, borderColor: "#e2e8f0", fontSize: 12 }} />
-          <Area type="monotone" name="primary" dataKey="primary" stroke="#0891b2" fill={`url(#${gradientId})`} strokeWidth={2.5} dot={false} isAnimationActive={false} />
+          <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="#e4e1da" />
+          <XAxis dataKey="date" tickFormatter={(value: string) => value.slice(5)} tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: "#6b675f" }} minTickGap={20} />
+          <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: "#6b675f" }} width={65} tickFormatter={(value: number) => new Intl.NumberFormat("en", { notation: "compact" }).format(value)} />
+          <Tooltip formatter={(value, name) => [money(Number(value ?? 0), currency), name === "primary" ? primaryName : secondaryName]} contentStyle={{ borderRadius: 16, borderColor: "#e4e1da", fontSize: 12 }} />
+          <Area type="monotone" name="primary" dataKey="primary" stroke="#c93d0b" fill={`url(#${gradientId})`} strokeWidth={2.5} dot={false} isAnimationActive={false} />
           <Area type="monotone" name="secondary" dataKey="secondary" stroke="#f59e0b" fill="transparent" strokeWidth={2} dot={false} isAnimationActive={false} />
         </AreaChart>
       </ResponsiveContainer>

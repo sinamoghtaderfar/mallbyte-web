@@ -143,7 +143,7 @@ export default function AdminOrdersPage() {
                     <td className="py-4">
                       <Link
                         href={`/orders/${order.id}`}
-                        className="font-medium text-blue-700 hover:underline"
+                        className="font-medium text-ember-700 underline-offset-4 hover:underline"
                       >
                         View order
                       </Link>

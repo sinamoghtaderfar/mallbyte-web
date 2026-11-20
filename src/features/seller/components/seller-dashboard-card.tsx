@@ -3,6 +3,12 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { ArrowUpRight, BarChart3, CircleDollarSign, ClipboardList, Package, PackagePlus, Percent, RotateCcw, Settings2, ShoppingCart, Wallet } from "lucide-react";
+
+import { StatusBadge } from "@/components/ui/badge";
+import { buttonStyles } from "@/components/ui/button";
+import { StatCard } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/states";
 import { getApiErrorMessage } from "@/lib/api/errors";
 
 import { getSellerDashboard } from "../api";
@@ -70,20 +76,23 @@ export function SellerDashboardCard() {
 
   if (isLoading) {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm">
-        <p className="text-sm text-slate-500">Loading seller dashboard...</p>
+      <div role="status" className="space-y-6">
+        <span className="sr-only">Loading seller dashboard...</span>
+        <Skeleton className="h-12 w-72" />
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-32 rounded-2xl" />)}</div>
+        <Skeleton className="h-56 rounded-2xl" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="rounded-3xl border border-red-200 bg-red-50 p-5 sm:p-8 shadow-sm">
-        <h1 className="text-xl font-semibold text-red-800">
+      <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 sm:p-8">
+        <h1 className="text-xl font-semibold text-rose-900">
           Seller dashboard is not available
         </h1>
 
-        <p className="mt-2 text-sm text-red-700">{error}</p>
+        <p role="alert" className="mt-2 text-sm text-rose-800">{error}</p>
 
         <div className="mt-6 flex flex-wrap gap-3">
           <Link
@@ -102,7 +111,7 @@ export function SellerDashboardCard() {
 
           <Link
             href="/seller/apply"
-            className="mb-btn mb-btn-secondary text-rose-700 hover:bg-rose-50"
+            className="mb-btn mb-btn-secondary"
           >
             Apply as seller
           </Link>
@@ -113,7 +122,7 @@ export function SellerDashboardCard() {
 
   if (!seller) {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm">
+      <div className="rounded-2xl border border-line bg-surface p-8">
         <h1 className="text-xl font-semibold text-slate-950">
           Seller profile not found
         </h1>
@@ -121,136 +130,92 @@ export function SellerDashboardCard() {
     );
   }
 
+  const actions = [
+    { href: "/seller/products/new", label: "Add a product", text: "Create a listing with images and variants", icon: PackagePlus },
+    { href: "/seller/products", label: "Manage products", text: "Edit catalog, pricing and stock", icon: Package },
+    { href: "/seller/orders", label: "View orders", text: "Fulfil and update order items", icon: ClipboardList },
+    { href: "/seller/returns", label: "View returns", text: "Review return requests", icon: RotateCcw },
+    { href: "/seller/analytics", label: "Sales analytics", text: "Sales trends and top products", icon: BarChart3 },
+    { href: "/seller/finance", label: "Financial statement", text: "Ledger balances, payout eligibility", icon: Wallet },
+  ];
+
   return (
-    <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
-      <section className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
+    <div className="space-y-8">
+      <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-3">
             <p className="mb-eyebrow">
               Seller dashboard
             </p>
-
-            <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">
-              {seller.store_name}
-            </h1>
-
-            <p className="mt-3 text-sm leading-6 text-slate-500">
-              {seller.description || "No store description yet."}
-            </p>
+            <StatusBadge status={seller.status} label={seller.status} className="capitalize" />
           </div>
 
-          <span className="rounded-full bg-green-100 px-4 py-2 text-sm font-medium capitalize text-green-700">
-            {seller.status}
-          </span>
+          <h1 className="mt-2 text-[1.75rem] font-semibold tracking-[-0.02em] text-slate-950 sm:text-[2rem]">
+            {seller.store_name}
+          </h1>
+
+          <p className="mt-1.5 max-w-2xl text-sm leading-6 text-muted">
+            {seller.description || "No store description yet."}
+          </p>
         </div>
-
-        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-2xl border border-slate-200 p-5">
-            <p className="mb-eyebrow">
-              Total sales
-            </p>
-            <p className="mt-3 text-2xl font-semibold text-slate-950">
-              {formatMoney(seller.total_sales)}
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 p-5">
-            <p className="mb-eyebrow">
-              Orders
-            </p>
-            <p className="mt-3 text-2xl font-semibold text-slate-950">
-              {seller.total_orders}
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 p-5">
-            <p className="mb-eyebrow">
-              Balance
-            </p>
-            <p className="mt-3 text-2xl font-semibold text-slate-950">
-              {formatMoney(seller.balance)}
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 p-5">
-            <p className="mb-eyebrow">
-              Commission
-            </p>
-            <p className="mt-3 text-2xl font-semibold text-slate-950">
-              {formatMoney(seller.commission_rate)}%
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-8 grid gap-4 sm:grid-cols-2">
-          <div className="rounded-2xl border border-slate-200 p-5">
-            <p className="mb-eyebrow">
-              Business email
-            </p>
-            <p className="mt-2 text-sm font-medium text-slate-950">
-              {seller.business_email}
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 p-5">
-            <p className="mb-eyebrow">
-              Verified at
-            </p>
-            <p className="mt-2 text-sm font-medium text-slate-950">
-              {formatDate(seller.verified_at)}
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-8 flex flex-wrap gap-3">
-          <Link
-            href="/seller/products"
-            className="mb-btn mb-btn-primary"
-          >
-            Manage products
+        <div className="flex flex-wrap gap-2">
+          <Link href="/seller/store" className={buttonStyles({ variant: "secondary" })}>
+            <Settings2 size={16} aria-hidden="true" />Edit store settings
           </Link>
-
-          <Link
-            href="/seller/orders"
-            className="mb-btn mb-btn-secondary"
-          >
-            View orders
-          </Link>
-
-          <Link
-            href="/seller/returns"
-            className="mb-btn mb-btn-secondary"
-          >
-            View returns
-          </Link>
-
-          <Link
-            href="/seller/store"
-            className="mb-btn mb-btn-secondary"
-          >
-            Edit store settings
-          </Link>
-
-          <Link
-            href="/seller/status"
-            className="mb-btn mb-btn-secondary"
-          >
-            View status
+          <Link href="/seller/products/new" className={buttonStyles()}>
+            <PackagePlus size={16} aria-hidden="true" />New product
           </Link>
         </div>
-      </section>
+      </header>
 
-      <aside className="h-fit rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-slate-950">
-          Next seller work
-        </h2>
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard tone="ink" label="Total sales" value={formatMoney(seller.total_sales)} icon={<CircleDollarSign size={16} />} hint="Lifetime, as reported by the store record" />
+        <StatCard label="Orders" value={seller.total_orders} icon={<ShoppingCart size={16} />} hint="Total orders containing your products" />
+        <StatCard label="Balance" value={formatMoney(seller.balance)} icon={<Wallet size={16} />} hint="See Finance for ledger details" />
+        <StatCard label="Commission" value={`${formatMoney(seller.commission_rate)}%`} icon={<Percent size={16} />} hint="Platform commission rate" />
+      </div>
 
-        <div className="mt-5 space-y-4 text-sm leading-6 text-slate-600">
-          <p>1. Manage products, orders, and return visibility.</p>
-          <p>2. Review customer returns related to your products.</p>
-          <p>3. Real analytics charts can be added later.</p>
-        </div>
-      </aside>
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
+        <section aria-labelledby="seller-actions-heading" className="mb-card p-5 sm:p-6">
+          <h2 id="seller-actions-heading" className="text-base font-semibold text-slate-950">Workspace</h2>
+          <p className="mt-1 text-sm text-muted">Everything you need to run your store.</p>
+          <ul className="mt-5 grid gap-3 sm:grid-cols-2">
+            {actions.map(({ href, label, text, icon: Icon }) => (
+              <li key={href}>
+                <Link href={href} className="group flex h-full items-start gap-3.5 rounded-xl border border-line p-4 transition hover:border-line-strong hover:bg-slate-50">
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-800 transition group-hover:bg-ink group-hover:text-white" aria-hidden="true"><Icon size={17} strokeWidth={1.8} /></span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-medium text-slate-950">{label}</span>
+                    <span className="mt-0.5 block text-xs leading-5 text-muted">{text}</span>
+                  </span>
+                  <ArrowUpRight size={15} className="shrink-0 text-slate-400 transition group-hover:text-ink" aria-hidden="true" />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <aside aria-labelledby="seller-profile-heading" className="mb-card h-fit p-5 sm:p-6">
+          <h2 id="seller-profile-heading" className="text-base font-semibold text-slate-950">Store profile</h2>
+          <dl className="mt-4 divide-y divide-line text-sm">
+            <div className="py-3">
+              <dt className="text-xs text-muted">Business email</dt>
+              <dd className="mt-0.5 font-medium text-slate-950 [overflow-wrap:anywhere]">{seller.business_email}</dd>
+            </div>
+            {seller.business_phone ? <div className="py-3">
+              <dt className="text-xs text-muted">Business phone</dt>
+              <dd className="mt-0.5 font-medium text-slate-950">{seller.business_phone}</dd>
+            </div> : null}
+            <div className="py-3">
+              <dt className="text-xs text-muted">Verified at</dt>
+              <dd className="mt-0.5 font-medium text-slate-950">{formatDate(seller.verified_at)}</dd>
+            </div>
+          </dl>
+          <Link href="/seller/status" className="mt-2 inline-flex min-h-10 items-center gap-1 text-sm font-medium text-ink underline-offset-4 hover:underline">
+            View status<ArrowUpRight size={14} aria-hidden="true" />
+          </Link>
+        </aside>
+      </div>
     </div>
   );
 }

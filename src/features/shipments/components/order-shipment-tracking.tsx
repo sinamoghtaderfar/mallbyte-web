@@ -185,7 +185,7 @@ export function OrderShipmentTracking({ orderId }: OrderShipmentTrackingProps) {
                   href={shipment.tracking_url}
                   target="_blank"
                   rel="noreferrer"
-                  className="mt-1 inline-block text-sm font-medium text-blue-700 underline underline-offset-4"
+                  className="mt-1 inline-block text-sm font-medium text-ember-700 underline underline-offset-4"
                 >
                   Track shipment
                 </a>

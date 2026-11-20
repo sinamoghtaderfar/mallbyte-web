@@ -344,7 +344,7 @@ function TagManager({
   onChanged,
 }: TagManagerProps) {
   const [name, setName] = useState("");
-  const [color, setColor] = useState("#64748b");
+  const [color, setColor] = useState("#6b675f");
   const [busyId, setBusyId] =
     useState<number | "new" | null>(null);
   const [error, setError] = useState("");
@@ -477,7 +477,7 @@ function TagManager({
               className="h-2.5 w-2.5 rounded-full"
               style={{
                 backgroundColor:
-                  tag.color || "#64748b",
+                  tag.color || "#6b675f",
               }}
             />
 
@@ -736,7 +736,7 @@ function TicketDetail({
                   style={{
                     backgroundColor:
                       tag.color ||
-                      "#64748b",
+                      "#6b675f",
                   }}
                 />
 

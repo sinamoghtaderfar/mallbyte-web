@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 
 import type { ProductListItem } from "@/features/products/types";
 import { getApiErrorMessage } from "@/lib/api/errors";
+import { getImageUrl } from "@/lib/media/image-url";
 import type { PaginatedResponse } from "@/types/api";
 
 import { getSellerProducts } from "../api";
@@ -82,8 +83,8 @@ export function SellerProductsList() {
   const pager = (
     <nav aria-label="Seller product pages" className="mt-6 flex items-center gap-4 text-sm text-slate-700">
       <span>{pagination.count} products · Page {page} of {Math.max(1, Math.ceil(pagination.count / 20))}</span>
-      <button type="button" disabled={page <= 1} onClick={() => changePage(page - 1)} className="rounded-xl border px-3 py-2 disabled:opacity-40">Previous products</button>
-      <button type="button" disabled={isLoading || Boolean(error) || !pagination.next} onClick={() => changePage(page + 1)} className="rounded-xl border px-3 py-2 disabled:opacity-40">Next products</button>
+      <button type="button" disabled={page <= 1} onClick={() => changePage(page - 1)} className="mb-btn mb-btn-secondary mb-btn-sm">Previous products</button>
+      <button type="button" disabled={isLoading || Boolean(error) || !pagination.next} onClick={() => changePage(page + 1)} className="mb-btn mb-btn-secondary mb-btn-sm">Next products</button>
     </nav>
   );
 
@@ -117,14 +118,14 @@ export function SellerProductsList() {
   }
 
   return (
-    <section className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8 shadow-sm">
+    <section className="mb-card p-5 sm:p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="mb-eyebrow">
             Seller products
           </p>
 
-          <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">
+          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
             Manage products
           </h1>
 
@@ -153,42 +154,55 @@ export function SellerProductsList() {
           </p>
         </div>
       ) : (
-        <div className="mt-8 overflow-hidden rounded-3xl border border-slate-200">
-          <div className="grid grid-cols-[1fr_140px_120px] gap-4 border-b border-slate-200 bg-slate-50 px-5 py-3 mb-eyebrow">
-            <span>Product</span>
-            <span>Price</span>
-            <span>Stock</span>
-          </div>
-
-          <div className="divide-y divide-slate-100">
-            {products.map((product) => (
-              <div
-                key={product.id}
-                className="grid grid-cols-[1fr_140px_120px] gap-4 px-5 py-4"
-              >
-                <div>
-                  <Link
-                    href={`/seller/products/${product.id}`}
-                    className="text-sm font-semibold text-slate-950 underline-offset-4 hover:underline"
-                  >
-                    {product.name}
-                  </Link>
-                  <p className="mt-1 text-xs text-slate-500">
-                    {product.category_name || "No category"} ·{" "}
-                    {product.brand_name || "No brand"}
-                  </p>
-                </div>
-
-                <p className="text-sm font-medium text-slate-900">
-                  {formatPrice(product.final_price)}
-                </p>
-
-                <p className="text-sm text-slate-600">
-                  {product.available_stock} available
-                </p>
-              </div>
-            ))}
-          </div>
+        <div className="mt-6 overflow-x-auto rounded-xl border border-line">
+          <table className="mb-table min-w-[36rem]">
+            <thead>
+              <tr>
+                <th scope="col">Product</th>
+                <th scope="col" className="!text-right">Price</th>
+                <th scope="col">Stock</th>
+              </tr>
+            </thead>
+            <tbody>
+              {products.map((product) => {
+                const img = getImageUrl(product.main_image);
+                const tone = product.available_stock <= 0 ? "bg-rose-500" : product.available_stock <= 5 ? "bg-amber-500" : "bg-emerald-500";
+                return (
+                  <tr key={product.id}>
+                    <td>
+                      <div className="flex items-center gap-3">
+                        <span className="size-11 shrink-0 overflow-hidden rounded-lg bg-sunken ring-1 ring-inset ring-black/[0.05]">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          {img ? <img src={img} alt="" loading="lazy" className="size-full object-cover" /> : null}
+                        </span>
+                        <div className="min-w-0">
+                          <Link
+                            href={`/seller/products/${product.id}`}
+                            className="text-sm font-medium text-slate-950 underline-offset-4 hover:underline"
+                          >
+                            {product.name}
+                          </Link>
+                          <p className="mt-0.5 text-xs text-muted">
+                            {product.category_name || "No category"} ·{" "}
+                            {product.brand_name || "No brand"}
+                          </p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="text-right font-medium text-slate-900">
+                      {formatPrice(product.final_price)}
+                    </td>
+                    <td>
+                      <span className="inline-flex items-center gap-2 text-slate-700">
+                        <span className={`size-1.5 rounded-full ${tone}`} aria-hidden="true" />
+                        {product.available_stock} available
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
 

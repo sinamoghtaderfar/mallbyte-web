@@ -712,7 +712,7 @@ export function NotificationCenter() {
                   "flex gap-4 border-b border-slate-100 p-5 last:border-b-0",
                   notification.is_read
                     ? "bg-white"
-                    : "bg-blue-50/50",
+                    : "bg-ember-50/50",
                 ].join(" ")}
               >
                 <input
@@ -734,7 +734,7 @@ export function NotificationCenter() {
                     "mt-2 h-2.5 w-2.5 shrink-0 rounded-full",
                     notification.is_read
                       ? "bg-slate-300"
-                      : "bg-blue-600",
+                      : "bg-brand",
                   ].join(" ")}
                 />
 
