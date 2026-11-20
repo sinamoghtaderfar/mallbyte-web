@@ -2,6 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { Inbox, MessageSquarePlus, MessagesSquare } from "lucide-react";
+
+import { Button, buttonStyles } from "@/components/ui/button";
+import { StatCard } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
+import { Skeleton } from "@/components/ui/states";
 import { useAuthStore } from "@/features/auth/auth-store";
 import { AccessDenied } from "@/features/auth/components/access-denied";
 import { getMyPermissions } from "@/features/rbac/api";
@@ -93,20 +99,20 @@ function formatDate(value: string | null) {
 }
 
 function badgeClass(value: string) {
-  const base = "inline-flex rounded-full px-2.5 py-1 text-xs font-semibold";
+  const base = "inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-xs font-medium leading-5 ring-1 ring-inset";
 
   const classes: Record<string, string> = {
-    open: "bg-blue-50 text-blue-700",
-    pending: "bg-amber-50 text-amber-700",
-    resolved: "bg-emerald-50 text-emerald-700",
-    closed: "bg-slate-100 text-slate-600",
-    low: "bg-slate-100 text-slate-600",
-    normal: "bg-blue-50 text-blue-700",
-    high: "bg-orange-50 text-orange-700",
-    urgent: "bg-red-50 text-red-700",
+    open: "bg-sky-50 text-sky-900 ring-sky-200",
+    pending: "bg-amber-50 text-amber-900 ring-amber-200",
+    resolved: "bg-emerald-50 text-emerald-800 ring-emerald-200",
+    closed: "bg-slate-100 text-slate-700 ring-slate-200",
+    low: "bg-slate-100 text-slate-700 ring-slate-200",
+    normal: "bg-surface text-slate-700 ring-line-strong",
+    high: "bg-ember-50 text-ember-800 ring-ember-200",
+    urgent: "bg-rose-50 text-rose-800 ring-rose-200",
   };
 
-  return `${base} ${classes[value] ?? "bg-slate-100 text-slate-700"}`;
+  return `${base} ${classes[value] ?? "bg-slate-100 text-slate-700 ring-slate-200"}`;
 }
 
 type CreateTicketFormProps = {
@@ -172,15 +178,15 @@ function CreateTicketForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
+      className="mb-card p-5 sm:p-6"
     >
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-xl font-semibold text-slate-950">
+          <h2 className="text-xl font-semibold text-foreground">
             New support ticket
           </h2>
 
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-sm text-muted">
             Describe the issue clearly so support can help faster.
           </p>
         </div>
@@ -197,7 +203,7 @@ function CreateTicketForm({
       {error ? (
         <p
           role="alert"
-          className="mt-4 text-sm text-red-700"
+          className="mt-4 text-sm text-danger"
         >
           {error}
         </p>
@@ -260,7 +266,7 @@ function CreateTicketForm({
               onChange={(event) =>
                 setOrderId(event.target.value)
               }
-              className="mt-1.5 w-full rounded-2xl border border-slate-200 px-3 py-3 text-sm"
+              className="mt-1.5 mb-control"
             />
           </label>
 
@@ -277,7 +283,7 @@ function CreateTicketForm({
               onChange={(event) =>
                 setProductId(event.target.value)
               }
-              className="mt-1.5 w-full rounded-2xl border border-slate-200 px-3 py-3 text-sm"
+              className="mt-1.5 mb-control"
             />
           </label>
 
@@ -294,7 +300,7 @@ function CreateTicketForm({
               onChange={(event) =>
                 setReturnRequestId(event.target.value)
               }
-              className="mt-1.5 w-full rounded-2xl border border-slate-200 px-3 py-3 text-sm"
+              className="mt-1.5 mb-control"
             />
           </label>
         </div>
@@ -416,19 +422,19 @@ function TagManager({
   }
 
   return (
-    <section aria-labelledby="support-tag-management-heading" className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h2 id="support-tag-management-heading" className="text-lg font-semibold text-slate-950">
+    <section aria-labelledby="support-tag-management-heading" className="mb-card p-5 sm:p-6">
+      <h2 id="support-tag-management-heading" className="text-lg font-semibold text-foreground">
         Tag management
       </h2>
 
-      <p className="mt-1 text-sm text-slate-500">
+      <p className="mt-1 text-sm text-muted">
         Managers can maintain the shared support taxonomy here. Showing the current support tag page.
       </p>
 
       {error ? (
         <p
           role="alert"
-          className="mt-3 text-sm text-red-700"
+          className="mt-3 text-sm text-danger"
         >
           {error}
         </p>
@@ -445,7 +451,7 @@ function TagManager({
             setName(event.target.value)
           }
           placeholder="New tag"
-          className="min-w-48 flex-1 rounded-2xl border border-slate-200 px-4 py-2.5 text-sm"
+          className="mb-control min-w-48 flex-1"
         />
 
         <input
@@ -455,7 +461,7 @@ function TagManager({
           onChange={(event) =>
             setColor(event.target.value)
           }
-          className="h-11 w-14 rounded-xl border border-slate-200 bg-white p-1"
+          className="h-11 w-14 rounded-xl border border-line-strong bg-surface p-1"
         />
 
         <button
@@ -471,7 +477,7 @@ function TagManager({
         {tags.map((tag) => (
           <div
             key={tag.id}
-            className="flex items-center gap-2 rounded-2xl border border-slate-200 px-3 py-2"
+            className="flex items-center gap-2 rounded-xl border border-line px-3 py-2"
           >
             <span
               className="h-2.5 w-2.5 rounded-full"
@@ -486,7 +492,7 @@ function TagManager({
             </span>
 
             {!tag.is_active ? (
-              <span className="text-xs text-slate-400">
+              <span className="text-xs text-muted">
                 inactive
               </span>
             ) : null}
@@ -497,7 +503,7 @@ function TagManager({
               onClick={() =>
                 void toggleActive(tag)
               }
-              className="text-xs font-medium text-slate-500 hover:text-slate-950"
+              className="text-xs font-medium text-muted hover:text-foreground"
             >
               {tag.is_active ? "Disable" : "Enable"}
             </button>
@@ -678,19 +684,19 @@ function TicketDetail({
       : "";
 
   return (
-    <section className="rounded-3xl border border-slate-200 bg-white shadow-sm">
-      <div className="border-b border-slate-200 p-6">
+    <section className="mb-card min-w-0 overflow-hidden">
+      <div className="border-b border-line p-5 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+            <p className="mb-eyebrow">
               {ticket.ticket_number}
             </p>
 
-            <h2 className="mt-1 text-2xl font-semibold text-slate-950">
+            <h2 className="mt-1 text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
               {ticket.subject}
             </h2>
 
-            <p className="mt-2 text-sm text-slate-500">
+            <p className="mt-2 text-sm text-muted">
               {getCategoryLabel(ticket.category)}
               {" · opened "}
               {formatDate(ticket.created_at)}
@@ -729,7 +735,7 @@ function TicketDetail({
             (tag) => (
               <span
                 key={tag.id}
-                className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-600"
+                className="inline-flex items-center gap-1.5 rounded-full border border-line px-2.5 py-0.5 text-xs font-medium text-slate-700"
               >
                 <span
                   className="h-2 w-2 rounded-full"
@@ -748,7 +754,7 @@ function TicketDetail({
 
         <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-3">
           <div>
-            <dt className="text-slate-400">
+            <dt className="text-muted">
               Customer
             </dt>
 
@@ -759,7 +765,7 @@ function TicketDetail({
           </div>
 
           <div>
-            <dt className="text-slate-400">
+            <dt className="text-muted">
               Assigned to
             </dt>
 
@@ -770,7 +776,7 @@ function TicketDetail({
           </div>
 
           <div>
-            <dt className="text-slate-400">
+            <dt className="text-muted">
               Last message
             </dt>
 
@@ -786,14 +792,14 @@ function TicketDetail({
       {error ? (
         <p
           role="alert"
-          className="mx-6 mt-5 text-sm text-red-700"
+          className="mx-6 mt-5 text-sm text-danger"
         >
           {error}
         </p>
       ) : null}
 
       {capabilities.isSupportStaff ? (
-        <div className="grid gap-4 border-b border-slate-200 p-6 md:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-4 border-b border-line p-6 md:grid-cols-2 xl:grid-cols-4">
           {capabilities.canAssign ? (
             <div>
               <label className="mb-eyebrow">
@@ -807,7 +813,7 @@ function TicketDetail({
                       event.target.value,
                     )
                   }
-                  className="mt-1.5 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-sm"
+                  className="mt-1.5 mb-control mb-select"
                 >
                   <option value="">
                     Select agent
@@ -862,7 +868,7 @@ function TicketDetail({
                         .value as SupportTicketPriority,
                     )
                   }
-                  className="mt-1.5 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-sm"
+                  className="mt-1.5 mb-control mb-select"
                 >
                   {SUPPORT_PRIORITY_OPTIONS.map(
                     (option) => (
@@ -894,7 +900,7 @@ function TicketDetail({
                       ),
                   )
                 }
-                className="mt-2 w-full rounded-2xl border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 disabled:opacity-50"
+                className="mt-2 w-full mb-btn mb-btn-secondary mb-btn-sm"
               >
                 Update priority
               </button>
@@ -913,7 +919,7 @@ function TicketDetail({
                   onChange={(event) =>
                     setTagSelection({ request: tagRequest, id: event.target.value })
                   }
-                  className="mt-1.5 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-sm"
+                  className="mt-1.5 mb-control mb-select"
                 >
                   <option value="">
                     Select tag
@@ -952,7 +958,7 @@ function TicketDetail({
                     },
                   )
                 }
-                className="mt-2 w-full rounded-2xl border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 disabled:opacity-50"
+                className="mt-2 w-full mb-btn mb-btn-secondary mb-btn-sm"
               >
                 Add tag
               </button>
@@ -982,7 +988,7 @@ function TicketDetail({
                         ),
                     )
                   }
-                  className="rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700"
+                  className="mb-btn mb-btn-sm border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
                 >
                   Resolve
                 </button>
@@ -1004,7 +1010,7 @@ function TicketDetail({
                         ),
                     )
                   }
-                  className="rounded-2xl border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700"
+                  className="mb-btn mb-btn-secondary mb-btn-sm"
                 >
                   Close
                 </button>
@@ -1029,7 +1035,7 @@ function TicketDetail({
                         ),
                     )
                   }
-                  className="rounded-2xl border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700"
+                  className="mb-btn mb-btn-sm border-sky-200 bg-sky-50 text-sky-900 hover:bg-sky-100"
                 >
                   Reopen
                 </button>
@@ -1041,8 +1047,8 @@ function TicketDetail({
 
       {capabilities.canManageTags &&
       ticket.tags_detail.length ? (
-        <div className="flex flex-wrap gap-2 border-b border-slate-200 px-6 py-4">
-          <span className="mr-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
+        <div className="flex flex-wrap gap-2 border-b border-line px-6 py-4">
+          <span className="mr-1 mb-eyebrow">
             Remove tag
           </span>
 
@@ -1065,7 +1071,7 @@ function TicketDetail({
                       ),
                   )
                 }
-                className="rounded-full border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-600 hover:border-red-200 hover:text-red-700"
+                className="inline-flex min-h-8 items-center rounded-full border border-line px-2.5 py-1 text-xs font-medium text-slate-700 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-800"
               >
                 {tag.name} ×
               </button>
@@ -1074,28 +1080,34 @@ function TicketDetail({
         </div>
       ) : null}
 
-      <div className="p-6">
+      <div className="p-5 sm:p-6">
         <h3 className="mb-eyebrow">
           Conversation
         </h3>
 
-        <div className="mt-4 space-y-3">
+        <ol className="mt-4 grid gap-3" aria-label="Messages">
           {ticket.messages.map(
             (message) => (
+              <li key={message.id} className={message.sender === currentUserId ? "flex justify-end" : "flex justify-start"}>
               <article
-                key={message.id}
                 className={[
-                  "rounded-2xl border p-4",
+                  "w-full max-w-[44rem] rounded-2xl border p-4 sm:w-[88%]",
                   message.is_internal_note
                     ? "border-amber-200 bg-amber-50"
-                    : "border-slate-200 bg-slate-50",
+                    : message.sender === currentUserId
+                      ? "rounded-br-md border-ink/10 bg-slate-100"
+                      : "rounded-bl-md border-line bg-surface shadow-xs",
                 ].join(" ")}
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-slate-800">
+                    <span aria-hidden="true" className="flex size-7 shrink-0 items-center justify-center rounded-full bg-ink text-[0.6875rem] font-semibold text-white">
+                      {(message.sender_display || "U").trim().charAt(0).toUpperCase()}
+                    </span>
+                    <span className="text-sm font-medium text-foreground">
                       {message.sender_display ||
                         `User #${message.sender}`}
+                      {message.sender === currentUserId ? <span className="ml-1 font-normal text-muted">(you)</span> : null}
                     </span>
 
                     {message.is_internal_note ? (
@@ -1105,26 +1117,27 @@ function TicketDetail({
                     ) : null}
                   </div>
 
-                  <time className="text-xs text-slate-400">
+                  <time dateTime={message.created_at} className="text-xs text-muted">
                     {formatDate(
                       message.created_at,
                     )}
                   </time>
                 </div>
 
-                <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">
+                <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-800 [overflow-wrap:anywhere]">
                   {message.message}
                 </p>
               </article>
+              </li>
             ),
           )}
 
           {!ticket.messages.length ? (
-            <p className="text-sm text-slate-500">
+            <li className="text-sm text-muted">
               No messages yet.
-            </p>
+            </li>
           ) : null}
-        </div>
+        </ol>
 
         {ticket.status !== "closed" &&
         (
@@ -1133,10 +1146,10 @@ function TicketDetail({
         ) ? (
           <form
             onSubmit={submitReply}
-            className="mt-6"
+            className={`mt-6 rounded-2xl border p-3 transition-colors focus-within:border-ink ${internalNote ? "border-amber-300 bg-amber-50/60" : "border-line-strong/80 bg-surface"}`}
           >
             {capabilities.canAddInternalNote ? (
-              <label className="mb-2 flex items-center gap-2 text-sm text-slate-600">
+              <label className="mb-2 flex min-h-9 items-center gap-2 px-1 text-sm text-slate-700">
                 <input
                   aria-label="Internal note"
                   type="checkbox"
@@ -1166,10 +1179,11 @@ function TicketDetail({
                   ? "Write an internal note..."
                   : "Write a reply..."
               }
-              className="w-full resize-y mb-control"
+              className="block w-full resize-y border-0 bg-transparent px-1 py-1 text-base text-foreground placeholder:text-muted focus:outline-none sm:text-sm"
             />
 
-            <div className="mt-3 flex justify-end">
+            <div className="mt-2 flex items-center justify-between gap-3 border-t border-line pt-3">
+              <p className="text-xs text-muted">{internalNote ? "Visible to support staff only." : "The customer is notified of replies."}</p>
               <button
                 type="submit"
                 disabled={
@@ -1186,7 +1200,7 @@ function TicketDetail({
           </form>
         ) : ticket.status ===
           "closed" ? (
-          <p className="mt-6 rounded-2xl bg-slate-100 p-4 text-sm text-slate-600">
+          <p className="mt-6 rounded-xl border border-line bg-sunken/60 p-4 text-sm text-muted">
             This ticket is closed.
             Reopen it before adding new
             replies or attachments.
@@ -1194,7 +1208,7 @@ function TicketDetail({
         ) : null}
 
         {canAccessAttachments ? (
-          <div className="mt-6 border-t border-slate-200 pt-5">
+          <div className="mt-6 border-t border-line pt-5">
             <p className="text-sm font-semibold text-slate-700">
               Attachments
             </p>
@@ -1234,14 +1248,14 @@ function TicketDetail({
                         )
                       : undefined
                   }
-                  className="rounded-2xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 disabled:opacity-50"
+                  className="mb-btn mb-btn-secondary mb-btn-sm"
                 >
                   Upload
                 </button>
               </div>
             ) : ticket.status ===
               "closed" ? (
-              <p className="mt-2 text-sm text-slate-500">
+              <p className="mt-2 text-sm text-muted">
                 New attachments cannot be
                 uploaded while this ticket
                 is closed.
@@ -1256,7 +1270,7 @@ function TicketDetail({
                       type="button"
                       key={attachment.id}
                       onClick={() => void run("download", () => downloadSupportAttachment(ticket.id, attachment.id, attachment.original_filename), false)}
-                      className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 hover:text-slate-950"
+                      className="mb-btn mb-btn-secondary mb-btn-sm text-xs font-medium text-slate-600 hover:text-foreground"
                     >
                       {attachment.original_filename ||
                         `Attachment #${attachment.id}`}
@@ -1265,7 +1279,7 @@ function TicketDetail({
                 )}
               </div>
             ) : (
-              <p className="mt-3 text-sm text-slate-400">
+              <p className="mt-3 text-sm text-muted">
                 No attachments.
               </p>
             )}
@@ -1273,7 +1287,7 @@ function TicketDetail({
         ) : null}
 
         {capabilities.canViewAuditLogs ? (
-          <div className="mt-6 border-t border-slate-200 pt-5">
+          <div className="mt-6 border-t border-line pt-5">
             <button
               type="button"
               onClick={() =>
@@ -1290,7 +1304,7 @@ function TicketDetail({
                   false,
                 )
               }
-              className="rounded-2xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700"
+              className="mb-btn mb-btn-secondary mb-btn-sm"
             >
               {auditLogs
                 ? "Refresh audit log"
@@ -1302,14 +1316,14 @@ function TicketDetail({
                 {auditLogs.map((log) => (
                   <div
                     key={log.id}
-                    className="rounded-2xl border border-slate-200 px-4 py-3"
+                    className="rounded-xl border border-line px-4 py-3"
                   >
                     <div className="flex items-center justify-between gap-3">
                       <span className="text-sm font-semibold text-slate-700">
                         {log.action}
                       </span>
 
-                      <span className="text-xs text-slate-400">
+                      <span className="text-xs text-muted">
                         {formatDate(
                           log.created_at,
                         )}
@@ -1725,10 +1739,12 @@ export function SupportCenter({
     !permissionReady
   ) {
     return (
-      <main className="mx-auto max-w-7xl px-4 py-10">
-        <p className="text-sm text-slate-500">
+      <main className="grid gap-6" aria-busy="true">
+        <p role="status" className="text-sm text-muted">
           Loading support workspace...
         </p>
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">{[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-24 rounded-2xl" />)}</div>
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.4fr)]"><Skeleton className="h-96 rounded-2xl" /><Skeleton className="h-96 rounded-2xl" /></div>
       </main>
     );
   }
@@ -1746,50 +1762,25 @@ export function SupportCenter({
   }
 
   return (
-    <main className="mx-auto max-w-7xl px-4 py-10">
-      <div className="flex flex-wrap items-end justify-between gap-5">
-        <div>
-          <p className="mb-eyebrow">
-            {capabilities.isSupportStaff
-              ? "Support operations"
-              : "Help center"}
-          </p>
-
-          <h1 className="mt-2 text-3xl font-semibold text-slate-950">
-            {capabilities.isSupportStaff
-              ? "Support desk"
-              : "Customer support"}
-          </h1>
-
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-            {capabilities.isSupportStaff
-              ? "Work the support queue with actions controlled by your RBAC permissions."
-              : "Create tickets, follow replies, and keep your support history in one place."}
-          </p>
-        </div>
-
-        {!capabilities.isSupportStaff ? (
-          <button
-            type="button"
-            onClick={() =>
-              setShowCreate(
-                (current) =>
-                  !current,
-              )
-            }
-            className="mb-btn mb-btn-primary"
-          >
-            {showCreate
-              ? "Hide form"
-              : "New ticket"}
-          </button>
-        ) : null}
-      </div>
+    <main className="min-w-0">
+      <PageHeader
+        eyebrow={capabilities.isSupportStaff ? "Support operations" : "Help center"}
+        title={capabilities.isSupportStaff ? "Support desk" : "Customer support"}
+        description={capabilities.isSupportStaff
+          ? "Work the support queue with actions controlled by your RBAC permissions."
+          : "Create tickets, follow replies, and keep your support history in one place."}
+        actions={!capabilities.isSupportStaff ? (
+          <Button variant={showCreate ? "secondary" : "primary"} aria-expanded={showCreate}
+            onClick={() => setShowCreate((current) => !current)}>
+            {showCreate ? null : <MessageSquarePlus size={16} aria-hidden="true" />}
+            {showCreate ? "Hide form" : "New ticket"}
+          </Button>
+        ) : null} />
 
       {error ? (
         <p
           role="alert"
-          className="mt-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+          className="mt-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-950"
         >
           {error}
         </p>
@@ -1812,7 +1803,7 @@ export function SupportCenter({
         </div>
       ) : null}
 
-      <section className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <section aria-label="Ticket summary" className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         {[
           [
             "Total",
@@ -1837,24 +1828,13 @@ export function SupportCenter({
           ],
         ].map(
           ([label, value]) => (
-            <div
-              key={String(label)}
-              className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm"
-            >
-              <p className="text-sm text-slate-500">
-                {label}
-              </p>
-
-              <p className="mt-2 text-3xl font-semibold text-slate-950">
-                {value}
-              </p>
-            </div>
+            <StatCard key={String(label)} label={label} value={value} />
           ),
         )}
       </section>
 
-      <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="grid gap-3 md:grid-cols-4">
+      <section aria-label="Ticket filters" className="mt-6 mb-card p-4 sm:p-5">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <label>
             <span className="mb-eyebrow">
               Status
@@ -1874,7 +1854,7 @@ export function SupportCenter({
                     | "",
                 )
               }
-              className="mt-1.5 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-sm"
+              className="mt-1.5 mb-control mb-select"
             >
               <option value="">
                 All statuses
@@ -1915,7 +1895,7 @@ export function SupportCenter({
                         | "",
                     )
                   }
-                  className="mt-1.5 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-sm"
+                  className="mt-1.5 mb-control mb-select"
                 >
                   <option value="">
                     All priorities
@@ -1960,7 +1940,7 @@ export function SupportCenter({
                         | "",
                     )
                   }
-                  className="mt-1.5 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-sm"
+                  className="mt-1.5 mb-control mb-select"
                 >
                   <option value="">
                     All categories
@@ -2006,7 +1986,7 @@ export function SupportCenter({
                         : "",
                     )
                   }
-                  className="mt-1.5 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-sm"
+                  className="mt-1.5 mb-control mb-select"
                 >
                   <option value="">
                     All assignments
@@ -2025,24 +2005,24 @@ export function SupportCenter({
       {capabilities.canManageTags ? (
         <nav
           aria-label="Support tag pages"
-          className="mt-6 rounded-3xl border border-slate-200 bg-white p-5 text-sm text-slate-700"
+          className="mt-6 mb-card p-5 text-sm text-slate-700"
         >
           <p className="font-semibold">{tagPage.data.count} support tags</p>
-          <p className="mt-1 text-slate-500">
+          <p className="mt-1 text-muted">
             This page supplies tag management and the ticket tag selector.
           </p>
           {tagPage.loading ? (
             <p role="status" className="mt-2">Loading support tags...</p>
           ) : null}
           {tagPage.error ? (
-            <p role="alert" className="mt-2 text-red-700">{tagPage.error}</p>
+            <p role="alert" className="mt-2 text-danger">{tagPage.error}</p>
           ) : null}
           <div className="mt-3 flex flex-wrap items-center gap-3">
             <button
               type="button"
               disabled={tagPage.page <= 1}
               onClick={() => void refreshTags(tagPage.page - 1)}
-              className="rounded-xl border border-slate-200 px-3 py-2 disabled:opacity-40"
+              className="mb-btn mb-btn-secondary mb-btn-sm"
             >
               Previous tag page
             </button>
@@ -2053,7 +2033,7 @@ export function SupportCenter({
               type="button"
               disabled={tagPage.loading || Boolean(tagPage.error) || !tagPage.data.next}
               onClick={() => void refreshTags(tagPage.page + 1)}
-              className="rounded-xl border border-slate-200 px-3 py-2 disabled:opacity-40"
+              className="mb-btn mb-btn-secondary mb-btn-sm"
             >
               Next tag page
             </button>
@@ -2061,7 +2041,7 @@ export function SupportCenter({
               <button
                 type="button"
                 onClick={() => void refreshTags()}
-                className="rounded-xl border border-slate-200 px-3 py-2"
+                className="mb-btn mb-btn-secondary mb-btn-sm"
               >
                 Retry support tags
               </button>
@@ -2070,15 +2050,15 @@ export function SupportCenter({
         </nav>
       ) : null}
 
-      <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.4fr)]">
-        <section className="rounded-3xl border border-slate-200 bg-white shadow-sm">
-          <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+      <div className="mt-6 grid items-start gap-6 xl:grid-cols-[minmax(0,0.85fr)_minmax(0,1.4fr)]">
+        <section aria-label="Tickets" className="mb-card overflow-hidden xl:sticky xl:top-24">
+          <div className="flex items-center justify-between border-b border-line px-5 py-4">
             <div>
-              <h2 className="font-semibold text-slate-950">
+              <h2 className="text-base font-semibold tracking-tight text-foreground">
                 Tickets
               </h2>
 
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-muted">
                 {ticketPage.count}{" "}
                 ticket
                 {ticketPage.count === 1
@@ -2088,13 +2068,13 @@ export function SupportCenter({
             </div>
 
             {loading ? (
-              <span className="text-xs text-slate-400">
+              <span className="text-xs text-muted">
                 Refreshing...
               </span>
             ) : null}
           </div>
 
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-line">
             {ticketPage.results.map(
               (ticket) => (
                 <button
@@ -2106,26 +2086,27 @@ export function SupportCenter({
                       true,
                     )
                   }
+                  aria-current={selectedTicketId === ticket.id ? "true" : undefined}
                   className={[
-                    "w-full px-5 py-4 text-left transition hover:bg-slate-50",
+                    "relative w-full px-5 py-4 text-left transition-colors hover:bg-slate-50 focus-visible:z-10",
                     selectedTicketId ===
                     ticket.id
-                      ? "bg-slate-50"
+                      ? "bg-ember-50/60 before:absolute before:inset-y-0 before:left-0 before:w-[3px] before:bg-brand"
                       : "",
                   ].join(" ")}
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-slate-900">
+                      <p className="truncate text-sm font-medium text-foreground">
                         {
                           ticket.subject
                         }
                       </p>
 
-                      <p className="mt-1 text-xs text-slate-400">
-                        {
+                      <p className="mt-1 text-xs text-muted">
+                        <span className="font-mono">{
                           ticket.ticket_number
-                        }
+                        }</span>
                         {" · "}
                         {getCategoryLabel(
                           ticket.category,
@@ -2156,13 +2137,13 @@ export function SupportCenter({
                     </span>
 
                     {capabilities.isSupportStaff ? (
-                      <span className="text-xs text-slate-500">
+                      <span className="text-xs text-muted">
                         {ticket.assigned_to_display ||
                           "Unassigned"}
                       </span>
                     ) : null}
 
-                    <span className="ml-auto text-xs text-slate-400">
+                    <span className="ml-auto text-xs text-muted">
                       {formatDate(
                         ticket.updated_at,
                       )}
@@ -2175,14 +2156,15 @@ export function SupportCenter({
             {!loading &&
             !ticketPage.results
               .length ? (
-              <div className="px-5 py-10 text-center text-sm text-slate-500">
-                No tickets match these
-                filters.
+              <div className="px-5 py-12 text-center">
+                <Inbox size={22} className="mx-auto text-muted" aria-hidden="true" />
+                <p className="mt-3 text-sm text-muted">No tickets match these
+                filters.</p>
               </div>
             ) : null}
           </div>
 
-          <div className="flex items-center justify-between border-t border-slate-200 px-5 py-4">
+          <div className="flex items-center justify-between border-t border-line px-5 py-3">
             <button
               type="button"
               disabled={
@@ -2192,12 +2174,12 @@ export function SupportCenter({
               onClick={() =>
                 changePage(Math.max(1, page - 1))
               }
-              className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 disabled:opacity-40"
+              className={buttonStyles({ variant: "secondary", size: "small" })}
             >
               Previous
             </button>
 
-            <span className="text-xs text-slate-400">
+            <span className="text-xs text-muted">
               Page {page}
             </span>
 
@@ -2209,7 +2191,7 @@ export function SupportCenter({
               onClick={() =>
                 changePage(page + 1)
               }
-              className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 disabled:opacity-40"
+              className={buttonStyles({ variant: "secondary", size: "small" })}
             >
               Next
             </button>
@@ -2232,13 +2214,14 @@ export function SupportCenter({
             onClose={closeTicket}
           />
         ) : (
-          <section className="flex min-h-80 items-center justify-center rounded-3xl border border-dashed border-slate-300 bg-white p-5 sm:p-8 text-center">
+          <section className="flex min-h-96 items-center justify-center rounded-2xl border border-dashed border-line-strong bg-surface/60 p-6 text-center sm:p-8">
             <div>
-              <p role={detailLoading ? "status" : undefined} className="font-semibold text-slate-800">
+              <span className="mx-auto mb-4 flex size-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-600 ring-8 ring-slate-50" aria-hidden="true"><MessagesSquare size={22} /></span>
+              <p role={detailLoading ? "status" : undefined} className="font-semibold text-foreground">
                 {detailLoading ? "Loading conversation..." : "Select a ticket"}
               </p>
 
-              <p className="mt-1 text-sm text-slate-500">
+              <p className="mt-1 text-sm text-muted">
                 Open a ticket to view
                 the conversation and
                 available actions.
