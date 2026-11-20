@@ -40,6 +40,10 @@ Numbers in tables and stats use tabular figures (`data-numeric` or any `table`).
 - `Card`, `CardHeader`, `StatCard`, `PageHeader`, `Breadcrumbs`.
 - `Skeleton`, `EmptyState`, `Notice` (danger → `role="alert"`, others → `role="status"`).
 - `Price`, `Rating`, `formatAmount`, `discountPercent` — amounts are shown as plain numbers because catalog endpoints return no currency; currencies appear only where the API supplies them (payments, finance).
+- `Pagination` — server-paginated list footer: polite summary plus previous/next buttons whose text is caller-provided, so each list keeps a specific accessible name (`Next audit actions`, `Previous returns`).
+- `DetailList`, `TableFrame`, `Timeline`, `MetricInline` (`data-display.tsx`) — description lists for facts (empty values render an em dash), a card-framed horizontally scrolling table, a vertical event history with tone dots, and a compact metric strip.
+- `SegmentedNav` — in-page section switcher (buttons or links) with `aria-current="page"`; scrolls horizontally on narrow screens.
+- `ConfirmDialog`, `dialogOverlayClass`, `dialogPanelClass` — confirmation built on `AccessibleDialog`; bottom sheet on phones, centred on larger screens. With `reasonLabel` + `reasonMinLength` the confirm action stays disabled until a reason is long enough.
 
 Legacy markup uses the CSS recipes `.mb-control`, `.mb-select`, `.mb-btn` (`-primary`, `-secondary`, `-danger`, `-success`, `-sm`), `.mb-card`, `.mb-eyebrow`, `.mb-table`, `.mb-skeleton`, `.mb-container`. New code should prefer the React components.
 
@@ -51,6 +55,18 @@ Legacy markup uses the CSS recipes `.mb-control`, `.mb-select`, `.mb-btn` (`-pri
 - Wide tables scroll inside their own container; on small screens they keep a 42rem minimum rather than crushing columns.
 - Workspaces use a quiet utility footer; the storefront uses the full ink footer.
 
+## Operational screen patterns
+
+The deep workspace screens (super admin, CMS, support, notifications, seller products and orders, returns, inventory, shipping, finance and observability) share these patterns:
+
+- **Header.** `PageHeader` with eyebrow, workspace-scale title, one-sentence description and primary actions; detail pages add breadcrumbs and show identifiers (order, return, shipment, ticket numbers) in Geist Mono next to a `StatusBadge`.
+- **Summary.** A row of `StatCard`s only for figures the API already returns; a stat's label and value share one container. Tones: `ink` for the headline figure, `brand` when a queue needs attention.
+- **Lists.** A filter toolbar (search, labelled selects, toggles) above a framed `mb-table`: right-aligned tabular numbers, status badges with text, a quiet secondary action per row, `Pagination` in the card footer. Filters that only apply to the loaded page say so.
+- **Details.** Main column with content cards (items, timeline, conversation) and a sticky aside with the summary and an **Actions** card on `lg`; a single column on phones. Consequential transitions confirm through `ConfirmDialog`.
+- **Forms.** Titled card sections with label, hint and inline error; required fields marked; the submit area lives in a sticky aside on desktop and at the end of the flow on phones.
+- **Conversation.** Messages align by author (own messages right, tinted), with internal notes in amber and a composer card that explains who will see the message.
+- **Charts.** Recharts colours come from `CHART_COLORS` in `features/insights/components/insight-kit.tsx` (ember, ink, neutral), series are distinguished by line style as well as colour, and every chart offers its data as a table.
+
 ## Interaction and accessibility
 
 - Visible 2px ember focus outline on every interactive element; skip link to `#main-content`.
@@ -61,4 +77,4 @@ Legacy markup uses the CSS recipes `.mb-control`, `.mb-select`, `.mb-btn` (`-pri
 
 ## Verification
 
-Before/after evidence for this redesign lives in `docs/ui-evidence/redesign/` (captured against a local `mallbyte-api` on SQLite with seeded demo data and procedurally generated product illustrations — not production content). Validate unit tests, TypeScript, lint, Playwright (mocked API) and a production build before merging.
+Deep-screen evidence from the Playwright suite (mocked API data, 390/834/1440px) lives in `docs/ui-evidence/phase4/`; `e2e/deep-screens.spec.ts` also asserts that those pages never scroll horizontally. Before/after evidence for this redesign lives in `docs/ui-evidence/redesign/` (captured against a local `mallbyte-api` on SQLite with seeded demo data and procedurally generated product illustrations — not production content). Validate unit tests, TypeScript, lint, Playwright (mocked API) and a production build before merging.
