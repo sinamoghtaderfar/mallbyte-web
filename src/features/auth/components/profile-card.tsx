@@ -1,6 +1,8 @@
 "use client";
 
 import { useAuthStore } from "../auth-store";
+import { isAdminUser } from "../roles";
+import { ProfileSellerAction } from "@/features/seller/components/profile-seller-action";
 
 function getAccountTypeLabel(user: {
   is_seller?: boolean;
@@ -73,7 +75,7 @@ export function ProfileCard() {
         </div>
       </div>
 
-      <div className="mt-8 flex flex-wrap gap-3"></div>
+      {!isAdminUser(user) && <ProfileSellerAction key={user.id} />}
     </div>
   );
 }
